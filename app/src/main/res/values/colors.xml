@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <!-- Bizim Uygulama Renklerimiz -->
+    <color name="bg_cream">#F4F1EA</color>
+    <color name="primary_green">#4A7C59</color>
+    <color name="text_brown">#3E2723</color>
+    <color name="gray_light">#E0E0E0</color>
+</resources>
