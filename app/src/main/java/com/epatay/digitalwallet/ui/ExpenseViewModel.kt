@@ -25,4 +25,11 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun insert(expense: Expense) = viewModelScope.launch {
         repository.insert(expense)
     }
+    // Arayüzden çağrılacak silme fonksiyonu
+    fun delete(expense: Expense) = viewModelScope.launch {
+        repository.delete(expense)
+    }
+    fun update(expense: Expense) = viewModelScope.launch {
+        repository.update(expense)
+    }
 }

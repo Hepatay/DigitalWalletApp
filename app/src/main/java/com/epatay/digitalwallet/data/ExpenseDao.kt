@@ -2,9 +2,11 @@ package com.epatay.digitalwallet.data
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 
 
 @Dao
@@ -17,4 +19,10 @@ interface ExpenseDao {
     // Tüm harcamaları en yenisi en üstte olacak şekilde (DESC) getirme komutu
     @Query("SELECT * FROM expenses_table ORDER BY id DESC")
     fun getAllExpenses(): LiveData<List<Expense>>
+
+    @Delete
+    suspend fun delete(expense: Expense)
+
+    @Update
+    suspend fun update(expense: Expense)
 }

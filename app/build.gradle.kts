@@ -40,6 +40,10 @@ android {
 }
 
 dependencies {
+    // Retrofit ve JSON dönüştürücü (GSON)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
     // ViewModel ve viewModelScope için gerekli kütüphane
@@ -48,9 +52,11 @@ dependencies {
     // Arka plan işlemleri (Coroutines / launch) için gerekli kütüphaneler
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.1")
 
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    implementation("com.google.android.material:material:1.12.0")
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)

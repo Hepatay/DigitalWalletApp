@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:padding="50dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Yeni Harcama Ekle"
+        android:textColor="#333333"
+        android:textSize="25sp"
+        android:textStyle="bold" />
+
+    <!-- Harcama Adı Girişi -->
+    <EditText
+        android:id="@+id/etExpenseTitle"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="20dp"
+        android:background="#F5F5F5"
+        android:hint="Neye harcadın? (Örn: Market)"
+        android:padding="4dp"
+        android:textColor="#333333" />
+
+    <!-- Tutar Girişi (Sadece sayı girilebilsin diye numberDecimal yaptık) -->
+    <EditText
+        android:id="@+id/etExpenseAmount"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:background="#F5F5F5"
+        android:hint="Tutar (Örn: 150.5)"
+        android:inputType="numberDecimal"
+        android:padding="12dp"
+        android:textColor="#333333" />
+    <!-- Kategori Seçimi (Material Dropdown) -->
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:hint="Kategori Seç">
+
+        <AutoCompleteTextView
+            android:id="@+id/etCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:dropDownHeight="150dp"
+            android:inputType="none" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Kaydet Butonu -->
+    <Button
+        android:id="@+id/btnSaveExpense"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:backgroundTint="#4CAF50"
+        android:text="KAYDET"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

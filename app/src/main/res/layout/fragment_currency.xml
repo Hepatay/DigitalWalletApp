@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:text="Güncel Döviz Kurları"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+    <!-- Miktar Giriş Kutusu -->
+    <EditText
+        android:id="@+id/etAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15dp"
+        android:background="#E0E0E0"
+        android:padding="12dp"
+        android:hint="Hesaplanacak miktarı girin (Örn: 1)"
+        android:inputType="numberDecimal"
+        android:textSize="16sp" />
+
+    <!-- Hata Mesajı -->
+    <TextView
+        android:id="@+id/tvError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="İnternet bağlantınızı kontrol edin!"
+        android:textColor="#FF0000"
+        android:textAlignment="center"
+        android:visibility="gone"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Yükleme İkonu -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Döviz Listesi -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCurrencies"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btnUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Kurları Güncelle"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>
