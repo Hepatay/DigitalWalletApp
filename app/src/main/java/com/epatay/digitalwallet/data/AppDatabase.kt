@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Expense::class], version = 1, exportSchema = false)
+// DEĞİŞİKLİK 1: InvestmentItem tablosunu ekledik ve versiyonu 3 yaptık.
+@Database(entities = [Expense::class, WalletItem::class, InvestmentItem::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun expenseDao(): ExpenseDao
+    abstract fun walletDao(): WalletDao
+
+    // DEĞİŞİKLİK 2: Yatırım DAO'muzu bağladık
+    abstract fun investmentDao(): InvestmentDao
 
     companion object {
         @Volatile
@@ -20,7 +25,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "wallet_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Versiyon 3'e çökmeden geçiş yapmak için
+                    .build()
+
                 INSTANCE = instance
                 instance
             }

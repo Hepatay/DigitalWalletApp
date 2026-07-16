@@ -47,8 +47,9 @@ class CurrencyAdapter(private var currencyList: List<CurrencyItem>) :
     }
 
     // EditText'ten gelen yeni miktarı alıp listeyi yenileyen fonksiyon
-    fun updateMultiplier(newMultiplier: Double) {
-        multiplier = newMultiplier
+    fun updateMultiplier(amount: Double) {
+        this.multiplier = amount
         notifyDataSetChanged()
     }
+
 }

@@ -3,6 +3,7 @@ package com.epatay.digitalwallet.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData // Bu import şart!
 import androidx.lifecycle.viewModelScope
 import com.epatay.digitalwallet.data.AppDatabase
 import com.epatay.digitalwallet.data.Expense
@@ -11,25 +12,21 @@ import kotlinx.coroutines.launch
 
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
 
+    // Buradaki değişkenleri PUBLIC olarak tanımlıyoruz
+    val dolarKuru = MutableLiveData<Double>(0.0)
+    val euroKuru = MutableLiveData<Double>(0.0)
+    val sterlinKuru = MutableLiveData<Double>(0.0)
+
     private val repository: ExpenseRepository
     val allExpenses: LiveData<List<Expense>>
 
     init {
-        // Veritabanını ve DAO'yu başlatıp Repository'ye veriyoruz
         val expenseDao = AppDatabase.getDatabase(application).expenseDao()
         repository = ExpenseRepository(expenseDao)
         allExpenses = repository.allExpenses
     }
 
-    // Arayüzden çağrılacak ekleme fonksiyonu (Arka planda çalışması için viewModelScope kullanıyoruz)
-    fun insert(expense: Expense) = viewModelScope.launch {
-        repository.insert(expense)
-    }
-    // Arayüzden çağrılacak silme fonksiyonu
-    fun delete(expense: Expense) = viewModelScope.launch {
-        repository.delete(expense)
-    }
-    fun update(expense: Expense) = viewModelScope.launch {
-        repository.update(expense)
-    }
+    fun insert(expense: Expense) = viewModelScope.launch { repository.insert(expense) }
+    fun delete(expense: Expense) = viewModelScope.launch { repository.delete(expense) }
+    fun update(expense: Expense) = viewModelScope.launch { repository.update(expense) }
 }

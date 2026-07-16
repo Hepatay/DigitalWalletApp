@@ -4,38 +4,58 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_cream">
+    android:background="#F8F9FA">
 
+    <!-- Sayfa Başlığı -->
     <TextView
-        android:id="@+id/tvAnalysisTitle"
+        android:id="@+id/tvInvestmentsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Harcama Analizi"
-        android:textColor="@color/text_brown"
-        android:textSize="22sp"
+        android:layout_margin="20dp"
+        android:text="Yatırımlarım"
+        android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <com.github.mikephil.charting.charts.PieChart
-        android:id="@+id/pieChart"
-        android:layout_width="match_parent"
-        android:layout_height="350dp"
-        android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/tvAnalysisTitle" />
+        android:textColor="#000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:id="@+id/tvAnalysisDesc"
+        android:id="@+id/tvInvestmentsSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Kategorilere göre harcama dağılımı"
-        android:textColor="#757575"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="4dp"
+        android:text="Kâr ve zarar durumunuzu takip edin"
         android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:textColor="#888888"
+        app:layout_constraintTop_toBottomOf="@id/tvInvestmentsTitle"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Yatırımların Listeleneceği Alan -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvInvestments"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:paddingHorizontal="12dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/tvInvestmentsSubtitle"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pieChart" />
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Yeni Yatırım Ekle Butonu (FAB) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddInvestment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="Yeni Yatırım Ekle"
+        android:src="@android:drawable/ic_input_add"
+        app:backgroundTint="#2196F3"
+        app:tint="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

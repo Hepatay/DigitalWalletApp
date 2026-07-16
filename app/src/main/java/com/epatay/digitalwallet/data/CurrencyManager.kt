@@ -1,5 +1,5 @@
 package com.epatay.digitalwallet.data
-// CurrencyManager.kt (Yeni bir dosya oluştur)
+
 import android.content.Context
 import com.google.gson.Gson
 
@@ -14,6 +14,10 @@ class CurrencyManager(context: Context) {
 
     fun getSavedRates(): ExchangeRateResponse? {
         val json = sharedPreferences.getString("last_rates", null) ?: return null
-        return gson.fromJson(json, ExchangeRateResponse::class.java)
+        return try {
+            gson.fromJson(json, ExchangeRateResponse::class.java)
+        } catch (e: Exception) {
+            null
+        }
     }
 }

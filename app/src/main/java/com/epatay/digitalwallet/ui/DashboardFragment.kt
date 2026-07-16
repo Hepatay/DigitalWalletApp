@@ -1,12 +1,23 @@
 package com.epatay.digitalwallet.ui
 
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.databinding.FragmentDashboardBinding
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.utils.ColorTemplate
 
 class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
@@ -23,7 +34,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         adapter.onItemClick = { expense ->
             showEditBottomSheet(expense)
         }
-        binding.rvTransactions.adapter = adapter
+            binding.rvTransactions.adapter = adapter
         binding.rvTransactions.layoutManager = LinearLayoutManager(requireContext())
 
         // 2. ViewModel Gözlemi
@@ -31,6 +42,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             adapter.setData(expenses)
             val toplamTutar = expenses.sumOf { it.amount }
             binding.tvTotalBalance.text = "₺$toplamTutar"
+
+            updatePieChart(expenses)
         }
 
         // 3. FAB (Harcama Ekleme) Butonu
@@ -39,22 +52,22 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
 
         // 4. Swipe to Delete (Silme) Özelliği
-        val itemTouchHelperCallback = object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
-            0, androidx.recyclerview.widget.ItemTouchHelper.LEFT
+        val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(
+            0, ItemTouchHelper.LEFT
         ) {
-            override fun onMove(recyclerView: androidx.recyclerview.widget.RecyclerView, viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, target: androidx.recyclerview.widget.RecyclerView.ViewHolder) = false
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) = false
 
-            override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val silinecekHarcama = adapter.getExpenseAt(position)
                 expenseViewModel.delete(silinecekHarcama)
-                android.widget.Toast.makeText(requireContext(), "Harcama silindi", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Harcama silindi", Toast.LENGTH_SHORT).show()
             }
 
             override fun onChildDraw(
-                c: android.graphics.Canvas,
-                recyclerView: androidx.recyclerview.widget.RecyclerView,
-                viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
                 dX: Float,
                 dY: Float,
                 actionState: Int,
@@ -62,10 +75,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             ) {
                 val itemView = viewHolder.itemView
                 // Kırmızı arka plan
-                val background = android.graphics.drawable.ColorDrawable(android.graphics.Color.parseColor("#F44336"))
+                val background = ColorDrawable(Color.parseColor("#F44336"))
 
                 // Çöp kutusu ikonu
-                val icon = androidx.core.content.ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete)!!
+                val icon = ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete)!!
                 val iconMargin = (itemView.height - icon.intrinsicHeight) / 2
                 val iconTop = itemView.top + iconMargin
                 val iconBottom = iconTop + icon.intrinsicHeight
@@ -83,7 +96,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         }
-        androidx.recyclerview.widget.ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(binding.rvTransactions)
+        ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(binding.rvTransactions)
     }
     // Harcama Ekleme Penceresi
     private fun showAddBottomSheet() {
@@ -129,6 +142,41 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             bottomSheetDialog.dismiss()
         }
         bottomSheetDialog.show()
+    }
+
+    // Pasta Grafiği Güncelleme Fonksiyonu
+    private fun updatePieChart(expenses: List<com.epatay.digitalwallet.data.Expense>) {
+        if (expenses.isEmpty()) {
+            binding.pieChart.clear()
+            return
+        }
+
+        // Harcamaları kategorilerine göre grupla ve topla
+        val categorySums = expenses.groupBy { it.category }
+            .mapValues { entry -> entry.value.sumOf { it.amount } }
+
+        // Grafik için veri listesini oluştur
+        val entries = ArrayList<PieEntry>()
+        for ((category, sum) in categorySums) {
+            // Eğer kategori boşsa "Diğer" yazsın
+            val kategoriAdi = if (category.isNullOrEmpty()) "Diğer" else category
+            entries.add(PieEntry(sum.toFloat(), kategoriAdi))
+        }
+
+        // Veri setini ve renkleri ayarla
+        val dataSet = PieDataSet(entries, "")
+        dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList() + ColorTemplate.PASTEL_COLORS.toList()
+        dataSet.valueTextSize = 14f
+        dataSet.valueTextColor = Color.WHITE
+
+        // Grafiği ekrana bas
+        val data = PieData(dataSet)
+        binding.pieChart.data = data
+        binding.pieChart.description.isEnabled = false // Sağ alttaki gereksiz yazıyı gizle
+        binding.pieChart.centerText = "Dağılım"
+        binding.pieChart.setCenterTextSize(16f)
+        binding.pieChart.animateY(800) // 0.8 saniyelik şık bir açılış animasyonu
+        binding.pieChart.invalidate() // Grafiği yenile
     }
 
 
