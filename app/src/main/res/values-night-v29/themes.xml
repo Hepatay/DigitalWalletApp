@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style
-        name="Base.Theme.DigitalWallet"
-        parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.DigitalWallet" parent="Theme.Material3.DayNight.NoActionBar">
 
         <item name="colorPrimary">#90CAF9</item>
         <item name="colorOnPrimary">#003258</item>
@@ -33,5 +31,4 @@
         <item name="android:forceDarkAllowed">false</item>
 
     </style>
-
 </resources>

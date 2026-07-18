@@ -4,13 +4,17 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.epatay.digitalwallet.data.InvestmentItem
+import com.epatay.digitalwallet.data.InvestmentDao
 
-// entity olarak artık Transaction::class kullanıyoruz.
-// versiyonu artırdık ki eski tablo yapısıyla çakışmasın.
-@Database(entities = [Transaction::class], version = 2, exportSchema = false)
+// 1. DEĞİŞİKLİK: entities listesine InvestmentItem::class eklendi ve versiyon 3 yapıldı.
+@Database(entities = [Transaction::class, InvestmentItem::class], version = 4, exportSchema = false)
 abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+
+    // 2. DEĞİŞİKLİK: ViewModel'in aradığı investmentDao buraya eklendi!
+    abstract fun investmentDao(): InvestmentDao
 
     companion object {
         @Volatile
@@ -23,8 +27,6 @@ abstract class TransactionDatabase : RoomDatabase() {
                     TransactionDatabase::class.java,
                     "transaction_database"
                 )
-                    // Tablo yapısını değiştirdiğimiz için eski verileri silip yeni tabloyu kurar.
-                    // Geliştirme aşamasında olduğumuz için migration (göç) yazmakla uğraşmadan temiz bir başlangıç yapıyoruz.
                     .fallbackToDestructiveMigration()
                     .build()
 

@@ -1,82 +1,266 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA">
+    android:background="?attr/colorSurface">
 
-    <!-- 1. Toplam Varlık ve Özet Grafiği Kartı -->
-    <androidx.cardview.widget.CardView
+    <!-- Dashboard özeti -->
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardDashboard"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="?attr/colorOutline"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingStart="20dp"
+            android:paddingTop="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="18dp">
 
+            <!-- Toplam bakiye başlığı -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Toplam Varlığım"
-                android:textSize="14sp"
-                android:textColor="#888888" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
 
+            <!-- Toplam bakiye -->
             <TextView
                 android:id="@+id/tvTotalBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="₺0.00"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="#000000"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="16dp"/>
+                android:text="0,00 ₺"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
-            <!-- ÖZET GRAFİK -->
-            <com.github.mikephil.charting.charts.PieChart
-                android:id="@+id/pieChart"
+            <!-- Toplam gelir ve toplam gider -->
+            <LinearLayout
+                android:id="@+id/layoutIncomeExpense"
                 android:layout_width="match_parent"
-                android:layout_height="200dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <!-- Toplam gelir kartı -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Toplam Gelir"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvTotalIncome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="0,00 ₺"
+                            android:textColor="#4CAF50"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Toplam gider kartı -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Toplam Gider"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvTotalExpense"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="0,00 ₺"
+                            android:textColor="#F44336"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Grafik ve kategori detayları -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/pieChart"
+                    android:layout_width="125dp"
+                    android:layout_height="125dp"
+                    android:contentDescription="Harcama dağılım grafiği" />
+
+                <LinearLayout
+                    android:id="@+id/llCategoryDetails"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+            <!-- Aylık bütçe bilgisi -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <TextView
+                    android:id="@+id/tvDailyBudgetInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:lineSpacingExtra="3dp"
+                    android:paddingStart="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp"
+                    android:text="Aylık bütçe analizi hesaplanıyor..."
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp"
+                    tools:text="Aylık limit: 50.000,00 ₺&#10;Bu ayki gider: 12.000,00 ₺&#10;Kalan limit: 38.000,00 ₺&#10;Ay sonuna 13 gün kaldı&#10;Günlük harcanabilir: 2.714,29 ₺" />
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
 
-    <!-- 2. İŞLEM LİSTESİ (Eksik olan RecyclerView eklendi) -->
-    <!-- Grafiğin altından başlar, ekranın en altına kadar uzanır -->
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Ayarlar butonu -->
+    <!-- Ayarlar butonu -->
+    <ImageView
+        android:id="@+id/btnSettings"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Aylık limit ayarları"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:padding="9dp"
+        android:translationZ="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_settings"
+        app:tint="?attr/colorOnSurface" />
+
+    <!-- İşlem listesi -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTransactions"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        app:layout_constraintTop_toBottomOf="@id/cardDashboard"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp"
+        app:layout_constraintBottom_toTopOf="@id/tvDisclaimer"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/cardDashboard"
+        tools:listitem="@layout/item_expense" />
 
-    <!-- 3. FAB (Ekle Butonu) -->
+    <!-- Yeni işlem ekleme butonu -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddExpense"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
-        android:contentDescription="Yeni İşlem Ekle"
+        android:layout_marginBottom="14dp"
+        android:contentDescription="Yeni işlem ekle"
         android:src="@android:drawable/ic_input_add"
-        app:backgroundTint="#4CAF50"
-        app:tint="#FFFFFF"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintBottom_toTopOf="@id/tvDisclaimer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="?attr/colorOnPrimary" />
+
+    <!-- Yasal uyarı -->
+    <TextView
+        android:id="@+id/tvDisclaimer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:text="Yasal Uyarı: Veriler yatırım tavsiyesi değildir, yalnızca kişisel takip amaçlıdır."
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="11sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

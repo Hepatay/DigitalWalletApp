@@ -3,53 +3,80 @@ package com.epatay.digitalwallet.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyItem
+import java.util.Locale
 
-class CurrencyAdapter(private var currencyList: List<CurrencyItem>) :
-    RecyclerView.Adapter<CurrencyAdapter.CurrencyViewHolder>() {
+class CurrencyAdapter(
+    private var currencyList: List<CurrencyItem>
+) : RecyclerView.Adapter<CurrencyAdapter.CurrencyViewHolder>() {
 
-    // Varsayılan miktar 1.0 olarak başlar
     private var multiplier: Double = 1.0
 
     class CurrencyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvRate: TextView = view.findViewById(R.id.tvCurrencyRate)
         val tvName: TextView = view.findViewById(R.id.tvCurrencyName)
-        val ivFlag: android.widget.ImageView = view.findViewById(R.id.ivFlag) // İkonu bul
+        val ivFlag: ImageView = view.findViewById(R.id.ivFlag)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CurrencyViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_currency, parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): CurrencyViewHolder {
+
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_currency, parent, false)
+
         return CurrencyViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: CurrencyViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: CurrencyViewHolder,
+        position: Int
+    ) {
         val item = currencyList[position]
 
-        // Girilen miktar ile kuru çarpıyoruz
         val totalTry = item.rateValue * multiplier
 
-        // Çıktıyı dinamik olarak ekrana basıyoruz (Örn: 50 USD = 1600.00 TRY)
-        val amountString = if (multiplier % 1.0 == 0.0) multiplier.toInt().toString() else multiplier.toString()
-        holder.tvRate.text = "$amountString ${item.code} = ${String.format("%.2f", totalTry)} TRY"
+        val amountString = if (multiplier % 1.0 == 0.0) {
+            multiplier.toInt().toString()
+        } else {
+            multiplier.toString()
+        }
+
+        holder.tvRate.text = String.format(
+            Locale("tr", "TR"),
+            "%s %s = %.2f TRY",
+            amountString,
+            item.code,
+            totalTry
+        )
+
         holder.tvName.text = item.name
 
+        // Eksik olan satır buydu
         holder.ivFlag.setImageResource(item.flagIcon)
     }
 
-    override fun getItemCount(): Int = currencyList.size
+    override fun getItemCount(): Int {
+        return currencyList.size
+    }
 
     fun updateData(newList: List<CurrencyItem>) {
         currencyList = newList
         notifyDataSetChanged()
     }
 
-    // EditText'ten gelen yeni miktarı alıp listeyi yenileyen fonksiyon
-    fun updateMultiplier(amount: Double) {
-        this.multiplier = amount
+    fun updateMultiplier(newMultiplier: Double) {
+        multiplier = if (newMultiplier > 0.0) {
+            newMultiplier
+        } else {
+            1.0
+        }
+
         notifyDataSetChanged()
     }
-
 }

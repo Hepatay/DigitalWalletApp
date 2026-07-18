@@ -16,115 +16,385 @@ import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyItem
 import com.epatay.digitalwallet.data.CurrencyManager
 import com.epatay.digitalwallet.data.ExchangeRateResponse
+import com.epatay.digitalwallet.data.GoldRetrofitInstance
 import com.epatay.digitalwallet.data.RetrofitInstance
 import com.epatay.digitalwallet.databinding.FragmentCurrencyBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class CurrencyFragment : Fragment(R.layout.fragment_currency) {
+class CurrencyFragment :
+    Fragment(R.layout.fragment_currency) {
 
-    private var _binding: FragmentCurrencyBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var currencyManager: CurrencyManager
-    private lateinit var adapter: CurrencyAdapter
-    private val expenseViewModel: ExpenseViewModel by activityViewModels()
+    companion object {
+        private const val TROY_OUNCE_GRAMS =
+            31.1034768
+    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentCurrencyBinding.bind(view)
-        currencyManager = CurrencyManager(requireContext())
+    private var _binding:
+            FragmentCurrencyBinding? = null
 
-        adapter = CurrencyAdapter(emptyList())
-        binding.rvCurrencies.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvCurrencies.adapter = adapter
+    private val binding
+        get() = _binding!!
 
-        // İlk açılışta eski veriyi yükle
-        loadData(currencyManager.getSavedRates())
+    private lateinit var currencyManager:
+            CurrencyManager
 
-        // Uygulama açıldığında API'den güncel veriyi çek
+    private lateinit var adapter:
+            CurrencyAdapter
+
+    private val transactionViewModel:
+            TransactionViewModel by activityViewModels()
+
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
+        super.onViewCreated(
+            view,
+            savedInstanceState
+        )
+
+        _binding =
+            FragmentCurrencyBinding.bind(view)
+
+        currencyManager =
+            CurrencyManager(requireContext())
+
+        adapter =
+            CurrencyAdapter(emptyList())
+
+        binding.rvCurrencies.layoutManager =
+            LinearLayoutManager(requireContext())
+
+        binding.rvCurrencies.adapter =
+            adapter
+
+        // Önceden kaydedilen döviz ve altın verilerini gösterir
+        loadData(
+            currencyManager.getSavedRates()
+        )
+
         if (isInternetAvailable()) {
             fetchDataFromApi()
         }
 
         binding.btnUpdate.setOnClickListener {
+
             if (isInternetAvailable()) {
                 fetchDataFromApi()
             } else {
-                showError("İnternet bağlantısı yok.")
+                showError(
+                    "İnternet bağlantısı yok."
+                )
             }
         }
 
         binding.etAmount.addTextChangedListener { text ->
-            val amount = text.toString().toDoubleOrNull() ?: 1.0
+
+            val amount =
+                text
+                    ?.toString()
+                    ?.replace(",", ".")
+                    ?.toDoubleOrNull()
+                    ?: 1.0
+
             adapter.updateMultiplier(amount)
         }
     }
 
     private fun fetchDataFromApi() {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.btnUpdate.isEnabled = false
+
+        binding.progressBar.visibility =
+            View.VISIBLE
+
+        binding.btnUpdate.isEnabled =
+            false
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = withContext(Dispatchers.IO) { RetrofitInstance.api.getLatestRates() }
 
-                currencyManager.saveRates(response)
-                loadData(response)
-                Toast.makeText(requireContext(), "Güncellendi", Toast.LENGTH_SHORT).show()
+            try {
+
+                // Önce döviz kurları çekilir
+                val exchangeResponse =
+                    withContext(Dispatchers.IO) {
+
+                        RetrofitInstance.api
+                            .getLatestRates()
+                    }
+
+                currencyManager.saveRates(
+                    exchangeResponse
+                )
+
+                var goldUpdated = false
+
+                try {
+
+                    // Altın fiyatı USD/ons olarak çekilir
+                    val goldResponse =
+                        withContext(Dispatchers.IO) {
+
+                            GoldRetrofitInstance.api
+                                .getGoldPrice()
+                        }
+
+                    val usdTryRate =
+                        getSafeRate(
+                            exchangeResponse
+                                .conversion_rates,
+                            "USD"
+                        )
+
+                    /*
+                     * API'den gelen altın fiyatı:
+                     * USD / ons
+                     *
+                     * USD/TL ile çarpılır ve
+                     * 31.1034768'e bölünür.
+                     */
+                    val gramGoldTry =
+                        (
+                                goldResponse.price *
+                                        usdTryRate
+                                ) / TROY_OUNCE_GRAMS
+
+                    if (
+                        gramGoldTry.isFinite() &&
+                        gramGoldTry > 0.0
+                    ) {
+
+                        currencyManager
+                            .saveGramGoldPrice(
+                                gramGoldTry
+                            )
+
+                        goldUpdated = true
+                    }
+
+                } catch (goldException: Exception) {
+
+                    Log.e(
+                        "ALTIN_DEBUG",
+                        "Altın API hatası",
+                        goldException
+                    )
+                }
+
+                loadData(exchangeResponse)
+
+                val message =
+                    if (goldUpdated) {
+                        "Döviz ve altın güncellendi"
+                    } else {
+                        "Döviz güncellendi, altın alınamadı"
+                    }
+
+                Toast.makeText(
+                    requireContext(),
+                    message,
+                    Toast.LENGTH_SHORT
+                ).show()
+
             } catch (e: Exception) {
-                Log.e("KUR_DEBUG", "API Hatası: ${e.message}")
-                showError("Sunucu hatası: ${e.message}")
+
+                Log.e(
+                    "KUR_DEBUG",
+                    "Döviz API hatası",
+                    e
+                )
+
+                showError(
+                    "Sunucu hatası: ${e.message}"
+                )
+
             } finally {
-                binding.progressBar.visibility = View.GONE
-                binding.btnUpdate.isEnabled = true
+
+                binding.progressBar.visibility =
+                    View.GONE
+
+                binding.btnUpdate.isEnabled =
+                    true
             }
         }
     }
 
-    private fun loadData(response: ExchangeRateResponse?) {
-        if (response == null || response.conversion_rates.isNullOrEmpty()) {
-            binding.rvCurrencies.visibility = View.GONE
+    private fun getSafeRate(
+        rates: Map<String, Double>,
+        currencyCode: String
+    ): Double {
+
+        val rawRate =
+            rates[currencyCode]
+                ?: return 0.0
+
+        return if (rawRate > 0.0) {
+            1.0 / rawRate
+        } else {
+            0.0
+        }
+    }
+
+    private fun loadData(
+        response: ExchangeRateResponse?
+    ) {
+        if (
+            response == null ||
+            response.conversion_rates.isEmpty()
+        ) {
+            binding.rvCurrencies.visibility =
+                View.GONE
+
             return
         }
 
-        val rates = response.conversion_rates
+        val rates =
+            response.conversion_rates
 
-        // API'den USD bazlı geldiği için 1/kur yaparak TRY bazlına çeviriyoruz
-        val usdRate = 1.0 / (rates["USD"] ?: 1.0)
-        val eurRate = 1.0 / (rates["EUR"] ?: 1.0)
-        val gbpRate = 1.0 / (rates["GBP"] ?: 1.0)
-        val jpyRate = 1.0 / (rates["JPY"] ?: 1.0)
-        val chfRate = 1.0 / (rates["CHF"] ?: 1.0)
+        binding.tvError.visibility =
+            View.GONE
 
-        binding.tvError.visibility = View.GONE
-        binding.rvCurrencies.visibility = View.VISIBLE
+        binding.rvCurrencies.visibility =
+            View.VISIBLE
 
-        expenseViewModel.dolarKuru.value = usdRate
-        expenseViewModel.euroKuru.value = eurRate
-        expenseViewModel.sterlinKuru.value = gbpRate
+        val usdRate =
+            getSafeRate(rates, "USD")
 
-        val currencyList = listOf(
-            CurrencyItem("USD", "ABD Doları", usdRate, R.drawable.flag_usd),
-            CurrencyItem("EUR", "Euro", eurRate, R.drawable.flag_eur),
-            CurrencyItem("GBP", "İngiliz Sterlini", gbpRate, R.drawable.flag_gbp),
-            CurrencyItem("JPY", "Japon Yeni", jpyRate, R.drawable.flag_jpy),
-            CurrencyItem("CHF", "İsviçre Frangı", chfRate, R.drawable.flag_chf)
+        val eurRate =
+            getSafeRate(rates, "EUR")
+
+        val gbpRate =
+            getSafeRate(rates, "GBP")
+
+        transactionViewModel.dolarKuru.value =
+            usdRate
+
+        transactionViewModel.euroKuru.value =
+            eurRate
+
+        transactionViewModel.sterlinKuru.value =
+            gbpRate
+
+        val currencyList =
+            mutableListOf<CurrencyItem>()
+
+        val gramGoldPrice =
+            currencyManager
+                .getSavedGramGoldPrice()
+
+        if (
+            gramGoldPrice != null &&
+            gramGoldPrice > 0.0
+        ) {
+            currencyList.add(
+                CurrencyItem(
+                    "GRAM ALTIN",
+                    "Gram Altın",
+                    gramGoldPrice,
+                    R.drawable.ic_gold
+                )
+            )
+        }
+
+        currencyList.addAll(
+            listOf(
+                CurrencyItem(
+                    "USD",
+                    "ABD Doları",
+                    usdRate,
+                    R.drawable.flag_usd
+                ),
+                CurrencyItem(
+                    "EUR",
+                    "Euro",
+                    eurRate,
+                    R.drawable.flag_eur
+                ),
+                CurrencyItem(
+                    "GBP",
+                    "İngiliz Sterlini",
+                    gbpRate,
+                    R.drawable.flag_gbp
+                ),
+                CurrencyItem(
+                    "CHF",
+                    "İsviçre Frangı",
+                    getSafeRate(rates, "CHF"),
+                    R.drawable.flag_chf
+                ),
+                CurrencyItem(
+                    "JPY",
+                    "Japon Yeni",
+                    getSafeRate(rates, "JPY"),
+                    R.drawable.flag_jpy
+                ),
+                CurrencyItem(
+                    "CAD",
+                    "Kanada Doları",
+                    getSafeRate(rates, "CAD"),
+                    R.drawable.flag_cad
+                ),
+                CurrencyItem(
+                    "AUD",
+                    "Avustralya Doları",
+                    getSafeRate(rates, "AUD"),
+                    R.drawable.flag_aud
+                ),
+                CurrencyItem(
+                    "RUB",
+                    "Rus Rublesi",
+                    getSafeRate(rates, "RUB"),
+                    R.drawable.flag_rub
+                ),
+                CurrencyItem(
+                    "CNY",
+                    "Çin Yuanı",
+                    getSafeRate(rates, "CNY"),
+                    R.drawable.flag_cny
+                )
+            )
         )
+
         adapter.updateData(currencyList)
     }
 
     private fun showError(message: String) {
-        binding.tvError.text = message
-        binding.tvError.visibility = View.VISIBLE
-        if (currencyManager.getSavedRates() == null) binding.rvCurrencies.visibility = View.GONE
+
+        binding.tvError.text =
+            message
+
+        binding.tvError.visibility =
+            View.VISIBLE
+
+        if (
+            currencyManager.getSavedRates() == null
+        ) {
+            binding.rvCurrencies.visibility =
+                View.GONE
+        }
     }
 
     private fun isInternetAvailable(): Boolean {
-        val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val n = cm.activeNetwork ?: return false
-        val cap = cm.getNetworkCapabilities(n) ?: return false
-        return cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+
+        val connectivityManager =
+            requireContext()
+                .getSystemService(
+                    Context.CONNECTIVITY_SERVICE
+                ) as ConnectivityManager
+
+        val network =
+            connectivityManager.activeNetwork
+                ?: return false
+
+        val capabilities =
+            connectivityManager
+                .getNetworkCapabilities(network)
+                ?: return false
+
+        return capabilities.hasCapability(
+            NetworkCapabilities
+                .NET_CAPABILITY_INTERNET
+        )
     }
 
     override fun onDestroyView() {

@@ -7,4 +7,8 @@
     <color name="primary_green">#4A7C59</color>
     <color name="text_brown">#3E2723</color>
     <color name="gray_light">#E0E0E0</color>
+
+    <color name="app_background">#F8F9FA</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="text_primary">#000000</color>
 </resources>

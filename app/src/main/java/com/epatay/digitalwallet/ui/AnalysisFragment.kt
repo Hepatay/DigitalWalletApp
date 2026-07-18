@@ -1,19 +1,29 @@
 package com.epatay.digitalwallet.ui
 
-
-import android.content.Context
+import android.app.AlertDialog
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.epatay.digitalwallet.R
-import com.epatay.digitalwallet.databinding.FragmentAnalysisBinding
-import com.epatay.digitalwallet.databinding.BottomSheetAddInvestmentBinding
+import com.epatay.digitalwallet.data.CurrencyManager
 import com.epatay.digitalwallet.data.InvestmentItem
+import com.epatay.digitalwallet.databinding.BottomSheetAddInvestmentBinding
+import com.epatay.digitalwallet.databinding.FragmentAnalysisBinding
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.color.MaterialColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -23,82 +33,836 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
     private var _binding: FragmentAnalysisBinding? = null
     private val binding get() = _binding!!
 
-    // Hem yatırımlar hem de kurlar için ViewModel'leri bağladık
     private val investmentViewModel: InvestmentViewModel by activityViewModels()
-    private val expenseViewModel: ExpenseViewModel by activityViewModels()
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    private lateinit var adapter: InvestmentAdapter
+
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentAnalysisBinding.bind(view)
 
-        // 1. Adapter'ı başlat
-        val adapter = InvestmentAdapter()
+        _binding =
+            FragmentAnalysisBinding.bind(view)
+
+        adapter = InvestmentAdapter(
+
+            onEditClick = { investment ->
+                showEditPriceDialog(investment)
+            },
+
+            onDeleteClick = { investment ->
+                showDeleteInvestmentDialog(investment)
+            }
+        )
+
         binding.rvInvestments.adapter = adapter
-        binding.rvInvestments.layoutManager = LinearLayoutManager(requireContext())
 
-        adapter.setOnItemLongClickListener { investment ->
-            investmentViewModel.delete(investment)
-            Toast.makeText(requireContext(), "${investment.assetName} kaydı silindi", Toast.LENGTH_SHORT).show()
-        }
+        binding.rvInvestments.layoutManager =
+            LinearLayoutManager(requireContext())
 
-        // 2. Verileri gözlemle
-        investmentViewModel.allInvestments.observe(viewLifecycleOwner) { investments ->
+        investmentViewModel.allInvestments.observe(
+            viewLifecycleOwner
+        ) { investments ->
+
             adapter.setData(investments)
+
+            calculateGrandTotal(investments)
         }
 
-        // 3. Ekleme butonu
         binding.fabAddInvestment.setOnClickListener {
             showAddInvestmentBottomSheet()
         }
     }
 
-    private fun showAddInvestmentBottomSheet() {
-        val bottomSheetDialog = BottomSheetDialog(requireContext())
-        val dialogBinding = BottomSheetAddInvestmentBinding.inflate(layoutInflater)
-        bottomSheetDialog.setContentView(dialogBinding.root)
+    private fun showEditPriceDialog(
+        investment: InvestmentItem
+    ) {
+        val editText =
+            EditText(requireContext())
 
-        val varliklar = arrayOf("USD", "EUR", "GBP", "Altın")
-        dialogBinding.etAssetType.setAdapter(
-            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, varliklar)
+        editText.inputType =
+            InputType.TYPE_CLASS_NUMBER or
+                    InputType.TYPE_NUMBER_FLAG_DECIMAL
+
+        editText.setText(
+            investment.buyPrice.toString()
         )
 
-        dialogBinding.btnSaveInvestment.setOnClickListener {
-            val secilenVarlik = dialogBinding.etAssetType.text.toString().trim()
-            val miktarStr = dialogBinding.etInvestmentAmount.text.toString().trim()
+        editText.setSelection(
+            editText.text?.length ?: 0
+        )
 
-            if (secilenVarlik.isNotEmpty() && miktarStr.isNotEmpty()) {
-                val miktar = miktarStr.toDouble()
+        AlertDialog.Builder(requireContext())
+            .setTitle(
+                "${investment.assetName} Alış Fiyatını Düzenle"
+            )
+            .setView(editText)
+            .setNegativeButton(
+                "İptal",
+                null
+            )
+            .setPositiveButton(
+                "Güncelle"
+            ) { _, _ ->
 
-                // Kur verilerini ViewModel'den çekiyoruz
-                val anlikKur = when {
-                    secilenVarlik.contains("USD") -> expenseViewModel.dolarKuru.value ?: 0.0
-                    secilenVarlik.contains("EUR") -> expenseViewModel.euroKuru.value ?: 0.0
-                    secilenVarlik.contains("GBP") -> expenseViewModel.sterlinKuru.value ?: 0.0
-                    else -> 1.0
-                }
+                val newPrice =
+                    editText.text
+                        ?.toString()
+                        ?.trim()
+                        ?.replace(",", ".")
+                        ?.toDoubleOrNull()
 
-                // 1.0 ve altı hatalı veri demektir
-                if (anlikKur <= 1.0) {
-                    Toast.makeText(requireContext(), "Kur verisi alınamadı, ana sayfadan güncelleyin!", Toast.LENGTH_SHORT).show()
-                } else {
-                    val gercekTarih = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
-
-                    val yeniYatirim = InvestmentItem(
-                        assetName = secilenVarlik,
-                        amount = miktar,
-                        buyPrice = anlikKur,
-                        buyDate = gercekTarih
+                if (
+                    newPrice != null &&
+                    newPrice.isFinite() &&
+                    newPrice > 0.0
+                ) {
+                    /*
+                     * Mevcut veritabanı yapısında doğrudan
+                     * update kullanılmadığı için eski kayıt
+                     * silinip güncellenmiş kayıt ekleniyor.
+                     */
+                    investmentViewModel.delete(
+                        investment
                     )
 
-                    investmentViewModel.insert(yeniYatirim)
-                    Toast.makeText(requireContext(), "Yatırım eklendi (Kur: ₺$anlikKur)", Toast.LENGTH_SHORT).show()
-                    bottomSheetDialog.dismiss()
+                    val updatedInvestment =
+                        investment.copy(
+                            buyPrice = newPrice
+                        )
+
+                    investmentViewModel.insert(
+                        updatedInvestment
+                    )
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Fiyat güncellendi!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } else {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Geçerli bir alış fiyatı girin",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
+            }
+            .show()
+    }
+
+    private fun showDeleteInvestmentDialog(
+        investment: InvestmentItem
+    ) {
+        val isGramGold =
+            investment.assetName.equals(
+                "GRAM ALTIN",
+                ignoreCase = true
+            )
+
+        val amountText =
+            if (isGramGold) {
+                "${investment.amount} gram"
             } else {
-                Toast.makeText(requireContext(), "Lütfen tüm alanları doldurun!", Toast.LENGTH_SHORT).show()
+                "${investment.amount} adet"
+            }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Yatırımı sil")
+            .setMessage(
+                "\"${investment.assetName}\" adlı " +
+                        "$amountText yatırım kaydını " +
+                        "silmek istediğinizden emin misiniz?"
+            )
+            .setNegativeButton(
+                "İptal",
+                null
+            )
+            .setPositiveButton(
+                "Sil"
+            ) { _, _ ->
+
+                investmentViewModel.delete(
+                    investment
+                )
+
+                Toast.makeText(
+                    requireContext(),
+                    "${investment.assetName} kaydı silindi",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .show()
+    }
+
+    private fun calculateGrandTotal(
+        investments: List<InvestmentItem>
+    ) {
+        val currencyManager =
+            CurrencyManager(requireContext())
+
+        val rates =
+            currencyManager
+                .getSavedRates()
+                ?.conversion_rates
+
+        var grandTotal = 0.0
+        var totalCost = 0.0
+
+        val assetTotalsMap =
+            mutableMapOf<String, Float>()
+
+        for (item in investments) {
+
+            val assetName =
+                item.assetName
+                    .trim()
+                    .uppercase(Locale.ROOT)
+
+            /*
+             * Gram altın fiyatı ayrı altın API'sinden
+             * hesaplanıp CurrencyManager içine kaydediliyor.
+             *
+             * Dövizler ise TRY bazlı kur listesinden
+             * 1 / rawRate şeklinde hesaplanıyor.
+             */
+            val currentRate =
+                getCurrentAssetRate(
+                    assetName = assetName,
+                    savedBuyPrice = item.buyPrice,
+                    currencyManager = currencyManager,
+                    rates = rates
+                )
+
+            val currentValue =
+                item.amount * currentRate
+
+            val buyCost =
+                item.amount * item.buyPrice
+
+            grandTotal += currentValue
+            totalCost += buyCost
+
+            val oldTotal =
+                assetTotalsMap[assetName] ?: 0f
+
+            assetTotalsMap[assetName] =
+                oldTotal + currentValue.toFloat()
+        }
+
+        binding.tvTotalInvestmentAmount.text =
+            formatCurrency(grandTotal)
+
+        val totalProfit =
+            grandTotal - totalCost
+
+        when {
+
+            totalProfit > 0.0 -> {
+
+                binding.tvTotalProfitLoss.text =
+                    "+${formatCurrency(totalProfit)} Kâr"
+
+                binding.tvTotalProfitLoss.setTextColor(
+                    Color.parseColor("#4CAF50")
+                )
+            }
+
+            totalProfit < 0.0 -> {
+
+                binding.tvTotalProfitLoss.text =
+                    "${formatCurrency(totalProfit)} Zarar"
+
+                binding.tvTotalProfitLoss.setTextColor(
+                    Color.parseColor("#F44336")
+                )
+            }
+
+            else -> {
+
+                binding.tvTotalProfitLoss.text =
+                    "0,00 ₺"
+
+                binding.tvTotalProfitLoss.setTextColor(
+                    Color.parseColor("#888888")
+                )
             }
         }
+
+        setupPieChart(assetTotalsMap)
+    }
+
+    private fun getCurrentAssetRate(
+        assetName: String,
+        savedBuyPrice: Double,
+        currencyManager: CurrencyManager,
+        rates: Map<String, Double>?
+    ): Double {
+
+        if (assetName == "GRAM ALTIN") {
+
+            val savedGramGoldPrice =
+                currencyManager
+                    .getSavedGramGoldPrice()
+
+            return if (
+                savedGramGoldPrice != null &&
+                savedGramGoldPrice.isFinite() &&
+                savedGramGoldPrice > 0.0
+            ) {
+                savedGramGoldPrice
+            } else {
+                savedBuyPrice
+            }
+        }
+
+        val rawRate =
+            rates?.get(assetName)
+
+        return if (
+            rawRate != null &&
+            rawRate.isFinite() &&
+            rawRate > 0.0
+        ) {
+            1.0 / rawRate
+        } else {
+            savedBuyPrice
+        }
+    }
+
+    private fun setupPieChart(
+        assetTotalsMap: Map<String, Float>
+    ) {
+        val pieChart =
+            binding.pieChart
+
+        pieChart.clear()
+
+        binding.llInvestmentDetails
+            .removeAllViews()
+
+        val surfaceColor =
+            MaterialColors.getColor(
+                binding.root,
+                com.google.android.material.R.attr.colorSurface,
+                Color.WHITE
+            )
+
+        val onSurfaceColor =
+            MaterialColors.getColor(
+                binding.root,
+                com.google.android.material.R.attr.colorOnSurface,
+                Color.BLACK
+            )
+
+        val onSurfaceVariantColor =
+            MaterialColors.getColor(
+                binding.root,
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
+                Color.DKGRAY
+            )
+
+        pieChart.setNoDataText(
+            "Henüz yatırım bulunmuyor"
+        )
+
+        pieChart.setNoDataTextColor(
+            onSurfaceVariantColor
+        )
+
+        pieChart.setBackgroundColor(
+            Color.TRANSPARENT
+        )
+
+        if (assetTotalsMap.isEmpty()) {
+            pieChart.invalidate()
+            return
+        }
+
+        val sortedAssets =
+            assetTotalsMap
+                .toList()
+                .filter { (_, totalValue) ->
+                    totalValue > 0f
+                }
+                .sortedByDescending { (_, totalValue) ->
+                    totalValue
+                }
+
+        if (sortedAssets.isEmpty()) {
+            pieChart.invalidate()
+            return
+        }
+
+        val entries =
+            ArrayList<PieEntry>()
+
+        val colors =
+            ArrayList<Int>()
+
+        val assetColors = mapOf(
+            "USD" to Color.parseColor("#27AE60"),
+            "EUR" to Color.parseColor("#2980B9"),
+            "GBP" to Color.parseColor("#C0392B"),
+            "JPY" to Color.parseColor("#8E44AD"),
+            "AUD" to Color.parseColor("#16A085"),
+            "CAD" to Color.parseColor("#D35400"),
+            "CHF" to Color.parseColor("#607D8B"),
+            "RUB" to Color.parseColor("#7F8C8D"),
+            "CNY" to Color.parseColor("#F39C12"),
+            "GRAM ALTIN" to Color.parseColor("#F1C40F")
+        )
+
+        val fallbackColors = listOf(
+            Color.parseColor("#E74C3C"),
+            Color.parseColor("#3498DB"),
+            Color.parseColor("#2ECC71"),
+            Color.parseColor("#F1C40F"),
+            Color.parseColor("#9B59B6"),
+            Color.parseColor("#1ABC9C")
+        )
+
+        var fallbackIndex = 0
+
+        for ((assetName, totalValue) in sortedAssets) {
+
+            entries.add(
+                PieEntry(
+                    totalValue,
+                    assetName
+                )
+            )
+
+            val currentColor =
+                assetColors[assetName]
+                    ?: fallbackColors[
+                        fallbackIndex++ %
+                                fallbackColors.size
+                    ]
+
+            colors.add(currentColor)
+
+            val row =
+                LinearLayout(requireContext()).apply {
+
+                    orientation =
+                        LinearLayout.HORIZONTAL
+
+                    gravity =
+                        android.view.Gravity.CENTER_VERTICAL
+
+                    setPadding(
+                        0,
+                        6,
+                        0,
+                        6
+                    )
+                }
+
+            val colorView =
+                View(requireContext()).apply {
+
+                    layoutParams =
+                        LinearLayout.LayoutParams(
+                            30,
+                            30
+                        ).apply {
+
+                            setMargins(
+                                0,
+                                0,
+                                16,
+                                0
+                            )
+                        }
+
+                    setBackgroundColor(
+                        currentColor
+                    )
+                }
+
+            val textView =
+                TextView(requireContext()).apply {
+
+                    text =
+                        "$assetName  ${
+                            formatCurrency(
+                                totalValue.toDouble()
+                            )
+                        }"
+
+                    textSize = 13f
+
+                    setTextColor(
+                        onSurfaceColor
+                    )
+
+                    setTypeface(
+                        null,
+                        Typeface.BOLD
+                    )
+                }
+
+            row.addView(colorView)
+            row.addView(textView)
+
+            binding.llInvestmentDetails
+                .addView(row)
+        }
+
+        val dataSet =
+            PieDataSet(
+                entries,
+                ""
+            ).apply {
+
+                this.colors = colors
+
+                sliceSpace = 3f
+                selectionShift = 8f
+
+                setDrawValues(false)
+
+                valueTextColor =
+                    onSurfaceColor
+
+                valueTextSize = 11f
+            }
+
+        val pieData =
+            PieData(dataSet).apply {
+
+                setValueTextColor(
+                    onSurfaceColor
+                )
+            }
+
+        pieChart.apply {
+
+            data = pieData
+
+            description.isEnabled = false
+            legend.isEnabled = false
+
+            setDrawEntryLabels(false)
+
+            setEntryLabelColor(
+                onSurfaceColor
+            )
+
+            isDrawHoleEnabled = true
+            holeRadius = 58f
+            transparentCircleRadius = 63f
+
+            setHoleColor(
+                surfaceColor
+            )
+
+            setTransparentCircleColor(
+                surfaceColor
+            )
+
+            setTransparentCircleAlpha(100)
+
+            setDrawCenterText(true)
+
+            centerText = "Portföy"
+
+            setCenterTextColor(
+                onSurfaceColor
+            )
+
+            setCenterTextSize(13f)
+
+            isRotationEnabled = true
+            isHighlightPerTapEnabled = true
+
+            setUsePercentValues(false)
+
+            animateY(
+                800,
+                com.github.mikephil.charting.animation
+                    .Easing
+                    .EaseInOutQuad
+            )
+
+            invalidate()
+        }
+    }
+
+    private fun showAddInvestmentBottomSheet() {
+
+        val bottomSheetDialog =
+            BottomSheetDialog(requireContext())
+
+        val dialogBinding =
+            BottomSheetAddInvestmentBinding.inflate(
+                layoutInflater
+            )
+
+        bottomSheetDialog.setContentView(
+            dialogBinding.root
+        )
+
+        val assets = arrayOf(
+            "USD",
+            "EUR",
+            "GBP",
+            "CHF",
+            "JPY",
+            "CAD",
+            "AUD",
+            "RUB",
+            "CNY",
+            "GRAM ALTIN"
+        )
+
+        dialogBinding.etAssetType.apply {
+
+            setAdapter(
+                ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_dropdown_item_1line,
+                    assets
+                )
+            )
+
+            inputType =
+                InputType.TYPE_NULL
+
+            showSoftInputOnFocus =
+                false
+
+            isCursorVisible =
+                false
+
+            setOnClickListener {
+                showDropDown()
+            }
+
+            setOnFocusChangeListener { _, hasFocus ->
+
+                if (hasFocus) {
+                    showDropDown()
+                }
+            }
+
+            setOnItemClickListener { _, _, position, _ ->
+
+                val selectedAsset =
+                    assets[position]
+
+                dialogBinding.etInvestmentAmount.hint =
+                    if (selectedAsset == "GRAM ALTIN") {
+                        "Gram miktarı (Örnek: 1, 5, 10)"
+                    } else {
+                        "Satın alınan adet"
+                    }
+            }
+        }
+
+        dialogBinding.rgRateType
+            .setOnCheckedChangeListener { _, checkedId ->
+
+                dialogBinding.layoutManualRate.visibility =
+                    if (checkedId == R.id.rbManualRate) {
+                        View.VISIBLE
+                    } else {
+                        View.GONE
+                    }
+            }
+
+        dialogBinding.btnSaveInvestment
+            .setOnClickListener {
+
+                val selectedAsset =
+                    dialogBinding.etAssetType.text
+                        ?.toString()
+                        ?.trim()
+                        ?.uppercase(Locale.ROOT)
+                        .orEmpty()
+
+                val amountText =
+                    dialogBinding.etInvestmentAmount.text
+                        ?.toString()
+                        ?.trim()
+                        .orEmpty()
+
+                val amount =
+                    amountText.toIntOrNull()
+
+                if (selectedAsset.isEmpty()) {
+
+                    Toast.makeText(
+                        requireContext(),
+                        "Lütfen yatırım türünü seçin",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    return@setOnClickListener
+                }
+
+                if (amount == null || amount <= 0) {
+
+                    val message =
+                        if (selectedAsset == "GRAM ALTIN") {
+                            "Gram miktarı pozitif tam sayı olmalıdır"
+                        } else {
+                            "Miktar pozitif tam sayı olmalıdır"
+                        }
+
+                    Toast.makeText(
+                        requireContext(),
+                        message,
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    return@setOnClickListener
+                }
+
+                val isManualSelected =
+                    dialogBinding.rbManualRate.isChecked
+
+                var savedRate = 0.0
+
+                if (isManualSelected) {
+
+                    val manualRate =
+                        dialogBinding.etManualRate.text
+                            ?.toString()
+                            ?.trim()
+                            ?.replace(",", ".")
+                            ?.toDoubleOrNull()
+
+                    if (
+                        manualRate == null ||
+                        !manualRate.isFinite() ||
+                        manualRate <= 0.0
+                    ) {
+
+                        Toast.makeText(
+                            requireContext(),
+                            "Geçerli bir alış kuru girin",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        return@setOnClickListener
+                    }
+
+                    savedRate =
+                        manualRate
+
+                } else {
+
+                    val currencyManager =
+                        CurrencyManager(requireContext())
+
+                    if (selectedAsset == "GRAM ALTIN") {
+
+                        savedRate =
+                            currencyManager
+                                .getSavedGramGoldPrice()
+                                ?: 0.0
+
+                    } else {
+
+                        val rates =
+                            currencyManager
+                                .getSavedRates()
+                                ?.conversion_rates
+
+                        val rawRate =
+                            rates?.get(selectedAsset)
+
+                        if (
+                            rawRate != null &&
+                            rawRate.isFinite() &&
+                            rawRate > 0.0
+                        ) {
+                            savedRate =
+                                1.0 / rawRate
+                        }
+                    }
+                }
+
+                if (
+                    !savedRate.isFinite() ||
+                    savedRate <= 0.0
+                ) {
+
+                    val errorMessage =
+                        if (selectedAsset == "GRAM ALTIN") {
+                            "Gram altın fiyatı bulunamadı. Önce Piyasalar sayfasında Güncelle butonuna basın."
+                        } else {
+                            "Kur verisi alınamadı. Önce Piyasalar sayfasında Güncelle butonuna basın."
+                        }
+
+                    Toast.makeText(
+                        requireContext(),
+                        errorMessage,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    return@setOnClickListener
+                }
+
+                val currentDate =
+                    SimpleDateFormat(
+                        "dd.MM.yyyy HH:mm",
+                        Locale.getDefault()
+                    ).format(Date())
+
+                val newInvestment =
+                    InvestmentItem(
+                        assetName = selectedAsset,
+                        amount = amount,
+                        buyPrice = savedRate,
+                        buyDate = currentDate
+                    )
+
+                investmentViewModel.insert(
+                    newInvestment
+                )
+
+                val unitText =
+                    if (selectedAsset == "GRAM ALTIN") {
+                        "$amount gram"
+                    } else {
+                        "$amount adet"
+                    }
+
+                val rateTypeText =
+                    if (isManualSelected) {
+                        "manuel kurla"
+                    } else {
+                        "güncel kurla"
+                    }
+
+                Toast.makeText(
+                    requireContext(),
+                    "$unitText yatırım $rateTypeText eklendi",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                bottomSheetDialog.dismiss()
+            }
+
         bottomSheetDialog.show()
+    }
+
+    private fun formatCurrency(
+        value: Double
+    ): String {
+
+        return String.format(
+            Locale.forLanguageTag("tr-TR"),
+            "%,.2f ₺",
+            value
+        )
     }
 
     override fun onDestroyView() {

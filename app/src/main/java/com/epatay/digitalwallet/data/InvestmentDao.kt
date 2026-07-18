@@ -10,7 +10,7 @@ import androidx.room.Query
 @Dao
 interface InvestmentDao {
     // Tüm yatırımları getirir (Canlı olarak UI'ı güncellemek için LiveData kullanıyoruz)
-    @Query("SELECT * FROM investment_table ORDER BY id DESC")
+    @Query("SELECT * FROM investments_table ORDER BY id DESC")
     fun getAllInvestments(): LiveData<List<InvestmentItem>>
 
     // Yeni bir yatırım ekler

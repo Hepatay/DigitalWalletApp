@@ -23,7 +23,6 @@
         android:layout_marginBottom="12dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-        <!-- tools:ignore satırı ile uyarıyı zorla susturuyoruz -->
         <AutoCompleteTextView
             android:id="@+id/etAssetType"
             android:layout_width="match_parent"
@@ -45,6 +44,47 @@
             android:layout_height="wrap_content"
             android:inputType="numberDecimal"
             android:hint="Miktar (Örn: 100)"
+            tools:ignore="SpeakableTextPresentCheck" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- YENİ: Kur Seçimi Seçenekleri -->
+    <RadioGroup
+        android:id="@+id/rgRateType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <RadioButton
+            android:id="@+id/rbCurrentRate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Güncel Kur"
+            android:checked="true" /> <!-- Varsayılan olarak bu seçili -->
+
+        <RadioButton
+            android:id="@+id/rbManualRate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Geçmiş / Manuel" />
+    </RadioGroup>
+
+    <!-- YENİ: Sadece Manuel Seçilirse Görünecek Kutu -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutManualRate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:visibility="gone"> <!-- Başlangıçta gizli -->
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etManualRate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:hint="Alış kurunuzu girin (Örn: 34.50)"
             tools:ignore="SpeakableTextPresentCheck" />
     </com.google.android.material.textfield.TextInputLayout>
 
