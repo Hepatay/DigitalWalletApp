@@ -112,17 +112,19 @@ com.epatay.digitalwallet
 
 ---
 
-## 📸 Ekran Görüntüleri
+## Ekran Görüntüleri
 
-Uygulamaya ait ekran görüntüleri bu bölüme eklenecektir.
+### Ana Sayfa
 
-```markdown
-![Dashboard](screenshots/dashboard.png)
-![Canlı Döviz](screenshots/currency.png)
-![Yatırımlar](screenshots/investments.png)
-```
+![Ana Sayfa](screenshots/ana_sayfa.png)
 
-Ekran görüntülerini kullanmak için proje içerisinde `screenshots` isimli bir klasör oluşturabilirsiniz.
+### Portföy
+
+![Portföy](screenshots/portfoy.png)
+
+### Döviz Kurları
+
+![Döviz Kurları](screenshots/dovizler.png)
 
 ---
 
