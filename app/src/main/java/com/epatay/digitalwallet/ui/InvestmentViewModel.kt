@@ -4,22 +4,45 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
-import com.epatay.digitalwallet.data.TransactionDatabase
 import com.epatay.digitalwallet.data.InvestmentItem
+import com.epatay.digitalwallet.data.TransactionDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class InvestmentViewModel(application: Application) : AndroidViewModel(application) {
-    
-    private val dao = TransactionDatabase.getDatabase(application).investmentDao()
+class InvestmentViewModel(
+    application: Application
+) : AndroidViewModel(application) {
 
-    val allInvestments: LiveData<List<InvestmentItem>> = dao.getAllInvestments()
+    private val dao =
+        TransactionDatabase
+            .getDatabase(application)
+            .investmentDao()
 
-    fun insert(investment: InvestmentItem) = viewModelScope.launch(Dispatchers.IO) {
+    val allInvestments:
+            LiveData<List<InvestmentItem>> =
+        dao.getAllInvestments()
+
+    fun insert(
+        investment: InvestmentItem
+    ) = viewModelScope.launch(
+        Dispatchers.IO
+    ) {
         dao.insertInvestment(investment)
     }
 
-    fun delete(investment: InvestmentItem) = viewModelScope.launch(Dispatchers.IO) {
+    fun update(
+        investment: InvestmentItem
+    ) = viewModelScope.launch(
+        Dispatchers.IO
+    ) {
+        dao.updateInvestment(investment)
+    }
+
+    fun delete(
+        investment: InvestmentItem
+    ) = viewModelScope.launch(
+        Dispatchers.IO
+    ) {
         dao.deleteInvestment(investment)
     }
 }

@@ -54,6 +54,11 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         adapter = TransactionAdapter(
             transactionList = emptyList(),
+
+            onEditClick = { transaction ->
+                showTransactionBottomSheet(transaction)
+            },
+
             onDeleteClick = { transaction ->
                 showDeleteTransactionDialog(transaction)
             }
@@ -131,7 +136,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
 
         binding.fabAddExpense.setOnClickListener {
-            showAddBottomSheet()
+            showTransactionBottomSheet()
         }
     }
 
@@ -223,10 +228,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         val entries = ArrayList<PieEntry>()
         val chartColors = ArrayList<Int>()
 
-        for ((category, sum) in categorySums) {
-
-            val categoryName =
-                category ?: "Diğer"
+        for ((categoryName, sum) in categorySums) {
 
             val categoryColor =
                 colorMap[categoryName] ?: Color.GRAY
@@ -385,7 +387,9 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
     }
 
-    private fun showAddBottomSheet() {
+    private fun showTransactionBottomSheet(
+        transactionToEdit: Transaction? = null
+    ) {
 
         val bottomSheetDialog =
             BottomSheetDialog(requireContext())
@@ -399,7 +403,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             dialogBinding.root
         )
 
-        val kategoriler = arrayOf(
+        val isEditing =
+            transactionToEdit != null
+
+        val categories = arrayOf(
             "Gıda",
             "Ulaşım",
             "Fatura",
@@ -408,17 +415,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             "Diğer"
         )
 
-        /*
-         * Kategori açılır listesi.
-         * Kategori seçilirken klavye açılmaz.
-         */
         dialogBinding.etCategory.apply {
 
             setAdapter(
                 ArrayAdapter(
                     requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
-                    kategoriler
+                    categories
                 )
             )
 
@@ -440,10 +443,6 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             }
         }
 
-        /*
-         * Gelir seçildiğinde kategori alanını gizler.
-         * Gider seçildiğinde tekrar gösterir.
-         */
         fun updateTransactionForm(
             isIncome: Boolean
         ) {
@@ -456,10 +455,19 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 }
 
             dialogBinding.tvAddTransactionTitle.text =
-                if (isIncome) {
-                    "Yeni Gelir Ekle"
-                } else {
-                    "Yeni Gider Ekle"
+                when {
+
+                    isEditing && isIncome ->
+                        "Geliri Düzenle"
+
+                    isEditing ->
+                        "Gideri Düzenle"
+
+                    isIncome ->
+                        "Yeni Gelir Ekle"
+
+                    else ->
+                        "Yeni Gider Ekle"
                 }
 
             dialogBinding.layoutExpenseTitle.hint =
@@ -477,10 +485,19 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 }
 
             dialogBinding.btnSaveExpense.text =
-                if (isIncome) {
-                    "Geliri Kaydet"
-                } else {
-                    "Gideri Kaydet"
+                when {
+
+                    isEditing && isIncome ->
+                        "Geliri Güncelle"
+
+                    isEditing ->
+                        "Gideri Güncelle"
+
+                    isIncome ->
+                        "Geliri Kaydet"
+
+                    else ->
+                        "Gideri Kaydet"
                 }
 
             if (isIncome) {
@@ -497,25 +514,70 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             }
         }
 
-        dialogBinding.rgTransactionType
-            .setOnCheckedChangeListener { _, checkedId ->
-
-                val isIncome =
-                    checkedId == R.id.rbIncome
-
-                updateTransactionForm(
-                    isIncome
-                )
+        /*
+         * Düzenleme ekranındaysa gelir-gider
+         * seçimi tamamen gizlenir.
+         */
+        dialogBinding.rgTransactionType.visibility =
+            if (isEditing) {
+                View.GONE
+            } else {
+                View.VISIBLE
             }
 
         /*
-         * Form ilk açıldığında seçili işlem
-         * türüne göre görünümü düzenler.
+         * RadioGroup yalnızca yeni işlem eklenirken
+         * gelir-gider seçimi için kullanılır.
          */
-        updateTransactionForm(
+        if (!isEditing) {
+
             dialogBinding.rgTransactionType
-                .checkedRadioButtonId == R.id.rbIncome
-        )
+                .setOnCheckedChangeListener { _, checkedId ->
+
+                    val isIncome =
+                        checkedId == R.id.rbIncome
+
+                    updateTransactionForm(isIncome)
+                }
+        }
+
+        /*
+         * Mevcut kayıt düzenleniyorsa işlem türü
+         * değiştirilmeden bilgiler forma doldurulur.
+         */
+        if (transactionToEdit != null) {
+
+            val isIncome =
+                transactionToEdit.type ==
+                        TransactionType.INCOME
+
+            updateTransactionForm(isIncome)
+
+            dialogBinding.etExpenseTitle.setText(
+                transactionToEdit.title
+            )
+
+            dialogBinding.etExpenseAmount.setText(
+                transactionToEdit.amount.toString()
+            )
+
+            if (!isIncome) {
+
+                dialogBinding.etCategory.setText(
+                    transactionToEdit.category,
+                    false
+                )
+            }
+
+        } else {
+
+            val isIncome =
+                dialogBinding.rgTransactionType
+                    .checkedRadioButtonId ==
+                        R.id.rbIncome
+
+            updateTransactionForm(isIncome)
+        }
 
         dialogBinding.btnSaveExpense
             .setOnClickListener {
@@ -538,69 +600,91 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         ?.trim()
                         .orEmpty()
 
+                /*
+                 * Düzenleme sırasında işlem türü
+                 * mevcut kayıttan alınır.
+                 *
+                 * Yeni kayıt sırasında RadioGroup kullanılır.
+                 */
                 val isIncome =
-                    dialogBinding.rgTransactionType
-                        .checkedRadioButtonId ==
-                            R.id.rbIncome
+                    if (transactionToEdit != null) {
 
-                val amount = amountText
-                    .replace(",", ".")
-                    .toDoubleOrNull()
+                        transactionToEdit.type ==
+                                TransactionType.INCOME
+
+                    } else {
+
+                        dialogBinding.rgTransactionType
+                            .checkedRadioButtonId ==
+                                R.id.rbIncome
+                    }
+
+                val amount =
+                    amountText
+                        .replace(",", ".")
+                        .toDoubleOrNull()
 
                 if (
                     amount == null ||
                     amount <= 0.0
                 ) {
 
-                    dialogBinding
-                        .layoutExpenseAmount
-                        .error =
+                    dialogBinding.layoutExpenseAmount.error =
                         "Geçerli bir tutar girin"
 
                     return@setOnClickListener
                 }
 
-                dialogBinding
-                    .layoutExpenseAmount
-                    .error = null
+                dialogBinding.layoutExpenseAmount.error =
+                    null
 
-                /*
-                 * Kategori yalnızca gider
-                 * işlemlerinde zorunludur.
-                 */
                 if (
                     !isIncome &&
                     selectedCategory.isEmpty()
                 ) {
 
-                    dialogBinding
-                        .layoutCategory
-                        .error =
+                    dialogBinding.layoutCategory.error =
                         "Lütfen kategori seçin"
 
                     return@setOnClickListener
                 }
 
-                dialogBinding
-                    .layoutCategory
-                    .error = null
+                dialogBinding.layoutCategory.error =
+                    null
 
                 /*
-                 * Yalnızca içinde bulunduğumuz ayın
-                 * giderleri için limit kontrolü yapar.
+                 * Düzenlenen eski gideri limit
+                 * hesabından çıkarıyoruz.
                  */
+                val transactionsForLimit =
+                    if (transactionToEdit != null) {
+
+                        currentTransactions.filterNot {
+                                transaction ->
+
+                            transaction.id ==
+                                    transactionToEdit.id
+                        }
+
+                    } else {
+
+                        currentTransactions
+                    }
+
                 if (
                     !isIncome &&
                     transactionViewModel
                         .isOverMonthlyLimit(
                             newExpenseAmount = amount,
+
                             monthlyLimit =
                             transactionViewModel
                                 .getMonthlyLimit(
                                     requireContext()
                                 ),
+
                             transactions =
-                            currentTransactions
+                            transactionsForLimit
                         )
                 ) {
 
@@ -611,9 +695,9 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     ).show()
                 }
 
-                val transaction = Transaction(
+                val finalTitle =
+                    when {
 
-                    title = when {
                         title.isNotEmpty() ->
                             title
 
@@ -622,33 +706,82 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                         else ->
                             "Gider"
-                    },
+                    }
 
-                    amount = amount,
-
-                    category =
+                val finalCategory =
                     if (isIncome) {
                         "Gelir"
                     } else {
                         selectedCategory
+                    }
+
+                val transactionToSave =
+                    if (transactionToEdit != null) {
+
+                        /*
+                         * id, tarih ve işlem türü korunur.
+                         */
+                        transactionToEdit.copy(
+                            title = finalTitle,
+                            amount = amount,
+                            category = finalCategory
+                        )
+
+                    } else {
+
+                        Transaction(
+                            title = finalTitle,
+                            amount = amount,
+                            category = finalCategory,
+
+                            date =
+                            SimpleDateFormat(
+                                "dd.MM.yyyy HH:mm",
+                                Locale.getDefault()
+                            ).format(Date()),
+
+                            type =
+                            if (isIncome) {
+                                TransactionType.INCOME
+                            } else {
+                                TransactionType.EXPENSE
+                            }
+                        )
+                    }
+
+                if (isEditing) {
+
+                    transactionViewModel.update(
+                        transactionToSave
+                    )
+
+                } else {
+
+                    transactionViewModel.insert(
+                        transactionToSave
+                    )
+                }
+
+                Toast.makeText(
+                    requireContext(),
+
+                    when {
+
+                        isEditing && isIncome ->
+                            "Gelir güncellendi"
+
+                        isEditing ->
+                            "Gider güncellendi"
+
+                        isIncome ->
+                            "Gelir eklendi"
+
+                        else ->
+                            "Gider eklendi"
                     },
 
-                    date = SimpleDateFormat(
-                        "dd.MM.yyyy HH:mm",
-                        Locale.getDefault()
-                    ).format(Date()),
-
-                    type =
-                    if (isIncome) {
-                        TransactionType.INCOME
-                    } else {
-                        TransactionType.EXPENSE
-                    }
-                )
-
-                transactionViewModel.insert(
-                    transaction
-                )
+                    Toast.LENGTH_SHORT
+                ).show()
 
                 bottomSheetDialog.dismiss()
             }

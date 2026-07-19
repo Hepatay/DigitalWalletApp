@@ -5,29 +5,48 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
 
-    // 1. Yeni bir işlem (gelir veya gider) ekle
+    // Yeni gelir veya gider ekler
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTransaction(transaction: Transaction)
+    suspend fun insertTransaction(
+        transaction: Transaction
+    )
 
-    // 2. İşlemi sil (Kaydırmalı silme için kullanacağız)
+    // Mevcut gelir veya gider kaydını günceller
+    @Update
+    suspend fun updateTransaction(
+        transaction: Transaction
+    )
+
+    // İşlemi siler
     @Delete
-    suspend fun deleteTransaction(transaction: Transaction)
+    suspend fun deleteTransaction(
+        transaction: Transaction
+    )
 
-    // 3. Tüm işlemleri listelemek için (En son eklenen en üstte çıksın diye id DESC yaptık)
-    @Query("SELECT * FROM transactions_table ORDER BY id DESC")
+    // Tüm işlemleri en yeni kayıt üstte olacak şekilde getirir
+    @Query(
+        "SELECT * FROM transactions_table " +
+                "ORDER BY id DESC"
+    )
     fun getAllTransactions(): Flow<List<Transaction>>
 
-    // 4. BÜYÜK GÜÇ: Sadece GELİR olanların toplamını otomatik hesapla
-    // Tablo boşken null dönmesin diye Double? yapıyoruz.
-    @Query("SELECT SUM(amount) FROM transactions_table WHERE type = 'INCOME'")
+    // Toplam geliri hesaplar
+    @Query(
+        "SELECT SUM(amount) FROM transactions_table " +
+                "WHERE type = 'INCOME'"
+    )
     fun getTotalIncome(): Flow<Double?>
 
-    // 5. BÜYÜK GÜÇ: Sadece GİDER olanların toplamını otomatik hesapla
-    @Query("SELECT SUM(amount) FROM transactions_table WHERE type = 'EXPENSE'")
+    // Toplam gideri hesaplar
+    @Query(
+        "SELECT SUM(amount) FROM transactions_table " +
+                "WHERE type = 'EXPENSE'"
+    )
     fun getTotalExpense(): Flow<Double?>
 }

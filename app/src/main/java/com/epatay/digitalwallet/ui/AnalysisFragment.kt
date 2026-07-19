@@ -79,80 +79,215 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
     private fun showEditPriceDialog(
         investment: InvestmentItem
     ) {
-        val editText =
-            EditText(requireContext())
 
-        editText.inputType =
-            InputType.TYPE_CLASS_NUMBER or
-                    InputType.TYPE_NUMBER_FLAG_DECIMAL
-
-        editText.setText(
-            investment.buyPrice.toString()
-        )
-
-        editText.setSelection(
-            editText.text?.length ?: 0
-        )
-
-        AlertDialog.Builder(requireContext())
-            .setTitle(
-                "${investment.assetName} Alış Fiyatını Düzenle"
+        val isGramGold =
+            investment.assetName.equals(
+                "GRAM ALTIN",
+                ignoreCase = true
             )
-            .setView(editText)
-            .setNegativeButton(
-                "İptal",
-                null
-            )
-            .setPositiveButton(
-                "Güncelle"
-            ) { _, _ ->
+
+        val unitName =
+            if (isGramGold) {
+                "Gram miktarı"
+            } else {
+                "Adet"
+            }
+
+        val padding =
+            (20 * resources.displayMetrics.density)
+                .toInt()
+
+        val container =
+            LinearLayout(requireContext()).apply {
+
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setPadding(
+                    padding,
+                    padding / 2,
+                    padding,
+                    0
+                )
+            }
+
+        val amountLabel =
+            TextView(requireContext()).apply {
+
+                text = unitName
+                textSize = 14f
+
+                setPadding(
+                    0,
+                    padding / 2,
+                    0,
+                    4
+                )
+            }
+
+        val amountEditText =
+            EditText(requireContext()).apply {
+
+                hint = unitName
+
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER
+
+                setText(
+                    investment.amount.toString()
+                )
+
+                setSelection(
+                    text?.length ?: 0
+                )
+            }
+
+        val priceLabel =
+            TextView(requireContext()).apply {
+
+                text = "Birim alış fiyatı"
+                textSize = 14f
+
+                setPadding(
+                    0,
+                    padding / 2,
+                    0,
+                    4
+                )
+            }
+
+        val priceEditText =
+            EditText(requireContext()).apply {
+
+                hint = "Birim alış fiyatı"
+
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER or
+                            InputType.TYPE_NUMBER_FLAG_DECIMAL
+
+                setText(
+                    investment.buyPrice.toString()
+                )
+
+                setSelection(
+                    text?.length ?: 0
+                )
+            }
+
+        container.addView(amountLabel)
+        container.addView(amountEditText)
+        container.addView(priceLabel)
+        container.addView(priceEditText)
+
+        val dialog =
+            AlertDialog.Builder(requireContext())
+                .setTitle(
+                    "${investment.assetName} Yatırımını Düzenle"
+                )
+                .setView(container)
+                .setNegativeButton(
+                    "İptal",
+                    null
+                )
+                .setPositiveButton(
+                    "Güncelle",
+                    null
+                )
+                .create()
+
+        /*
+         * setPositiveButton içindeki standart işlem,
+         * geçersiz girişte bile pencereyi kapatır.
+         * Bu nedenle tıklama olayını pencere açıldıktan
+         * sonra ayrıca tanımlıyoruz.
+         */
+        dialog.setOnShowListener {
+
+            dialog.getButton(
+                AlertDialog.BUTTON_POSITIVE
+            ).setOnClickListener {
+
+                val newAmount =
+                    amountEditText.text
+                        ?.toString()
+                        ?.trim()
+                        ?.toIntOrNull()
 
                 val newPrice =
-                    editText.text
+                    priceEditText.text
                         ?.toString()
                         ?.trim()
                         ?.replace(",", ".")
                         ?.toDoubleOrNull()
 
                 if (
-                    newPrice != null &&
-                    newPrice.isFinite() &&
-                    newPrice > 0.0
+                    newAmount == null ||
+                    newAmount <= 0
                 ) {
-                    /*
-                     * Mevcut veritabanı yapısında doğrudan
-                     * update kullanılmadığı için eski kayıt
-                     * silinip güncellenmiş kayıt ekleniyor.
-                     */
-                    investmentViewModel.delete(
-                        investment
-                    )
 
-                    val updatedInvestment =
-                        investment.copy(
-                            buyPrice = newPrice
-                        )
+                    amountEditText.error =
+                        if (isGramGold) {
+                            "Gram miktarı pozitif tam sayı olmalıdır"
+                        } else {
+                            "Adet pozitif tam sayı olmalıdır"
+                        }
 
-                    investmentViewModel.insert(
-                        updatedInvestment
-                    )
+                    amountEditText.requestFocus()
 
-                    Toast.makeText(
-                        requireContext(),
-                        "Fiyat güncellendi!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                } else {
-
-                    Toast.makeText(
-                        requireContext(),
-                        "Geçerli bir alış fiyatı girin",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    return@setOnClickListener
                 }
+
+                amountEditText.error = null
+
+                if (
+                    newPrice == null ||
+                    !newPrice.isFinite() ||
+                    newPrice <= 0.0
+                ) {
+
+                    priceEditText.error =
+                        "Geçerli bir alış fiyatı girin"
+
+                    priceEditText.requestFocus()
+
+                    return@setOnClickListener
+                }
+
+                priceEditText.error = null
+
+                val updatedInvestment =
+                    investment.copy(
+                        amount = newAmount,
+                        buyPrice = newPrice
+                    )
+
+                /*
+                 * Mevcut yatırım türü ve alış tarihi korunur.
+                 * Yalnızca miktar ve alış fiyatı değiştirilir.
+                 */
+                investmentViewModel.update(
+                    updatedInvestment
+                )
+
+                val amountText =
+                    if (isGramGold) {
+                        "$newAmount gram"
+                    } else {
+                        "$newAmount adet"
+                    }
+
+                Toast.makeText(
+                    requireContext(),
+                    "${investment.assetName} yatırımı " +
+                            "$amountText olarak güncellendi",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                dialog.dismiss()
             }
-            .show()
+        }
+
+        dialog.show()
     }
 
     private fun showDeleteInvestmentDialog(
@@ -603,9 +738,19 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             BottomSheetAddInvestmentBinding.inflate(
                 layoutInflater
             )
-
         bottomSheetDialog.setContentView(
-            dialogBinding.root
+            dialogBinding.root)
+
+
+        val bottomSheetSurfaceColor =
+            MaterialColors.getColor(
+                dialogBinding.root,
+                com.google.android.material.R.attr.colorSurface,
+                Color.WHITE
+            )
+
+        dialogBinding.root.setBackgroundColor(
+            bottomSheetSurfaceColor
         )
 
         val assets = arrayOf(

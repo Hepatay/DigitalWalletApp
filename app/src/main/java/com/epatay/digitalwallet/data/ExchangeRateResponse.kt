@@ -1,7 +1,15 @@
 package com.epatay.digitalwallet.data
 
-// Dikkat: Süslü parantez yerine normal parantez kullanıyoruz
+import com.google.gson.annotations.SerializedName
+
 data class ExchangeRateResponse(
-    val base_code: String,
-    val conversion_rates: Map<String, Double>
+
+    val result: String? = null,
+
+    @SerializedName(
+        value = "rates",
+        alternate = ["conversion_rates"]
+    )
+    val conversion_rates: Map<String, Double> =
+        emptyMap()
 )

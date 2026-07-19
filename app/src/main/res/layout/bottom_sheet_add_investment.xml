@@ -1,101 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet_surface"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@drawable/rounded_bottom_sheet">
+    android:paddingStart="24dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="32dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="Yeni Yatırım Ekle"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:layout_marginBottom="16dp"/>
+        android:textStyle="bold" />
 
-    <!-- Varlık Tipi (Altın, Dolar vb.) -->
+    <!-- Varlık türü -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutAssetType"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        android:hint="Varlık Türü"
+        app:boxBackgroundColor="?attr/colorSurface"
+        app:boxStrokeColor="?attr/colorPrimary"
+        app:hintTextColor="?attr/colorOnSurfaceVariant">
 
-        <AutoCompleteTextView
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
             android:id="@+id/etAssetType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Varlık Türü (Örn: USD, Altın)"
+            android:hint="Örnek: USD, EUR, Gram Altın"
+            android:inputType="none"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
             tools:ignore="SpeakableTextPresentCheck" />
+
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Miktar -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutInvestmentAmount"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:hint="Miktar"
+        app:boxBackgroundColor="?attr/colorSurface"
+        app:boxStrokeColor="?attr/colorPrimary"
+        app:hintTextColor="?attr/colorOnSurfaceVariant">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etInvestmentAmount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
-            android:hint="Miktar (Örn: 100)"
+            android:hint="Örnek: 1, 5, 10"
+            android:inputType="number"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
             tools:ignore="SpeakableTextPresentCheck" />
+
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- YENİ: Kur Seçimi Seçenekleri -->
+    <!-- Kur seçim başlığı -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:text="Alış kuru"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp" />
+
+    <!-- Kur seçim seçenekleri -->
     <RadioGroup
         android:id="@+id/rgRateType"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="12dp"
+        android:orientation="horizontal">
 
-        <RadioButton
+        <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/rbCurrentRate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:checked="true"
             android:text="Güncel Kur"
-            android:checked="true" /> <!-- Varsayılan olarak bu seçili -->
+            android:textColor="?attr/colorOnSurface"
+            app:buttonTint="?attr/colorPrimary" />
 
-        <RadioButton
+        <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/rbManualRate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Geçmiş / Manuel" />
+            android:text="Geçmiş / Manuel"
+            android:textColor="?attr/colorOnSurface"
+            app:buttonTint="?attr/colorPrimary" />
+
     </RadioGroup>
 
-    <!-- YENİ: Sadece Manuel Seçilirse Görünecek Kutu -->
+    <!-- Manuel alış kuru -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutManualRate"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:visibility="gone"> <!-- Başlangıçta gizli -->
+        android:hint="Alış Kuru"
+        android:visibility="gone"
+        app:boxBackgroundColor="?attr/colorSurface"
+        app:boxStrokeColor="?attr/colorPrimary"
+        app:hintTextColor="?attr/colorOnSurfaceVariant">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etManualRate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Örnek: 34,50"
             android:inputType="numberDecimal"
-            android:hint="Alış kurunuzu girin (Örn: 34.50)"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
             tools:ignore="SpeakableTextPresentCheck" />
+
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveInvestment"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="56dp"
         android:text="KAYDET"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:backgroundTint="#2196F3"
-        android:textColor="#FFFFFF"/>
+        app:backgroundTint="?attr/colorPrimary"
+        app:cornerRadius="14dp" />
 
 </LinearLayout>

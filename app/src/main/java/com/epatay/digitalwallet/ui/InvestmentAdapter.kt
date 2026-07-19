@@ -88,24 +88,13 @@ class InvestmentAdapter(
                 .getSavedRates()
                 ?.conversion_rates
 
-        // Gram altın için API üzerindeki XAU kodu kullanılır
-        val rateCode =
-            if (assetName == "GRAM ALTIN") {
-                "XAU"
-            } else {
-                assetName
-            }
-
-        val rawRate =
-            rates?.get(rateCode)
-
         /*
-         * API'nin döndürdüğü değer TL tabanlı olmadığı için
-         * 1 / kur dönüşümü yapılıyor.
-         *
-         * XAU değeri ons fiyatıdır.
-         * 1 ons = 31.1034768 gram
-         */
+ * Gram altın fiyatı CurrencyManager içinde
+ * doğrudan TL/gram olarak saklanır.
+ *
+ * Döviz API'sindeki değerler ters kur biçiminde
+ * geldiği için dövizlerde 1 / kur dönüşümü yapılır.
+ */
         val currentRate =
             if (assetName == "GRAM ALTIN") {
 
@@ -115,11 +104,14 @@ class InvestmentAdapter(
 
             } else {
 
-                val rawRate =
+                val savedRawRate =
                     rates?.get(assetName)
 
-                if (rawRate != null && rawRate > 0.0) {
-                    1.0 / rawRate
+                if (
+                    savedRawRate != null &&
+                    savedRawRate > 0.0
+                ) {
+                    1.0 / savedRawRate
                 } else {
                     currentItem.buyPrice
                 }

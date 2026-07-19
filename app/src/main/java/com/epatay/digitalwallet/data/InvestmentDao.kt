@@ -6,18 +6,33 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface InvestmentDao {
-    // Tüm yatırımları getirir (Canlı olarak UI'ı güncellemek için LiveData kullanıyoruz)
-    @Query("SELECT * FROM investments_table ORDER BY id DESC")
+
+    // Tüm yatırımları en yeni kayıt üstte olacak şekilde getirir
+    @Query(
+        "SELECT * FROM investments_table " +
+                "ORDER BY id DESC"
+    )
     fun getAllInvestments(): LiveData<List<InvestmentItem>>
 
-    // Yeni bir yatırım ekler
+    // Yeni yatırım ekler
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertInvestment(investment: InvestmentItem)
+    suspend fun insertInvestment(
+        investment: InvestmentItem
+    )
 
-    // Mevcut bir yatırımı siler
+    // Mevcut yatırımı aynı id üzerinden günceller
+    @Update
+    suspend fun updateInvestment(
+        investment: InvestmentItem
+    )
+
+    // Mevcut yatırımı siler
     @Delete
-    suspend fun deleteInvestment(investment: InvestmentItem)
+    suspend fun deleteInvestment(
+        investment: InvestmentItem
+    )
 }

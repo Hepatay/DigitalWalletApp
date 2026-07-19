@@ -20,10 +20,9 @@
         android:orientation="horizontal"
         android:paddingStart="14dp"
         android:paddingTop="14dp"
-        android:paddingEnd="8dp"
+        android:paddingEnd="6dp"
         android:paddingBottom="14dp">
 
-        <!-- Kategori ikonu -->
         <androidx.cardview.widget.CardView
             android:id="@+id/cardIconBackground"
             android:layout_width="48dp"
@@ -42,7 +41,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- İşlem bilgileri -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -51,7 +49,7 @@
 
             <TextView
                 android:id="@+id/tvItemTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
@@ -62,34 +60,44 @@
 
             <TextView
                 android:id="@+id/tvItemDate"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="Tarih"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="12sp" />
 
         </LinearLayout>
 
-        <!-- Tutar -->
         <TextView
             android:id="@+id/tvItemAmount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="6dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="0,00 ₺"
             android:textColor="@color/primary_green"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
-        <!-- Silme butonu -->
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnEditTransaction"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="2dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="İşlemi düzenle"
+            android:padding="9dp"
+            android:src="@android:drawable/ic_menu_edit"
+            app:tint="?attr/colorPrimary" />
+
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnDeleteTransaction"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="İşlemi sil"
             android:padding="9dp"

@@ -12,6 +12,7 @@ import java.util.Locale
 
 class TransactionAdapter(
     private var transactionList: List<Transaction>,
+    private val onEditClick: (Transaction) -> Unit,
     private val onDeleteClick: (Transaction) -> Unit
 ) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
@@ -71,26 +72,48 @@ class TransactionAdapter(
                 Color.parseColor("#F44336")
             )
 
-            val iconRes = when (currentItem.category) {
-                "Eğitim" -> R.drawable.ic_school
-                "Gıda" -> R.drawable.ic_food
-                "Ulaşım" -> R.drawable.ic_bus
-                "Fatura" -> R.drawable.ic_bill
-                "Eğlence" -> R.drawable.ic_fun
-                else -> R.drawable.ic_other
-            }
+            val iconRes =
+                when (currentItem.category) {
 
-            holder.binding.ivCategoryIcon.setImageResource(iconRes)
+                    "Eğitim" ->
+                        R.drawable.ic_school
+
+                    "Gıda" ->
+                        R.drawable.ic_food
+
+                    "Ulaşım" ->
+                        R.drawable.ic_bus
+
+                    "Fatura" ->
+                        R.drawable.ic_bill
+
+                    "Eğlence" ->
+                        R.drawable.ic_fun
+
+                    else ->
+                        R.drawable.ic_other
+                }
+
+            holder.binding.ivCategoryIcon.setImageResource(
+                iconRes
+            )
 
             holder.binding.ivCategoryIcon.setColorFilter(
                 Color.parseColor("#F44336")
             )
         }
 
-        // Yalnızca çöp kutusuna basıldığında silme işlemi başlar
-        holder.binding.btnDeleteTransaction.setOnClickListener {
-            onDeleteClick(currentItem)
-        }
+        holder.binding.btnEditTransaction
+            .setOnClickListener {
+
+                onEditClick(currentItem)
+            }
+
+        holder.binding.btnDeleteTransaction
+            .setOnClickListener {
+
+                onDeleteClick(currentItem)
+            }
     }
 
     override fun getItemCount(): Int {
@@ -103,6 +126,7 @@ class TransactionAdapter(
     }
 
     private fun formatCurrency(value: Double): String {
+
         return String.format(
             Locale.forLanguageTag("tr-TR"),
             "%,.2f ₺",
