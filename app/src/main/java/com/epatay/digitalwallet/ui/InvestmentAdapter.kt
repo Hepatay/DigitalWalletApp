@@ -130,7 +130,7 @@ class InvestmentAdapter(
             "Alış Kuru: ${formatRate(currentItem.buyPrice)}"
 
         holder.binding.tvCurrentRate.text =
-            "Anlık Kur: ${formatRate(currentRate)}"
+            "Referans Kur: ${formatRate(currentRate)}"
 
         holder.binding.tvTotalBuyCost.text =
             "Alış Mlyt: ${formatCurrency(totalBuyCost)}"

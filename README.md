@@ -1,19 +1,19 @@
 # 🚀 Dijital Cüzdan — Digital Wallet
 
-Dijital Cüzdan; gelir, gider ve yatırımlarınızı takip etmenizi, güncel döviz kurlarını görüntülemenizi ve anlık kur hesaplamaları yapmanızı sağlayan modern bir Android uygulamasıdır.
+Dijital Cüzdan; gelir, gider ve yatırımlarınızı takip etmenizi, günlük referans döviz kurlarını görüntülemenizi ve kur hesaplamaları yapmanızı sağlayan modern bir Android uygulamasıdır.
 
-Uygulama; kişisel finans yönetimi, portföy takibi ve canlı piyasa verilerini tek bir yerde sunmayı amaçlamaktadır.
+Uygulama; kişisel finans yönetimi, portföy takibi ve günlük referans piyasa verilerini tek bir yerde sunmayı amaçlamaktadır.
 
 ---
 
 ## ✨ Özellikler
 
-### 💱 Anlık Döviz Takibi
+### 💱 Günlük Döviz Takibi
 
 - USD, EUR, GBP, JPY, CAD, AUD, CNY ve RUB gibi para birimlerini görüntüleme
 - Güncel kur verilerini API üzerinden çekme
 - Para birimlerini bayrak ikonlarıyla listeleme
-- Kullanıcının girdiği miktarı bütün para birimlerine anlık olarak dönüştürme
+- Kullanıcının girdiği miktarı bütün para birimlerine anında dönüştürme
 - Ekstra hesaplama butonu gerektirmeyen `TextWatcher` tabanlı hesaplama
 
 ### 💰 Gelir ve Gider Yönetimi
@@ -29,7 +29,7 @@ Uygulama; kişisel finans yönetimi, portföy takibi ve canlı piyasa verilerini
 - Döviz ve diğer yatırım varlıklarını portföye ekleme
 - Yatırım miktarı ve alış fiyatı kaydetme
 - Toplam alış maliyetini hesaplama
-- Güncel portföy değerini görüntüleme
+- Son alınan referans kurla portföy değerini görüntüleme
 - Kâr ve zarar durumunu takip etme
 - Yatırımları tarih sırasına göre listeleme
 
@@ -154,7 +154,7 @@ git clone https://github.com/Hepatay/DigitalWalletApp.git
 
 - [x] Temel kullanıcı arayüzü
 - [x] RecyclerView ve Adapter entegrasyonu
-- [x] Anlık döviz kuru takibi
+- [x] Günlük referans döviz kuru takibi
 - [x] TextWatcher tabanlı kur hesaplama
 - [x] Döviz bayraklarının gösterilmesi
 - [x] SharedPreferences ile çevrimdışı kur saklama
@@ -167,7 +167,7 @@ git clone https://github.com/Hepatay/DigitalWalletApp.git
 
 ### Planlananlar
 
-- [ ] Canlı gram altın fiyatı
+- [ ] Daha sık güncellenen gram altın fiyatı
 - [ ] Çeyrek, yarım ve tam altın takibi
 - [ ] Kripto para takibi
 - [ ] Döviz ve yatırım favorileri

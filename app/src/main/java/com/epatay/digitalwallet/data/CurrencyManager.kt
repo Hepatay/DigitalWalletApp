@@ -14,6 +14,9 @@ class CurrencyManager(context: Context) {
 
         private const val GRAM_GOLD_PRICE_KEY =
             "gram_gold_try"
+
+        private const val RATES_FETCHED_AT_KEY =
+            "rates_fetched_at"
     }
 
     private val sharedPreferences =
@@ -31,7 +34,13 @@ class CurrencyManager(context: Context) {
         sharedPreferences
             .edit()
             .putString(RATES_KEY, json)
+            .putLong(RATES_FETCHED_AT_KEY, System.currentTimeMillis())
             .apply()
+    }
+
+    fun shouldRefreshRates(maxAgeMillis: Long): Boolean {
+        val fetchedAt = sharedPreferences.getLong(RATES_FETCHED_AT_KEY, 0L)
+        return fetchedAt <= 0L || System.currentTimeMillis() - fetchedAt >= maxAgeMillis
     }
 
     fun getSavedRates(): ExchangeRateResponse? {

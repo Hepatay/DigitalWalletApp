@@ -48,8 +48,8 @@ class CurrencyAdapter(
         }
 
         holder.tvRate.text = String.format(
-            Locale("tr", "TR"),
-            "%s %s = %.2f TRY",
+            Locale.forLanguageTag("tr-TR"),
+            "%s %s = %.2f ₺",
             amountString,
             item.code,
             totalTry
@@ -71,7 +71,7 @@ class CurrencyAdapter(
     }
 
     fun updateMultiplier(newMultiplier: Double) {
-        multiplier = if (newMultiplier > 0.0) {
+        multiplier = if (newMultiplier.isFinite() && newMultiplier > 0.0) {
             newMultiplier
         } else {
             1.0

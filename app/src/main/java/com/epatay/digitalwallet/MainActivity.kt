@@ -1,8 +1,11 @@
 package com.epatay.digitalwallet
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.epatay.digitalwallet.databinding.ActivityMainBinding
 import com.epatay.digitalwallet.ui.ViewPagerAdapter
@@ -19,14 +22,21 @@ class MainActivity : AppCompatActivity() {
         )
 
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupViewPager()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        setupViewPager(savedInstanceState == null)
     }
 
-    private fun setupViewPager() {
+    private fun setupViewPager(shouldSelectDefaultPage: Boolean) {
 
         binding.viewPager.adapter =
             ViewPagerAdapter(this)
@@ -41,15 +51,17 @@ class MainActivity : AppCompatActivity() {
          * Uygulama açıldığında ortadaki
          * Bütçem ekranı gösterilir.
          */
-        binding.viewPager.setCurrentItem(
-            ViewPagerAdapter.DEFAULT_PAGE,
-            false
-        )
+        if (shouldSelectDefaultPage) {
+            binding.viewPager.setCurrentItem(
+                ViewPagerAdapter.DEFAULT_PAGE,
+                false
+            )
+        }
 
         val pageTitles = arrayOf(
-            "Portföyüm",
-            "Bütçem",
-            "Piyasalar"
+            getString(R.string.tab_portfolio),
+            getString(R.string.tab_budget),
+            getString(R.string.tab_markets)
         )
 
         TabLayoutMediator(
@@ -84,16 +96,16 @@ class MainActivity : AppCompatActivity() {
             when (position) {
 
                 ViewPagerAdapter.INVESTMENTS_PAGE ->
-                    "Bütçeme geçmek için sola kaydır →"
+                    getString(R.string.swipe_hint_investments)
 
                 ViewPagerAdapter.DASHBOARD_PAGE ->
-                    "← Portföyüm   •   Piyasalar →"
+                    getString(R.string.swipe_hint_dashboard)
 
                 ViewPagerAdapter.CURRENCY_PAGE ->
-                    "← Bütçeme geçmek için sağa kaydır"
+                    getString(R.string.swipe_hint_markets)
 
                 else ->
-                    ""
+                    null
             }
     }
 }

@@ -1,8 +1,10 @@
 package com.epatay.digitalwallet.ui
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -74,6 +76,22 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         binding.fabAddInvestment.setOnClickListener {
             showAddInvestmentBottomSheet()
         }
+
+        binding.tvDisclaimer.setOnClickListener {
+            val attributionPage = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.exchangerate-api.com")
+            )
+            runCatching { startActivity(attributionPage) }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        investmentViewModel.allInvestments.value?.let { investments ->
+            adapter.setData(investments)
+            calculateGrandTotal(investments)
+        }
     }
 
     private fun showEditPriceDialog(
@@ -131,7 +149,8 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                 hint = unitName
 
                 inputType =
-                    InputType.TYPE_CLASS_NUMBER
+                    InputType.TYPE_CLASS_NUMBER or
+                            InputType.TYPE_NUMBER_FLAG_DECIMAL
 
                 setText(
                     investment.amount.toString()
@@ -211,7 +230,8 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     amountEditText.text
                         ?.toString()
                         ?.trim()
-                        ?.toIntOrNull()
+                        ?.replace(",", ".")
+                        ?.toDoubleOrNull()
 
                 val newPrice =
                     priceEditText.text
@@ -222,14 +242,15 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
 
                 if (
                     newAmount == null ||
-                    newAmount <= 0
+                    !newAmount.isFinite() ||
+                    newAmount <= 0.0
                 ) {
 
                     amountEditText.error =
                         if (isGramGold) {
-                            "Gram miktarı pozitif tam sayı olmalıdır"
+                            "Gram miktarı pozitif sayı olmalıdır"
                         } else {
-                            "Adet pozitif tam sayı olmalıdır"
+                            "Miktar pozitif sayı olmalıdır"
                         }
 
                     amountEditText.requestFocus()
@@ -838,7 +859,9 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                         .orEmpty()
 
                 val amount =
-                    amountText.toIntOrNull()
+                    amountText
+                        .replace(",", ".")
+                        .toDoubleOrNull()
 
                 if (selectedAsset.isEmpty()) {
 
@@ -851,13 +874,17 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     return@setOnClickListener
                 }
 
-                if (amount == null || amount <= 0) {
+                if (
+                    amount == null ||
+                    !amount.isFinite() ||
+                    amount <= 0.0
+                ) {
 
                     val message =
                         if (selectedAsset == "GRAM ALTIN") {
-                            "Gram miktarı pozitif tam sayı olmalıdır"
+                            "Gram miktarı pozitif sayı olmalıdır"
                         } else {
-                            "Miktar pozitif tam sayı olmalıdır"
+                            "Miktar pozitif sayı olmalıdır"
                         }
 
                     Toast.makeText(

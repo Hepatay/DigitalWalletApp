@@ -62,8 +62,8 @@
             android:id="@+id/etInvestmentAmount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Örnek: 1, 5, 10"
-            android:inputType="number"
+            android:hint="Örnek: 1, 2,5, 10"
+            android:inputType="numberDecimal"
             android:textColor="?attr/colorOnSurface"
             android:textColorHint="?attr/colorOnSurfaceVariant"
             tools:ignore="SpeakableTextPresentCheck" />

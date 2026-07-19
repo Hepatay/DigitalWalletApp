@@ -38,7 +38,7 @@
         android:paddingTop="7dp"
         android:paddingEnd="12dp"
         android:paddingBottom="7dp"
-        android:text="← Portföyüm   •   Piyasalar →"
+        android:text="@string/swipe_hint_dashboard"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"

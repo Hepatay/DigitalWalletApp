@@ -85,8 +85,8 @@
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnEditTransaction"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="İşlemi düzenle"
@@ -96,8 +96,8 @@
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnDeleteTransaction"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="İşlemi sil"
             android:padding="9dp"

@@ -1,6 +1,8 @@
 package com.epatay.digitalwallet.ui
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -19,14 +21,20 @@ import com.epatay.digitalwallet.data.ExchangeRateResponse
 import com.epatay.digitalwallet.data.GoldRetrofitInstance
 import com.epatay.digitalwallet.data.RetrofitInstance
 import com.epatay.digitalwallet.databinding.FragmentCurrencyBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
     companion object {
         private const val TROY_OUNCE_GRAMS = 31.1034768
+        private const val RATES_MAX_AGE_MILLIS = 24L * 60L * 60L * 1000L
     }
 
     private var _binding: FragmentCurrencyBinding? = null
@@ -70,9 +78,9 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
          * Wi-Fi veya mobil ağın bulunması yeterli değildir.
          * Ağın gerçekten internete çıkabildiği de kontrol edilir.
          */
-        if (isInternetAvailable()) {
+        if (isInternetAvailable() && currencyManager.shouldRefreshRates(RATES_MAX_AGE_MILLIS)) {
             fetchDataFromApi()
-        } else {
+        } else if (!isInternetAvailable() && savedRates == null) {
             showError(getOfflineMessage())
         }
 
@@ -83,6 +91,22 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
             } else {
                 showError(getOfflineMessage())
             }
+        }
+
+        binding.tvRatesAttribution.setOnClickListener {
+            val attributionPage = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.exchangerate-api.com")
+            )
+            runCatching { startActivity(attributionPage) }
+        }
+
+        binding.tvPrivacy.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.privacy_title)
+                .setMessage(R.string.privacy_policy_message)
+                .setPositiveButton(R.string.close, null)
+                .show()
         }
 
         binding.etAmount.addTextChangedListener { text ->
@@ -117,6 +141,21 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
                         RetrofitInstance.api
                             .getLatestRates()
                     }
+
+                val requiredRates = listOf("USD", "EUR", "GBP")
+                val ratesAreValid = requiredRates.all { code ->
+                    exchangeResponse.conversion_rates[code]
+                        ?.let { it.isFinite() && it > 0.0 } == true
+                }
+
+                if (
+                    exchangeResponse.result != "success" ||
+                    exchangeResponse.baseCode != "TRY" ||
+                    exchangeResponse.conversion_rates.isEmpty() ||
+                    !ratesAreValid
+                ) {
+                    throw IOException("Geçersiz kur yanıtı")
+                }
 
                 currencyManager.saveRates(exchangeResponse)
 
@@ -266,6 +305,18 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
         val rates =
             response.conversion_rates
+
+        response.lastUpdateUnix?.let { timestamp ->
+            val formattedDate = DateFormat.getDateTimeInstance(
+                DateFormat.SHORT,
+                DateFormat.SHORT,
+                Locale.forLanguageTag("tr-TR")
+            ).format(Date(timestamp * 1000L))
+            binding.tvLastUpdated.text = getString(R.string.last_updated, formattedDate)
+            binding.tvLastUpdated.visibility = View.VISIBLE
+        } ?: run {
+            binding.tvLastUpdated.visibility = View.GONE
+        }
 
         binding.tvError.visibility = View.GONE
         binding.rvCurrencies.visibility = View.VISIBLE

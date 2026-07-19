@@ -626,6 +626,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                 if (
                     amount == null ||
+                    !amount.isFinite() ||
                     amount <= 0.0
                 ) {
 

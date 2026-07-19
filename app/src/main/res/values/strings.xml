@@ -1,3 +1,19 @@
 <resources>
-    <string name="app_name">Digital Wallet</string>
+    <string name="app_name">Dijital Cüzdan</string>
+    <string name="tab_portfolio">Portföyüm</string>
+    <string name="tab_budget">Bütçem</string>
+    <string name="tab_markets">Piyasalar</string>
+    <string name="swipe_hint_investments">Bütçeme geçmek için sola kaydır →</string>
+    <string name="swipe_hint_dashboard">← Portföyüm   •   Piyasalar →</string>
+    <string name="swipe_hint_markets">← Bütçeme geçmek için sağa kaydır</string>
+    <string name="rates_attribution">Rates By Exchange Rate API</string>
+    <string name="privacy_title">Gizlilik</string>
+    <string name="privacy_policy_message">Dijital Cüzdan hesap oluşturmaz, reklam veya analiz hizmeti kullanmaz ve kişisel finans kayıtlarını cihazınızda yerel olarak saklar. Yedekleme kapalıdır. Döviz ve altın bilgilerini göstermek için yalnızca piyasa verisi sağlayıcılarına internet isteği gönderilir; sağlayıcılar teknik bağlantı bilgilerini kendi politikalarına göre işleyebilir. Kayıtlarınızı uygulama içinden silebilir veya uygulama verilerini temizleyebilirsiniz.</string>
+    <string name="close">Kapat</string>
+    <string name="currency_title">Günlük Döviz Kurları</string>
+    <string name="currency_subtitle">Günlük referans kurlarını görüntüleyin</string>
+    <string name="last_updated">Son güncelleme: %1$s</string>
+    <string name="amount">Miktar</string>
+    <string name="amount_example">Örnek: 10</string>
+    <string name="investment_disclaimer_with_attribution">Yatırım tavsiyesi değildir • Rates By Exchange Rate API</string>
 </resources>
