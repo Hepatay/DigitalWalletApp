@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/colorSurface"
+    android:background="@drawable/bg_bottom_sheet_surface"
     android:fillViewport="true"
     android:overScrollMode="never">
 
@@ -167,7 +167,7 @@
             android:textStyle="bold"
             app:backgroundTint="?attr/colorPrimary"
             app:cornerRadius="14dp"
-            app:icon="@android:drawable/ic_menu_save"
+            app:icon="@drawable/ic_save"
             app:iconGravity="textStart"
             app:iconPadding="8dp"
             app:iconTint="?attr/colorOnPrimary" />

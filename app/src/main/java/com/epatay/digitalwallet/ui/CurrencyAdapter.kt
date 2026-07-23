@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyItem
+import java.text.NumberFormat
 import java.util.Locale
 
 class CurrencyAdapter(
@@ -41,15 +42,20 @@ class CurrencyAdapter(
 
         val totalTry = item.rateValue * multiplier
 
-        val amountString = if (multiplier % 1.0 == 0.0) {
-            multiplier.toInt().toString()
-        } else {
-            multiplier.toString()
-        }
+        val amountString =
+            NumberFormat
+                .getNumberInstance(
+                    Locale.forLanguageTag("tr-TR")
+                )
+                .apply {
+                    minimumFractionDigits = 0
+                    maximumFractionDigits = 4
+                }
+                .format(multiplier)
 
         holder.tvRate.text = String.format(
             Locale.forLanguageTag("tr-TR"),
-            "%s %s = %.2f ₺",
+            "%s %s = %,.2f ₺",
             amountString,
             item.code,
             totalTry

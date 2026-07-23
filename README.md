@@ -19,10 +19,18 @@ Uygulama; kişisel finans yönetimi, portföy takibi ve günlük referans piyasa
 ### 💰 Gelir ve Gider Yönetimi
 
 - Gelir ve gider kaydı oluşturma
-- İşlemleri kategori ve tarihe göre listeleme
+- Kira, maaş, fatura ve abonelik gibi aylık düzenli kayıtlar tanımlama
+- İsteğe bağlı aylık otomatik işlem oluşturma
+- Yaklaşan ödeme ve gelirleri ana ekranda görüntüleme
+- Yaklaşan tarihler için bildirim alma
+- İşlemlerde metin arama, kategori, gelir/gider ve tarih aralığı filtreleri
+- Kategori bazlı aylık bütçe belirleme ve limit ilerlemesini izleme
+- Aylık gelir, gider, bakiye ve kategori dağılım raporu
+- Birikim hedefi oluşturma; hedefe para ekleme ve hedeften para çekme
+- Filtrelenen işlemleri Excel uyumlu CSV veya PDF olarak dışa aktarma
 - Toplam gelir, toplam gider ve mevcut bakiye hesaplama
 - Room Database ile kalıcı veri saklama
-- İşlem ekleme ve silme desteği
+- İşlem ekleme, düzenleme ve silme desteği
 
 ### 📈 Yatırım ve Portföy Takibi
 
@@ -37,8 +45,10 @@ Uygulama; kişisel finans yönetimi, portföy takibi ve günlük referans piyasa
 
 - Toplam gelir ve gider özeti
 - Güncel bakiye bilgisi
-- Harcama kategorilerinin grafik üzerinde gösterilmesi
-- Son işlemlerin listelenmesi
+- Aylık limit, kalan bütçe ve günlük harcanabilir tutar
+- Yaklaşan düzenli ödeme ve gelir önizlemesi
+- Aranabilir ve filtrelenebilir işlem listesi
+- Bütçe, rapor, birikim ve dışa aktarma ekranlarına hızlı erişim
 - Portföy ve finans bilgilerinin tek ekranda sunulması
 
 ### 📴 Çevrimdışı Kullanım
@@ -69,10 +79,11 @@ Uygulama; kişisel finans yönetimi, portföy takibi ve günlük referans piyasa
 | Listeleme | RecyclerView, Adapter Pattern |
 | Yerel veritabanı | Room Database |
 | Veri erişimi | DAO ve Repository |
-| Yaşam döngüsü | ViewModel ve LiveData |
+| Yaşam döngüsü | ViewModel, Flow, StateFlow ve LiveData |
 | Ağ işlemleri | Retrofit |
 | Yerel önbellek | SharedPreferences |
 | Asenkron işlemler | Kotlin Coroutines |
+| Arka plan görevleri | WorkManager |
 | Grafik | MPAndroidChart |
 | Sürüm kontrolü | Git ve GitHub |
 
@@ -164,6 +175,12 @@ git clone https://github.com/Hepatay/DigitalWalletApp.git
 - [x] Portföy değer hesaplamaları
 - [x] Dashboard ve kategori grafikleri
 - [x] Repository ve ViewModel kullanımı
+- [x] Düzenli ödeme ve gelirler
+- [x] Aylık otomatik işlem oluşturma ve yaklaşan tarih bildirimleri
+- [x] Kategori bazlı bütçeler ve aylık raporlar
+- [x] Arama, tarih aralığı, kategori ve işlem türü filtreleri
+- [x] Birikim hedefleri ve birikim hareketleri
+- [x] Excel uyumlu CSV ve PDF dışa aktarma
 
 ### Planlananlar
 
@@ -171,7 +188,6 @@ git clone https://github.com/Hepatay/DigitalWalletApp.git
 - [ ] Çeyrek, yarım ve tam altın takibi
 - [ ] Kripto para takibi
 - [ ] Döviz ve yatırım favorileri
-- [ ] Arama ve filtreleme
 - [ ] Gelişmiş portföy dağılım grafiği
 - [ ] Fiyat değişim yüzdeleri
 - [ ] Dark Mode

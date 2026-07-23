@@ -8,6 +8,7 @@ import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyManager
 import com.epatay.digitalwallet.data.InvestmentItem
 import com.epatay.digitalwallet.databinding.ItemInvestmentBinding
+import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.abs
 
@@ -55,9 +56,9 @@ class InvestmentAdapter(
         // Gram altında "gram", dövizlerde "Adet" gösterilir
         holder.binding.tvAmount.text =
             if (assetName == "GRAM ALTIN") {
-                "${currentItem.amount} gram"
+                "${formatQuantity(currentItem.amount)} gram"
             } else {
-                "${currentItem.amount} Adet"
+                "${formatQuantity(currentItem.amount)} adet"
             }
 
         holder.binding.tvBuyDate.text =
@@ -133,7 +134,7 @@ class InvestmentAdapter(
             "Referans Kur: ${formatRate(currentRate)}"
 
         holder.binding.tvTotalBuyCost.text =
-            "Alış Mlyt: ${formatCurrency(totalBuyCost)}"
+            "Maliyet: ${formatCurrency(totalBuyCost)}"
 
         holder.binding.tvCurrentValue.text =
             "Güncel: ${formatCurrency(currentValue)}"
@@ -197,6 +198,18 @@ class InvestmentAdapter(
             "%,.4f ₺",
             value
         )
+    }
+
+    private fun formatQuantity(value: Double): String {
+        return NumberFormat
+            .getNumberInstance(
+                Locale.forLanguageTag("tr-TR")
+            )
+            .apply {
+                minimumFractionDigits = 0
+                maximumFractionDigits = 4
+            }
+            .format(value)
     }
 
     private fun formatCurrency(value: Double): String {

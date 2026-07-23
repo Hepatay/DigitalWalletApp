@@ -7,16 +7,117 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionDatabase
+import com.epatay.digitalwallet.data.TransactionDateUtils
+import com.epatay.digitalwallet.data.TransactionFilter
 import com.epatay.digitalwallet.data.TransactionRepository
 import com.epatay.digitalwallet.data.TransactionType
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.Locale
-import kotlin.math.abs
+import kotlin.math.roundToInt
 
+data class MonthlyBudgetSummary(
+    val monthlyLimit: Double,
+    val currentMonthExpense: Double,
+    val remainingLimit: Double,
+    val exceededAmount: Double,
+    val dailySpendingLimit: Double,
+    val daysUntilMonthEnd: Int,
+    val usagePercent: Int,
+    val progressPercent: Int
+)
+
+internal fun calculateMonthlyExpense(
+    transactions: List<Transaction>,
+    monthKey: Int
+): Double {
+    return transactions
+        .asSequence()
+        .filter { transaction ->
+            transaction.type ==
+                TransactionType.EXPENSE &&
+                TransactionDateUtils.monthKeyFromDateKey(
+                    transaction.occurredOn
+                ) == monthKey
+        }
+        .sumOf(Transaction::amount)
+}
+
+internal fun calculateMonthlyBudgetSummary(
+    monthlyLimit: Double,
+    transactions: List<Transaction>,
+    calendar: Calendar
+): MonthlyBudgetSummary {
+    val currentMonthExpense =
+        calculateMonthlyExpense(
+            transactions = transactions,
+            monthKey =
+                TransactionDateUtils.currentMonthKey(
+                    calendar
+                )
+        )
+
+    val rawRemainingLimit =
+        monthlyLimit - currentMonthExpense
+    val remainingLimit =
+        rawRemainingLimit.coerceAtLeast(0.0)
+    val exceededAmount =
+        (-rawRemainingLimit).coerceAtLeast(0.0)
+
+    val daysInMonth =
+        calendar.getActualMaximum(
+            Calendar.DAY_OF_MONTH
+        )
+    val currentDay =
+        calendar.get(Calendar.DAY_OF_MONTH)
+    val daysUntilMonthEnd =
+        (daysInMonth - currentDay)
+            .coerceAtLeast(0)
+    val budgetingDayCount =
+        (daysUntilMonthEnd + 1)
+            .coerceAtLeast(1)
+    val dailySpendingLimit =
+        if (rawRemainingLimit > 0.0) {
+            remainingLimit / budgetingDayCount
+        } else {
+            0.0
+        }
+
+    val usagePercent =
+        if (monthlyLimit > 0.0) {
+            (
+                currentMonthExpense /
+                    monthlyLimit *
+                    100.0
+                )
+                .roundToInt()
+                .coerceAtLeast(0)
+        } else if (currentMonthExpense > 0.0) {
+            100
+        } else {
+            0
+        }
+
+    return MonthlyBudgetSummary(
+        monthlyLimit = monthlyLimit,
+        currentMonthExpense = currentMonthExpense,
+        remainingLimit = remainingLimit,
+        exceededAmount = exceededAmount,
+        dailySpendingLimit = dailySpendingLimit,
+        daysUntilMonthEnd = daysUntilMonthEnd,
+        usagePercent = usagePercent,
+        progressPercent =
+            usagePercent.coerceIn(0, 100)
+    )
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class TransactionViewModel(
     application: Application
 ) : AndroidViewModel(application) {
@@ -26,6 +127,15 @@ class TransactionViewModel(
     val allTransactions: StateFlow<List<Transaction>>
     val totalIncome: StateFlow<Double?>
     val totalExpense: StateFlow<Double?>
+    val filteredTransactions: StateFlow<List<Transaction>>
+    val availableCategories: StateFlow<List<String>>
+    val unknownDateCount: StateFlow<Int>
+
+    private val _filters =
+        MutableStateFlow(TransactionFilter())
+
+    val filters: StateFlow<TransactionFilter> =
+        _filters.asStateFlow()
 
     // CurrencyFragment tarafından kullanılan kur değerleri
     val dolarKuru = MutableLiveData(1.0)
@@ -57,6 +167,32 @@ class TransactionViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0.0
         )
+
+        filteredTransactions =
+            filters
+                .flatMapLatest(repository::observeFiltered)
+                .stateIn(
+                    scope = viewModelScope,
+                    started =
+                        SharingStarted.WhileSubscribed(5000),
+                    initialValue = emptyList()
+                )
+
+        availableCategories =
+            repository.observeCategories().stateIn(
+                scope = viewModelScope,
+                started =
+                    SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
+        unknownDateCount =
+            repository.observeUnknownDateCount().stateIn(
+                scope = viewModelScope,
+                started =
+                    SharingStarted.WhileSubscribed(5000),
+                initialValue = 0
+            )
     }
 
     fun insert(transaction: Transaction) = viewModelScope.launch {
@@ -73,6 +209,82 @@ class TransactionViewModel(
 
     fun delete(transaction: Transaction) = viewModelScope.launch {
         repository.delete(transaction)
+    }
+
+    fun setSearchQuery(
+        query: String
+    ) {
+        _filters.value =
+            _filters.value.copy(query = query)
+    }
+
+    fun setDateRange(
+        startDateKey: Int?,
+        endDateKey: Int?
+    ) {
+        require(
+            startDateKey == null ||
+                TransactionDateUtils.isValidDateKey(
+                    startDateKey
+                )
+        ) {
+            "Geçersiz başlangıç tarihi."
+        }
+        require(
+            endDateKey == null ||
+                TransactionDateUtils.isValidDateKey(
+                    endDateKey
+                )
+        ) {
+            "Geçersiz bitiş tarihi."
+        }
+
+        val normalizedRange =
+            if (
+                startDateKey != null &&
+                endDateKey != null &&
+                startDateKey > endDateKey
+            ) {
+                endDateKey to startDateKey
+            } else {
+                startDateKey to endDateKey
+            }
+
+        _filters.value =
+            _filters.value.copy(
+                startDateKey = normalizedRange.first,
+                endDateKey = normalizedRange.second
+            )
+    }
+
+    fun setCategoryFilter(
+        category: String?
+    ) {
+        _filters.value =
+            _filters.value.copy(
+                category =
+                    category
+                        ?.trim()
+                        ?.takeIf(String::isNotEmpty)
+            )
+    }
+
+    fun setTypeFilter(
+        type: TransactionType?
+    ) {
+        _filters.value =
+            _filters.value.copy(type = type)
+    }
+
+    fun clearFilters() {
+        _filters.value = TransactionFilter()
+    }
+
+    suspend fun getFilteredSnapshot():
+        List<Transaction> {
+        return repository.getFilteredSnapshot(
+            filters.value
+        )
     }
 
     /*
@@ -133,130 +345,41 @@ class TransactionViewModel(
     ): Boolean {
 
         val currentMonthExpense =
-            calculateCurrentMonthExpense(transactions)
+            calculateMonthlyExpense(
+                transactions = transactions,
+                monthKey =
+                    TransactionDateUtils
+                        .currentMonthKey()
+            )
 
         return currentMonthExpense + newExpenseAmount > monthlyLimit
     }
 
     /**
-     * Dashboard'daki çok satırlı bütçe bilgisini hazırlar.
+     * Dashboard kartında ayrı görsel bileşenlerde gösterilecek
+     * aylık bütçe özetini hazırlar.
      */
-    fun getDailyBudgetInfo(
+    fun getMonthlyBudgetSummary(
         context: Context,
         transactions: List<Transaction>
-    ): String {
-
-        val monthlyLimit = getMonthlyLimit(context)
-
-        // Yalnızca bu ay yapılan giderlerin toplamı
-        val currentMonthExpense =
-            calculateCurrentMonthExpense(transactions)
-
-        // Negatif olabilen gerçek kalan tutar
-        val rawRemainingLimit =
-            monthlyLimit - currentMonthExpense
-
-        // Normal ekranda negatif kalan limit göstermiyoruz
-        val remainingLimit =
-            rawRemainingLimit.coerceAtLeast(0.0)
-
-        val calendar = Calendar.getInstance()
-
-        val daysInMonth = calendar.getActualMaximum(
-            Calendar.DAY_OF_MONTH
-        )
-
-        val currentDay = calendar.get(
-            Calendar.DAY_OF_MONTH
-        )
-
-        /*
-         * Kullanıcıya gösterilecek ay sonuna kalan gün.
-         * Bugün ayın 18'i ve ay 31 günse 13 gün gösterir.
-         */
-        val daysUntilMonthEnd =
-            (daysInMonth - currentDay).coerceAtLeast(0)
-
-        /*
-         * Günlük bütçe hesabında bugün de kullanılabilir bir gün
-         * olduğu için bugünü hesaplamaya dahil ediyoruz.
-         */
-        val budgetingDayCount =
-            (daysUntilMonthEnd + 1).coerceAtLeast(1)
-
-        val dailySpendingLimit =
-            if (rawRemainingLimit > 0.0) {
-                remainingLimit / budgetingDayCount
-            } else {
-                0.0
-            }
-
-        return if (rawRemainingLimit >= 0.0) {
-
-            """
-            Aylık limit: ${formatMoney(monthlyLimit)}
-            Bu ayki gider: ${formatMoney(currentMonthExpense)}
-            Kalan limit: ${formatMoney(remainingLimit)}
-            Ay sonuna $daysUntilMonthEnd gün kaldı
-            Günlük harcanabilir: ${formatMoney(dailySpendingLimit)}
-            """.trimIndent()
-
-        } else {
-
-            val exceededAmount = abs(rawRemainingLimit)
-
-            """
-            Aylık limit: ${formatMoney(monthlyLimit)}
-            Bu ayki gider: ${formatMoney(currentMonthExpense)}
-            Limit ${formatMoney(exceededAmount)} aşıldı
-            Ay sonuna $daysUntilMonthEnd gün kaldı
-            Günlük harcanabilir: ${formatMoney(0.0)}
-            """.trimIndent()
-        }
-    }
-
-    /**
-     * dd.MM.yyyy HH:mm biçimindeki tarihleri kullanarak
-     * yalnızca içinde bulunduğumuz ayın giderlerini toplar.
-     */
-    private fun calculateCurrentMonthExpense(
-        transactions: List<Transaction>
-    ): Double {
-
-        val calendar = Calendar.getInstance()
-
-        val currentMonth = String.format(
-            Locale.getDefault(),
-            "%02d",
-            calendar.get(Calendar.MONTH) + 1
-        )
-
-        val currentYear =
-            calendar.get(Calendar.YEAR).toString()
-
-        val currentMonthPattern =
-            ".$currentMonth.$currentYear"
-
-        return transactions
-            .filter { transaction ->
-
-                transaction.type == TransactionType.EXPENSE &&
-                        transaction.date.contains(currentMonthPattern)
-            }
-            .sumOf { transaction ->
-                transaction.amount
-            }
-    }
-
-    /**
-     * Türkçe para biçimi:
-     * 50000 -> 50.000,00 ₺
-     */
-    private fun formatMoney(value: Double): String {
-        return String.format(
-            Locale.forLanguageTag("tr-TR"),
-            "%,.2f ₺",
-            value
+    ): MonthlyBudgetSummary {
+        return getMonthlyBudgetSummary(
+            context = context,
+            transactions = transactions,
+            calendar = Calendar.getInstance()
         )
     }
+
+    fun getMonthlyBudgetSummary(
+        context: Context,
+        transactions: List<Transaction>,
+        calendar: Calendar
+    ): MonthlyBudgetSummary {
+        return calculateMonthlyBudgetSummary(
+            monthlyLimit = getMonthlyLimit(context),
+            transactions = transactions,
+            calendar = calendar
+        )
+    }
+
 }

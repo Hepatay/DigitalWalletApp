@@ -24,6 +24,7 @@ import com.epatay.digitalwallet.databinding.FragmentAnalysisBinding
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import java.text.SimpleDateFormat
@@ -70,10 +71,23 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
 
             adapter.setData(investments)
 
+            val isEmpty =
+                investments.isEmpty()
+
+            binding.rvInvestments.visibility =
+                if (isEmpty) View.GONE else View.VISIBLE
+
+            binding.layoutEmptyInvestments.visibility =
+                if (isEmpty) View.VISIBLE else View.GONE
+
             calculateGrandTotal(investments)
         }
 
         binding.fabAddInvestment.setOnClickListener {
+            showAddInvestmentBottomSheet()
+        }
+
+        binding.btnAddFirstInvestment.setOnClickListener {
             showAddInvestmentBottomSheet()
         }
 
@@ -515,24 +529,16 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                 Color.BLACK
             )
 
-        val onSurfaceVariantColor =
-            MaterialColors.getColor(
-                binding.root,
-                com.google.android.material.R.attr.colorOnSurfaceVariant,
-                Color.DKGRAY
-            )
-
         pieChart.setNoDataText(
-            "Henüz yatırım bulunmuyor"
-        )
-
-        pieChart.setNoDataTextColor(
-            onSurfaceVariantColor
+            ""
         )
 
         pieChart.setBackgroundColor(
             Color.TRANSPARENT
         )
+
+        binding.tvInvestmentChartEmpty.visibility =
+            View.VISIBLE
 
         if (assetTotalsMap.isEmpty()) {
             pieChart.invalidate()
@@ -553,6 +559,9 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             pieChart.invalidate()
             return
         }
+
+        binding.tvInvestmentChartEmpty.visibility =
+            View.GONE
 
         val entries =
             ArrayList<PieEntry>()
@@ -584,7 +593,17 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
 
         var fallbackIndex = 0
 
-        for ((assetName, totalValue) in sortedAssets) {
+        val visibleAssetCount = 3
+
+        for (
+            (
+                index,
+                assetTotal
+            ) in sortedAssets.withIndex()
+        ) {
+
+            val (assetName, totalValue) =
+                assetTotal
 
             entries.add(
                 PieEntry(
@@ -601,6 +620,10 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     ]
 
             colors.add(currentColor)
+
+            if (index >= visibleAssetCount) {
+                continue
+            }
 
             val row =
                 LinearLayout(requireContext()).apply {
@@ -668,6 +691,44 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
 
             binding.llInvestmentDetails
                 .addView(row)
+        }
+
+        val hiddenAssetCount =
+            sortedAssets.size - visibleAssetCount
+
+        if (hiddenAssetCount > 0) {
+
+            val moreText =
+                TextView(requireContext()).apply {
+
+                    text =
+                        "+$hiddenAssetCount varlık daha listede"
+
+                    textSize = 12f
+
+                    setTextColor(
+                        MaterialColors.getColor(
+                            binding.root,
+                            com.google.android.material.R.attr.colorPrimary,
+                            Color.BLUE
+                        )
+                    )
+
+                    setTypeface(
+                        null,
+                        Typeface.BOLD
+                    )
+
+                    setPadding(
+                        0,
+                        8,
+                        0,
+                        0
+                    )
+                }
+
+            binding.llInvestmentDetails
+                .addView(moreText)
         }
 
         val dataSet =
@@ -762,6 +823,11 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         bottomSheetDialog.setContentView(
             dialogBinding.root)
 
+        bottomSheetDialog.behavior.apply {
+            state =
+                BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+        }
 
         val bottomSheetSurfaceColor =
             MaterialColors.getColor(
@@ -822,11 +888,11 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                 val selectedAsset =
                     assets[position]
 
-                dialogBinding.etInvestmentAmount.hint =
+                dialogBinding.layoutInvestmentAmount.placeholderText =
                     if (selectedAsset == "GRAM ALTIN") {
-                        "Gram miktarı (Örnek: 1, 5, 10)"
+                        "Örnek: 1, 5 veya 10 gram"
                     } else {
-                        "Satın alınan adet"
+                        "Örnek: 1, 2,5 veya 10"
                     }
             }
         }

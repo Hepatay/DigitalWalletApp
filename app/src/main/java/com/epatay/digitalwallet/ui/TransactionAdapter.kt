@@ -3,6 +3,9 @@ package com.epatay.digitalwallet.ui
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.widget.PopupMenu
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.Transaction
@@ -11,10 +14,25 @@ import com.epatay.digitalwallet.databinding.ItemExpenseBinding
 import java.util.Locale
 
 class TransactionAdapter(
-    private var transactionList: List<Transaction>,
     private val onEditClick: (Transaction) -> Unit,
     private val onDeleteClick: (Transaction) -> Unit
-) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+) : ListAdapter<
+    Transaction,
+    TransactionAdapter.TransactionViewHolder
+>(
+    TransactionDiffCallback
+) {
+
+    constructor(
+        transactionList: List<Transaction>,
+        onEditClick: (Transaction) -> Unit,
+        onDeleteClick: (Transaction) -> Unit
+    ) : this(
+        onEditClick = onEditClick,
+        onDeleteClick = onDeleteClick
+    ) {
+        submitList(transactionList)
+    }
 
     class TransactionViewHolder(
         val binding: ItemExpenseBinding
@@ -38,13 +56,13 @@ class TransactionAdapter(
         holder: TransactionViewHolder,
         position: Int
     ) {
-        val currentItem = transactionList[position]
+        val currentItem = getItem(position)
 
         holder.binding.tvItemTitle.text =
             currentItem.title
 
         holder.binding.tvItemDate.text =
-            currentItem.date
+            "${currentItem.date} • ${currentItem.category}"
 
         if (currentItem.type == TransactionType.INCOME) {
 
@@ -103,26 +121,54 @@ class TransactionAdapter(
             )
         }
 
-        holder.binding.btnEditTransaction
-            .setOnClickListener {
+        holder.binding.btnTransactionMenu
+            .setOnClickListener { anchor ->
 
-                onEditClick(currentItem)
+                PopupMenu(
+                    anchor.context,
+                    anchor
+                ).apply {
+                    menu.add(
+                        0,
+                        MENU_EDIT,
+                        0,
+                        "Düzenle"
+                    ).setIcon(
+                        android.R.drawable.ic_menu_edit
+                    )
+
+                    menu.add(
+                        0,
+                        MENU_DELETE,
+                        1,
+                        "Sil"
+                    ).setIcon(
+                        android.R.drawable.ic_menu_delete
+                    )
+
+                    setOnMenuItemClickListener { item ->
+                        when (item.itemId) {
+                            MENU_EDIT -> {
+                                onEditClick(currentItem)
+                                true
+                            }
+
+                            MENU_DELETE -> {
+                                onDeleteClick(currentItem)
+                                true
+                            }
+
+                            else -> false
+                        }
+                    }
+
+                    show()
+                }
             }
-
-        holder.binding.btnDeleteTransaction
-            .setOnClickListener {
-
-                onDeleteClick(currentItem)
-            }
-    }
-
-    override fun getItemCount(): Int {
-        return transactionList.size
     }
 
     fun updateData(newList: List<Transaction>) {
-        transactionList = newList
-        notifyDataSetChanged()
+        submitList(newList)
     }
 
     private fun formatCurrency(value: Double): String {
@@ -132,5 +178,28 @@ class TransactionAdapter(
             "%,.2f ₺",
             value
         )
+    }
+
+    private companion object {
+        const val MENU_EDIT = 1
+        const val MENU_DELETE = 2
+
+        val TransactionDiffCallback =
+            object : DiffUtil.ItemCallback<Transaction>() {
+
+                override fun areItemsTheSame(
+                    oldItem: Transaction,
+                    newItem: Transaction
+                ): Boolean {
+                    return oldItem.id == newItem.id
+                }
+
+                override fun areContentsTheSame(
+                    oldItem: Transaction,
+                    newItem: Transaction
+                ): Boolean {
+                    return oldItem == newItem
+                }
+            }
     }
 }

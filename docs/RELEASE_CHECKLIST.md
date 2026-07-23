@@ -5,7 +5,11 @@
 - Android 16 / API 36 `compileSdk` ve `targetSdk`
 - AGP 8.13.2, Gradle 8.13, Kotlin 2.1.20 ve JDK 17
 - R8 küçültme ve kaynak daraltma
-- Room şema dışa aktarma; veri koruyan 2→4 ve 3→4 migration
+- Room şema dışa aktarma; veri koruyan 2→4, 3→4, 4→5, 5→6, 6→7 ve 7→8 migration
+- Düzenli ödeme/gelir kayıtları, günlük arka plan kontrolü ve yaklaşan tarih bildirimleri
+- Aynı düzenli kaydın aynı ayda ikinci kez oluşmasını engelleyen dönem defteri
+- Kategori bütçeleri, aylık rapor, işlem arama/filtreleme ve birikim hedefleri
+- Excel uyumlu CSV ve çok sayfalı PDF dışa aktarma
 - Finans kayıtları için bulut/cihaz aktarımı yedeklerinin kapatılması
 - HTTPS dışındaki trafiğin kapatılması
 - Exchange Rate API atfı ve günlük referans kur açıklaması
@@ -29,8 +33,8 @@
 
 ## Son doğrulama
 
-- Birim test: 1/1 başarılı
-- Emülatör testi (API 35): 1/1 başarılı
+- Birim test: tarih, bütçe, birikim, dışa aktarma ve düzenli kayıt sınır durumları başarılı
+- Emülatör testi (API 35): veri koruyan migration, otomatik aylık kayıt, çift kayıt engelleme, bildirim, yeni bütçe/rapor/hedef ekranları ve açık/koyu tema başarılı
 - Release lint: 0 hata; yayın engellemeyen modernizasyon/yerelleştirme uyarıları mevcut
 - R8’li release AAB: başarıyla üretildi; upload key henüz tanımlanmadığı için bu doğrulama paketi imzasızdır
 

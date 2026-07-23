@@ -110,12 +110,30 @@
             </LinearLayout>
 
             <!-- Pasta grafik -->
-            <com.github.mikephil.charting.charts.PieChart
-                android:id="@+id/pieChart"
+            <FrameLayout
                 android:layout_width="125dp"
                 android:layout_height="125dp"
-                android:layout_marginStart="6dp"
-                android:contentDescription="Portföy dağılım grafiği" />
+                android:layout_marginStart="6dp">
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/pieChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Portföy dağılım grafiği" />
+
+                <TextView
+                    android:id="@+id/tvInvestmentChartEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:lineSpacingExtra="1dp"
+                    android:padding="8dp"
+                    android:text="Henüz yatırım bulunmuyor"
+                    android:textAlignment="center"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp" />
+
+            </FrameLayout>
 
         </LinearLayout>
 
@@ -137,6 +155,54 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardGrandTotal"
         tools:listitem="@layout/item_investment" />
+
+    <LinearLayout
+        android:id="@+id/layoutEmptyInvestments"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/fabAddInvestment"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardGrandTotal"
+        app:layout_constraintVertical_bias="0.42"
+        tools:visibility="visible">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Portföyün henüz boş"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="İlk yatırımını ekleyerek portföyünü takip etmeye başla."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddFirstInvestment"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="İlk yatırımını ekle"
+            android:textAllCaps="false"
+            app:icon="@android:drawable/ic_input_add"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
 
     <!-- Yatırım ekleme butonu -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
