@@ -1,0 +1,173 @@
+package com.epatay.digitalwallet.data
+
+import androidx.room.withTransaction
+import kotlinx.coroutines.flow.Flow
+
+class SavingsGoalRepository(
+    private val database: TransactionDatabase
+) {
+
+    private val savingsGoalDao =
+        database.savingsGoalDao()
+
+    val goalsWithProgress:
+        Flow<List<SavingsGoalProgress>> =
+        savingsGoalDao.observeGoalsWithProgress()
+
+    fun observeEntries(
+        goalId: Int
+    ): Flow<List<SavingsGoalEntry>> {
+        return savingsGoalDao.observeEntries(goalId)
+    }
+
+    suspend fun insertGoal(
+        goal: SavingsGoal
+    ): Long {
+        return savingsGoalDao.insertGoal(
+            normalizeGoal(goal)
+        )
+    }
+
+    suspend fun updateGoal(
+        goal: SavingsGoal
+    ) {
+        require(goal.id > 0) {
+            "Güncellenecek hedef bulunamadı."
+        }
+
+        savingsGoalDao.updateGoal(
+            normalizeGoal(goal)
+        )
+    }
+
+    suspend fun setArchived(
+        goalId: Int,
+        isArchived: Boolean
+    ) {
+        require(goalId > 0) {
+            "Arşivlenecek hedef bulunamadı."
+        }
+
+        savingsGoalDao.setArchived(
+            goalId = goalId,
+            isArchived = isArchived
+        )
+    }
+
+    suspend fun deleteGoal(
+        goal: SavingsGoal
+    ) {
+        savingsGoalDao.deleteGoal(goal)
+    }
+
+    suspend fun addEntry(
+        entry: SavingsGoalEntry
+    ): Long {
+        val normalized = normalizeEntry(entry)
+
+        return database.withTransaction {
+            check(
+                savingsGoalDao.getGoalById(
+                    normalized.goalId
+                ) != null
+            ) {
+                "Birikim hedefi bulunamadı."
+            }
+
+            val newBalance =
+                savingsGoalDao.getSavedAmount(
+                    normalized.goalId
+                ) + normalized.amountDelta
+
+            require(newBalance >= -BALANCE_EPSILON) {
+                "Birikim bakiyesi sıfırın altına düşemez."
+            }
+
+            savingsGoalDao.insertEntry(normalized)
+        }
+    }
+
+    suspend fun deleteEntry(
+        entry: SavingsGoalEntry
+    ) {
+        database.withTransaction {
+            val current =
+                savingsGoalDao.getEntryById(entry.id)
+                    ?: return@withTransaction
+
+            val balanceAfterDelete =
+                savingsGoalDao.getSavedAmount(
+                    current.goalId
+                ) - current.amountDelta
+
+            require(
+                balanceAfterDelete >= -BALANCE_EPSILON
+            ) {
+                "Bu kayıt silinirse birikim bakiyesi sıfırın altına düşer."
+            }
+
+            savingsGoalDao.deleteEntry(current)
+        }
+    }
+
+    private fun normalizeGoal(
+        goal: SavingsGoal
+    ): SavingsGoal {
+        val normalized =
+            goal.copy(
+                title = goal.title.trim()
+            )
+
+        require(normalized.title.isNotEmpty()) {
+            "Hedef adı boş bırakılamaz."
+        }
+        require(
+            normalized.targetAmount.isFinite() &&
+                normalized.targetAmount > 0.0
+        ) {
+            "Hedef tutarı sıfırdan büyük olmalıdır."
+        }
+        require(
+            normalized.targetDateKey == null ||
+                TransactionDateUtils.isValidDateKey(
+                    normalized.targetDateKey
+                )
+        ) {
+            "Geçersiz hedef tarihi."
+        }
+
+        return normalized
+    }
+
+    private fun normalizeEntry(
+        entry: SavingsGoalEntry
+    ): SavingsGoalEntry {
+        require(entry.goalId > 0) {
+            "Birikim hedefi bulunamadı."
+        }
+        require(
+            entry.amountDelta.isFinite() &&
+                entry.amountDelta != 0.0
+        ) {
+            "Birikim hareketi sıfır olamaz."
+        }
+        require(
+            TransactionDateUtils.isValidDateKey(
+                entry.occurredOn
+            )
+        ) {
+            "Geçersiz birikim tarihi."
+        }
+
+        return entry.copy(
+            note =
+                entry.note
+                    ?.trim()
+                    ?.takeIf(String::isNotEmpty)
+        )
+    }
+
+    private companion object {
+        const val BALANCE_EPSILON = 0.000_001
+    }
+}

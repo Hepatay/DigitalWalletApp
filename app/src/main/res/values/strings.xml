@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Dijital Cüzdan</string>
+    <string name="app_name">VarlıkCep</string>
     <string name="tab_portfolio">Portföyüm</string>
     <string name="tab_budget">Bütçem</string>
     <string name="tab_markets">Piyasalar</string>
@@ -16,4 +16,7 @@
     <string name="amount">Miktar</string>
     <string name="amount_example">Örnek: 10</string>
     <string name="investment_disclaimer_with_attribution">Yatırım tavsiyesi değildir • Rates By Exchange Rate API</string>
+    <string name="brand_varlik">Varlık</string>
+    <string name="brand_cep">Cep</string>
+    <string name="privacy_options">Gizlilik seçenekleri</string>
 </resources>

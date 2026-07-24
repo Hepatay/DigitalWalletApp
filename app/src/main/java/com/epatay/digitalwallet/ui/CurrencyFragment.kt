@@ -25,8 +25,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
-import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -73,6 +74,7 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
             currencyManager.getSavedRates()
 
         loadData(savedRates)
+        updateLastUpdatedText(savedRates)
 
         /*
          * Wi-Fi veya mobil ağın bulunması yeterli değildir.
@@ -86,9 +88,22 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
         binding.btnUpdate.setOnClickListener {
 
+            Log.d(
+                "KUR_DEBUG",
+                "Kurları Güncelle butonuna basıldı."
+            )
+
             if (isInternetAvailable()) {
+
                 fetchDataFromApi()
+
             } else {
+
+                Log.w(
+                    "KUR_DEBUG",
+                    "Güncelleme başlatılmadı: internet bağlantısı doğrulanamadı."
+                )
+
                 showError(getOfflineMessage())
             }
         }
@@ -124,6 +139,11 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
     private fun fetchDataFromApi() {
 
+        Log.d(
+            "KUR_DEBUG",
+            "Döviz API isteği başlatıldı."
+        )
+
         binding.progressBar.visibility = View.VISIBLE
         binding.btnUpdate.isEnabled = false
         binding.tvError.visibility = View.GONE
@@ -136,10 +156,13 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
                  * Önce döviz kurları çekilir.
                  */
                 val exchangeResponse =
-                    withContext(Dispatchers.IO) {
+                    withTimeout(15_000L) {
 
-                        RetrofitInstance.api
-                            .getLatestRates()
+                        withContext(Dispatchers.IO) {
+
+                            RetrofitInstance.api
+                                .getLatestRates()
+                        }
                     }
 
                 val requiredRates = listOf("USD", "EUR", "GBP")
@@ -157,7 +180,24 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
                     throw IOException("Geçersiz kur yanıtı")
                 }
 
-                currencyManager.saveRates(exchangeResponse)
+                val ratesFetchedAt =
+                    currencyManager.saveRates(exchangeResponse)
+
+                /*
+                 * Döviz isteği başarılı olur olmaz tarih ve listeyi
+                 * yeniliyoruz. Altın servisini beklemiyoruz.
+                 */
+                loadData(exchangeResponse)
+
+                updateLastUpdatedText(
+                    exchangeResponse,
+                    ratesFetchedAt
+                )
+
+                Log.d(
+                    "KUR_DEBUG",
+                    "Döviz verileri kaydedildi. fetchedAt=$ratesFetchedAt"
+                )
 
                 var goldUpdated = false
 
@@ -167,10 +207,13 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
                      * Altın fiyatı USD/ons olarak çekilir.
                      */
                     val goldResponse =
-                        withContext(Dispatchers.IO) {
+                        withTimeout(10_000L) {
 
-                            GoldRetrofitInstance.api
-                                .getGoldPrice()
+                            withContext(Dispatchers.IO) {
+
+                                GoldRetrofitInstance.api
+                                    .getGoldPrice()
+                            }
                         }
 
                     val usdTryRate =
@@ -217,7 +260,13 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
                     )
                 }
 
-                loadData(exchangeResponse)
+                /*
+                 * Altın fiyatı değiştiyse listedeki gram altın satırını
+                 * yeni değerle tekrar çiziyoruz.
+                 */
+                if (goldUpdated) {
+                    loadData(exchangeResponse)
+                }
 
                 val message =
                     if (goldUpdated) {
@@ -268,6 +317,11 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
                 binding.progressBar.visibility = View.GONE
                 binding.btnUpdate.isEnabled = true
+
+                Log.d(
+                    "KUR_DEBUG",
+                    "Döviz güncelleme işlemi tamamlandı."
+                )
             }
         }
     }
@@ -305,18 +359,6 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
         val rates =
             response.conversion_rates
-
-        response.lastUpdateUnix?.let { timestamp ->
-            val formattedDate = DateFormat.getDateTimeInstance(
-                DateFormat.SHORT,
-                DateFormat.SHORT,
-                Locale.forLanguageTag("tr-TR")
-            ).format(Date(timestamp * 1000L))
-            binding.tvLastUpdated.text = getString(R.string.last_updated, formattedDate)
-            binding.tvLastUpdated.visibility = View.VISIBLE
-        } ?: run {
-            binding.tvLastUpdated.visibility = View.GONE
-        }
 
         binding.tvError.visibility = View.GONE
         binding.rvCurrencies.visibility = View.VISIBLE
@@ -420,6 +462,58 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
         )
 
         adapter.updateData(currencyList)
+    }
+
+    private fun updateLastUpdatedText(
+        response: ExchangeRateResponse?,
+        fetchedAtOverride: Long? = null
+    ) {
+
+        /*
+         * Ekranda API'nin kendi veri yayınlama zamanı yerine,
+         * uygulamanın veriyi gerçekten indirdiği zamanı gösteriyoruz.
+         *
+         * Eski kurulumlarda henüz yerel zaman kaydı olmayabilir.
+         * Bu durumda bir defaya mahsus olarak API zamanına düşülür.
+         */
+        val fetchedAt =
+            fetchedAtOverride
+                ?.takeIf { it > 0L }
+                ?: currencyManager
+                    .getRatesFetchedAt()
+                    .takeIf { it > 0L }
+                ?: response
+                    ?.lastUpdateUnix
+                    ?.takeIf { it > 0L }
+                    ?.times(1000L)
+
+        if (fetchedAt == null) {
+
+            binding.tvLastUpdated.visibility =
+                View.GONE
+
+            return
+        }
+
+        val formattedDate =
+            SimpleDateFormat(
+                "dd.MM.yyyy HH:mm:ss",
+                Locale.forLanguageTag("tr-TR")
+            ).format(Date(fetchedAt))
+
+        Log.d(
+            "KUR_DEBUG",
+            "Son güncelleme etiketi gösteriliyor: $formattedDate"
+        )
+
+        binding.tvLastUpdated.text =
+            getString(
+                R.string.last_updated,
+                formattedDate
+            )
+
+        binding.tvLastUpdated.visibility =
+            View.VISIBLE
     }
 
     private fun getOfflineMessage(): String {

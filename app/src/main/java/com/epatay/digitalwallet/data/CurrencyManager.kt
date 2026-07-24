@@ -27,20 +27,55 @@ class CurrencyManager(context: Context) {
 
     private val gson = Gson()
 
-    fun saveRates(response: ExchangeRateResponse) {
+    /**
+     * Kurları ve uygulamanın bu veriyi aldığı yerel zamanı
+     * aynı SharedPreferences işlemi içinde kaydeder.
+     *
+     * Dönen değer ekrandaki "Son güncelleme" yazısının
+     * anında yenilenmesi için kullanılır.
+     */
+    fun saveRates(
+        response: ExchangeRateResponse
+    ): Long {
 
-        val json = gson.toJson(response)
+        val json =
+            gson.toJson(response)
+
+        val fetchedAt =
+            System.currentTimeMillis()
 
         sharedPreferences
             .edit()
-            .putString(RATES_KEY, json)
-            .putLong(RATES_FETCHED_AT_KEY, System.currentTimeMillis())
+            .putString(
+                RATES_KEY,
+                json
+            )
+            .putLong(
+                RATES_FETCHED_AT_KEY,
+                fetchedAt
+            )
             .apply()
+
+        return fetchedAt
     }
 
-    fun shouldRefreshRates(maxAgeMillis: Long): Boolean {
-        val fetchedAt = sharedPreferences.getLong(RATES_FETCHED_AT_KEY, 0L)
-        return fetchedAt <= 0L || System.currentTimeMillis() - fetchedAt >= maxAgeMillis
+    fun getRatesFetchedAt(): Long {
+
+        return sharedPreferences.getLong(
+            RATES_FETCHED_AT_KEY,
+            0L
+        )
+    }
+
+    fun shouldRefreshRates(
+        maxAgeMillis: Long
+    ): Boolean {
+
+        val fetchedAt =
+            getRatesFetchedAt()
+
+        return fetchedAt <= 0L ||
+                System.currentTimeMillis() - fetchedAt >= maxAgeMillis
     }
 
     fun getSavedRates(): ExchangeRateResponse? {
@@ -58,14 +93,20 @@ class CurrencyManager(context: Context) {
                 ExchangeRateResponse::class.java
             )
 
-        } catch (e: Exception) {
+        } catch (exception: Exception) {
+
             null
         }
     }
 
-    fun saveGramGoldPrice(price: Double) {
+    fun saveGramGoldPrice(
+        price: Double
+    ) {
 
-        if (!price.isFinite() || price <= 0.0) {
+        if (
+            !price.isFinite() ||
+            price <= 0.0
+        ) {
             return
         }
 
@@ -87,7 +128,8 @@ class CurrencyManager(context: Context) {
             )
             ?.toDoubleOrNull()
             ?.takeIf {
-                it.isFinite() && it > 0.0
+                it.isFinite() &&
+                        it > 0.0
             }
     }
 }

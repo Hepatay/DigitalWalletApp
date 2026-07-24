@@ -2,32 +2,24 @@
 <resources>
 
     <style
-        name="Base.Theme.DigitalWallet"
-        parent="Theme.Material3.DayNight.NoActionBar">
+        name="Theme.VarlikCep.Splash"
+        parent="Theme.SplashScreen">
 
-        <item name="colorPrimary">#90CAF9</item>
-        <item name="colorOnPrimary">#003258</item>
+        <item name="windowSplashScreenBackground">
+            #111318
+        </item>
 
-        <item name="colorSecondary">#80CBC4</item>
-        <item name="colorOnSecondary">#003733</item>
+        <item name="windowSplashScreenAnimatedIcon">
+            @drawable/ic_splash_logo_safe
+        </item>
 
-        <item name="colorSurface">#111318</item>
-        <item name="colorOnSurface">#E2E2E9</item>
+        <item name="postSplashScreenTheme">
+            @style/Theme.DigitalWallet
+        </item>
 
-        <item name="colorSurfaceVariant">#2A2D34</item>
-        <item name="colorOnSurfaceVariant">#C3C7CF</item>
-
-        <item name="android:colorBackground">#111318</item>
-        <item name="colorOnBackground">#E2E2E9</item>
-
-        <item name="colorError">#FFB4AB</item>
-        <item name="colorOnError">#690005</item>
-
-        <item name="android:statusBarColor">#111318</item>
-        <item name="android:navigationBarColor">#111318</item>
-
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowActionModeOverlay">true</item>
+        <item name="isLightTheme">
+            false
+        </item>
 
     </style>
 

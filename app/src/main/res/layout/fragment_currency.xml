@@ -12,7 +12,6 @@
     android:paddingEnd="20dp"
     android:paddingBottom="16dp">
 
-    <!-- Sayfa Başlığı -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="0dp"
@@ -25,7 +24,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Alt Başlık -->
     <TextView
         android:id="@+id/tvSubtitle"
         android:layout_width="0dp"
@@ -48,9 +46,10 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvSubtitle" />
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
+        tools:text="Son güncelleme: 25.07.2026 00:45:30"
+        tools:visibility="visible" />
 
-    <!-- Miktar Girişi -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/amountInputLayout"
         android:layout_width="0dp"
@@ -79,7 +78,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Hata Mesajı -->
     <TextView
         android:id="@+id/tvError"
         android:layout_width="0dp"
@@ -95,7 +93,6 @@
         app:layout_constraintTop_toBottomOf="@id/amountInputLayout"
         tools:visibility="visible" />
 
-    <!-- Döviz Listesi -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCurrencies"
         android:layout_width="0dp"
@@ -109,7 +106,6 @@
         app:layout_constraintTop_toBottomOf="@id/tvError"
         tools:listitem="@layout/item_currency" />
 
-    <!-- Yüklenme Göstergesi -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progressBar"
         android:layout_width="48dp"
@@ -123,7 +119,6 @@
         app:trackColor="?attr/colorSurfaceVariant"
         tools:visibility="visible" />
 
-    <!-- Güncelleme Butonu -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnUpdate"
         android:layout_width="0dp"
@@ -147,7 +142,6 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -155,10 +149,13 @@
         <TextView
             android:id="@+id/tvRatesAttribution"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="@string/rates_attribution"
             android:textColor="?attr/colorPrimary"
             android:textSize="11sp" />
@@ -166,10 +163,13 @@
         <TextView
             android:id="@+id/tvPrivacy"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="@string/privacy_title"
             android:textColor="?attr/colorPrimary"
             android:textSize="11sp" />

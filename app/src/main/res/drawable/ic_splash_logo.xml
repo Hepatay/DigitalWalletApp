@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Cüzdanın arkasındaki kart -->
+    <path
+        android:fillColor="#10A77A"
+        android:pathData="
+            M28,18
+            C23,18 20,22 20,27
+            L20,35
+            L78,35
+            L78,27
+            C78,22 74,18 69,18
+            Z" />
+
+    <!-- Ana cüzdan -->
+    <path
+        android:fillColor="#063B49"
+        android:pathData="
+            M19,29
+            C13,29 10,33 10,39
+            L10,78
+            C10,84 14,88 20,88
+            L82,88
+            C88,88 92,84 92,78
+            L92,40
+            C92,34 88,30 82,30
+            Z" />
+
+    <!-- Cüzdan iç yüzeyi -->
+    <path
+        android:fillColor="#0A6A66"
+        android:pathData="
+            M21,36
+            C17,36 15,39 15,43
+            L15,74
+            C15,79 18,82 23,82
+            L75,82
+            C80,82 83,79 83,74
+            L83,43
+            C83,39 80,36 76,36
+            Z" />
+
+    <!-- Grafik sütunları -->
+    <path
+        android:fillColor="#15B889"
+        android:pathData="M27,63 L36,63 L36,74 L27,74 Z" />
+
+    <path
+        android:fillColor="#11A77E"
+        android:pathData="M43,54 L52,54 L52,74 L43,74 Z" />
+
+    <path
+        android:fillColor="#0D936F"
+        android:pathData="M59,44 L68,44 L68,74 L59,74 Z" />
+
+    <!-- Yükseliş çizgisi -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M26,67 L40,57 L52,62 L72,44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Ok başı -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M64,44 L72,44 L72,52"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Cüzdan tokası -->
+    <path
+        android:fillColor="#075D5B"
+        android:pathData="
+            M76,48
+            L91,48
+            C96,48 99,52 99,57
+            L99,68
+            C99,73 96,77 91,77
+            L76,77
+            Z" />
+
+    <!-- Toka üzerindeki para işareti alanı -->
+    <path
+        android:fillColor="#11A77E"
+        android:pathData="
+            M87,55
+            A7,7 0,1 1 86.9,55
+            Z" />
+
+</vector>

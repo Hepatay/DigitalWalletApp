@@ -1,58 +1,155 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.constraintlayout.widget.ConstraintLayout
+<android.widget.FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <!-- Sayfa sekmeleri -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurface"
+            android:elevation="4dp"
+            android:importantForAccessibility="no"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tabGravity="fill"
+            app:tabIndicatorAnimationMode="elastic"
+            app:tabIndicatorColor="?attr/colorPrimary"
+            app:tabIndicatorFullWidth="false"
+            app:tabIndicatorHeight="3dp"
+            app:tabMode="fixed"
+            app:tabRippleColor="?attr/colorSurfaceVariant"
+            app:tabSelectedTextColor="?attr/colorPrimary"
+            app:tabTextColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/tvSwipeHint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurfaceVariant"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="7dp"
+            android:text="@string/swipe_hint_dashboard"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tabLayout" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPager"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toTopOf="@id/btnPrivacyOptions"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSwipeHint" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrivacyOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:minHeight="40dp"
+            android:text="@string/privacy_options"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@id/adViewContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <android.widget.FrameLayout
+            android:id="@+id/adViewContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"
+            android:background="?attr/colorSurface"
+            android:gravity="center"
+            android:minHeight="50dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <android.widget.FrameLayout
+        android:id="@+id/introOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="?attr/colorSurface"
-        android:elevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tabGravity="fill"
-        app:tabIndicatorAnimationMode="elastic"
-        app:tabIndicatorColor="?attr/colorPrimary"
-        app:tabIndicatorFullWidth="false"
-        app:tabIndicatorHeight="3dp"
-        app:tabMode="fixed"
-        app:tabRippleColor="?attr/colorSurfaceVariant"
-        app:tabSelectedTextColor="?attr/colorPrimary"
-        app:tabTextColor="?attr/colorOnSurfaceVariant" />
+        android:clickable="true"
+        android:elevation="24dp"
+        android:focusable="true">
 
-    <!-- Kaydırma yönü bilgisi -->
-    <TextView
-        android:id="@+id/tvSwipeHint"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorSurfaceVariant"
-        android:gravity="center"
-        android:paddingStart="12dp"
-        android:paddingTop="7dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="7dp"
-        android:text="@string/swipe_hint_dashboard"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tabLayout" />
+        <android.widget.LinearLayout
+            android:id="@+id/introBrandContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-    <!-- Sayfaların gösterildiği alan -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/viewPager"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvSwipeHint" />
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/lottieIntro"
+                android:layout_width="138dp"
+                android:layout_height="138dp"
+                android:importantForAccessibility="no"
+                app:lottie_autoPlay="false"
+                app:lottie_cacheComposition="true"
+                app:lottie_loop="false" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <android.widget.LinearLayout
+                android:id="@+id/brandWordmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:alpha="0"
+                android:contentDescription="@string/app_name"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:includeFontPadding="false"
+                    android:text="@string/brand_varlik"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:includeFontPadding="false"
+                    android:text="@string/brand_cep"
+                    android:textColor="?attr/colorSecondary"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+            </android.widget.LinearLayout>
+
+        </android.widget.LinearLayout>
+
+    </android.widget.FrameLayout>
+
+</android.widget.FrameLayout>
