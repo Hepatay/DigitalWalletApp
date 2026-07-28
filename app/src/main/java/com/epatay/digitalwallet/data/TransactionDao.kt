@@ -27,7 +27,7 @@ data class CategoryTransactionTotal(
 interface TransactionDao {
 
     // Yeni gelir veya gider ekler
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTransaction(
         transaction: Transaction
     )
@@ -50,6 +50,12 @@ interface TransactionDao {
                 "ORDER BY id DESC"
     )
     fun getAllTransactions(): Flow<List<Transaction>>
+
+    @Query(
+        "SELECT * FROM transactions_table " +
+                "ORDER BY occurredOn DESC, id DESC"
+    )
+    suspend fun getAllTransactionsSnapshot(): List<Transaction>
 
     // Toplam geliri hesaplar
     @Query(

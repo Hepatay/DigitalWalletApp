@@ -33,9 +33,17 @@ class CategoryBudgetRepository(
     suspend fun upsert(
         categoryBudget: CategoryBudget
     ) {
+        val normalizedLimit =
+            DecimalMath.normalizeMoney(
+                categoryBudget.limitAmount
+            )
+
         val normalized =
             categoryBudget.copy(
-                category = categoryBudget.category.trim()
+                category = categoryBudget.category.trim(),
+                limitAmount =
+                    normalizedLimit
+                        ?: categoryBudget.limitAmount
             )
 
         require(

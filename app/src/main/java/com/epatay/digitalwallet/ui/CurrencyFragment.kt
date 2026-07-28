@@ -1,53 +1,39 @@
 package com.epatay.digitalwallet.ui
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.widget.Toast
-import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyItem
-import com.epatay.digitalwallet.data.CurrencyManager
-import com.epatay.digitalwallet.data.ExchangeRateResponse
-import com.epatay.digitalwallet.data.GoldRetrofitInstance
-import com.epatay.digitalwallet.data.RetrofitInstance
+import com.epatay.digitalwallet.data.CurrencyFlagProvider
+import com.epatay.digitalwallet.data.CurrencyRate
 import com.epatay.digitalwallet.databinding.FragmentCurrencyBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class CurrencyFragment : Fragment(R.layout.fragment_currency) {
-
-    companion object {
-        private const val TROY_OUNCE_GRAMS = 31.1034768
-        private const val RATES_MAX_AGE_MILLIS = 24L * 60L * 60L * 1000L
-    }
 
     private var _binding: FragmentCurrencyBinding? = null
 
     private val binding
         get() = _binding!!
 
-    private lateinit var currencyManager: CurrencyManager
     private lateinit var adapter: CurrencyAdapter
 
+    private val currencyViewModel:
+        CurrencyViewModel by viewModels(
+            ownerProducer = {
+                parentFragment ?: this
+            }
+        )
+
     private val transactionViewModel:
-            TransactionViewModel by activityViewModels()
+        TransactionViewModel by activityViewModels()
 
     override fun onViewCreated(
         view: View,
@@ -55,526 +41,188 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
     ) {
         super.onViewCreated(view, savedInstanceState)
 
-        _binding = FragmentCurrencyBinding.bind(view)
+        _binding =
+            FragmentCurrencyBinding.bind(view)
 
-        currencyManager = CurrencyManager(requireContext())
-
-        adapter = CurrencyAdapter(emptyList())
+        adapter =
+            CurrencyAdapter(emptyList())
 
         binding.rvCurrencies.layoutManager =
             LinearLayoutManager(requireContext())
 
-        binding.rvCurrencies.adapter = adapter
-
-        /*
-         * Önceden kaydedilen döviz ve altın
-         * verilerini hemen ekranda gösterir.
-         */
-        val savedRates =
-            currencyManager.getSavedRates()
-
-        loadData(savedRates)
-        updateLastUpdatedText(savedRates)
-
-        /*
-         * Wi-Fi veya mobil ağın bulunması yeterli değildir.
-         * Ağın gerçekten internete çıkabildiği de kontrol edilir.
-         */
-        if (isInternetAvailable() && currencyManager.shouldRefreshRates(RATES_MAX_AGE_MILLIS)) {
-            fetchDataFromApi()
-        } else if (!isInternetAvailable() && savedRates == null) {
-            showError(getOfflineMessage())
-        }
-
-        binding.btnUpdate.setOnClickListener {
-
-            Log.d(
-                "KUR_DEBUG",
-                "Kurları Güncelle butonuna basıldı."
-            )
-
-            if (isInternetAvailable()) {
-
-                fetchDataFromApi()
-
-            } else {
-
-                Log.w(
-                    "KUR_DEBUG",
-                    "Güncelleme başlatılmadı: internet bağlantısı doğrulanamadı."
-                )
-
-                showError(getOfflineMessage())
-            }
-        }
-
-        binding.tvRatesAttribution.setOnClickListener {
-            val attributionPage = Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("https://www.exchangerate-api.com")
-            )
-            runCatching { startActivity(attributionPage) }
-        }
-
-        binding.tvPrivacy.setOnClickListener {
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.privacy_title)
-                .setMessage(R.string.privacy_policy_message)
-                .setPositiveButton(R.string.close, null)
-                .show()
-        }
-
-        binding.etAmount.addTextChangedListener { text ->
-
-            val amount =
-                text
-                    ?.toString()
-                    ?.replace(",", ".")
-                    ?.toDoubleOrNull()
-                    ?: 1.0
-
-            adapter.updateMultiplier(amount)
-        }
-    }
-
-    private fun fetchDataFromApi() {
-
-        Log.d(
-            "KUR_DEBUG",
-            "Döviz API isteği başlatıldı."
-        )
-
-        binding.progressBar.visibility = View.VISIBLE
-        binding.btnUpdate.isEnabled = false
-        binding.tvError.visibility = View.GONE
+        binding.rvCurrencies.adapter =
+            adapter
 
         viewLifecycleOwner.lifecycleScope.launch {
-
-            try {
-
-                /*
-                 * Önce döviz kurları çekilir.
-                 */
-                val exchangeResponse =
-                    withTimeout(15_000L) {
-
-                        withContext(Dispatchers.IO) {
-
-                            RetrofitInstance.api
-                                .getLatestRates()
-                        }
-                    }
-
-                val requiredRates = listOf("USD", "EUR", "GBP")
-                val ratesAreValid = requiredRates.all { code ->
-                    exchangeResponse.conversion_rates[code]
-                        ?.let { it.isFinite() && it > 0.0 } == true
+            viewLifecycleOwner.repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+                currencyViewModel.uiState.collect { state ->
+                    renderState(state)
                 }
-
-                if (
-                    exchangeResponse.result != "success" ||
-                    exchangeResponse.baseCode != "TRY" ||
-                    exchangeResponse.conversion_rates.isEmpty() ||
-                    !ratesAreValid
-                ) {
-                    throw IOException("Geçersiz kur yanıtı")
-                }
-
-                val ratesFetchedAt =
-                    currencyManager.saveRates(exchangeResponse)
-
-                /*
-                 * Döviz isteği başarılı olur olmaz tarih ve listeyi
-                 * yeniliyoruz. Altın servisini beklemiyoruz.
-                 */
-                loadData(exchangeResponse)
-
-                updateLastUpdatedText(
-                    exchangeResponse,
-                    ratesFetchedAt
-                )
-
-                Log.d(
-                    "KUR_DEBUG",
-                    "Döviz verileri kaydedildi. fetchedAt=$ratesFetchedAt"
-                )
-
-                var goldUpdated = false
-
-                try {
-
-                    /*
-                     * Altın fiyatı USD/ons olarak çekilir.
-                     */
-                    val goldResponse =
-                        withTimeout(10_000L) {
-
-                            withContext(Dispatchers.IO) {
-
-                                GoldRetrofitInstance.api
-                                    .getGoldPrice()
-                            }
-                        }
-
-                    val usdTryRate =
-                        getSafeRate(
-                            exchangeResponse.conversion_rates,
-                            "USD"
-                        )
-
-                    /*
-                     * Gold API:
-                     * 1 ons altının USD fiyatını verir.
-                     *
-                     * Gram altın TL:
-                     * Altın ons/USD × USD/TL ÷ 31.1034768
-                     */
-                    val gramGoldTry =
-                        (
-                                goldResponse.price *
-                                        usdTryRate
-                                ) / TROY_OUNCE_GRAMS
-
-                    if (
-                        gramGoldTry.isFinite() &&
-                        gramGoldTry > 0.0
-                    ) {
-
-                        currencyManager.saveGramGoldPrice(
-                            gramGoldTry
-                        )
-
-                        goldUpdated = true
-                    }
-
-                } catch (goldException: Exception) {
-
-                    /*
-                     * Altın API çalışmazsa dövizlerin
-                     * güncellenmesini engellemiyoruz.
-                     */
-                    Log.e(
-                        "ALTIN_DEBUG",
-                        "Altın API hatası",
-                        goldException
-                    )
-                }
-
-                /*
-                 * Altın fiyatı değiştiyse listedeki gram altın satırını
-                 * yeni değerle tekrar çiziyoruz.
-                 */
-                if (goldUpdated) {
-                    loadData(exchangeResponse)
-                }
-
-                val message =
-                    if (goldUpdated) {
-                        "Döviz ve altın güncellendi"
-                    } else {
-                        "Döviz güncellendi, altın alınamadı"
-                    }
-
-                Toast.makeText(
-                    requireContext(),
-                    message,
-                    Toast.LENGTH_SHORT
-                ).show()
-
-            } catch (exception: Exception) {
-
-                Log.e(
-                    "KUR_DEBUG",
-                    "Döviz API hatası",
-                    exception
-                )
-
-                /*
-                 * Kullanıcıya API adresi ve teknik hata
-                 * ayrıntısı gösterilmez.
-                 */
-                val errorMessage =
-                    when {
-
-                        !isInternetAvailable() -> {
-                            getOfflineMessage()
-                        }
-
-                        currencyManager.getSavedRates() != null -> {
-                            "Sunucuya ulaşılamadı. " +
-                                    "Son kaydedilen veriler gösteriliyor."
-                        }
-
-                        else -> {
-                            "Veriler alınamadı. " +
-                                    "Lütfen daha sonra tekrar deneyin."
-                        }
-                    }
-
-                showError(errorMessage)
-
-            } finally {
-
-                binding.progressBar.visibility = View.GONE
-                binding.btnUpdate.isEnabled = true
-
-                Log.d(
-                    "KUR_DEBUG",
-                    "Döviz güncelleme işlemi tamamlandı."
-                )
             }
         }
     }
 
-    private fun getSafeRate(
-        rates: Map<String, Double>,
-        currencyCode: String
-    ): Double {
+    private fun renderState(
+        state: CurrencyUiState
+    ) {
+        when (state) {
+            CurrencyUiState.Loading -> {
+                binding.progressBar.visibility =
+                    View.VISIBLE
+                binding.tvError.visibility =
+                    View.GONE
+            }
 
-        val rawRate =
-            rates[currencyCode]
-                ?: return 0.0
+            is CurrencyUiState.Success -> {
+                binding.progressBar.visibility =
+                    View.GONE
+                showRates(
+                    rates = state.rates,
+                    lastUpdatedText =
+                        state.lastUpdatedText,
+                    message = null
+                )
+            }
 
-        return if (
-            rawRate.isFinite() &&
-            rawRate > 0.0
-        ) {
-            1.0 / rawRate
-        } else {
-            0.0
+            is CurrencyUiState.ShowingCachedData -> {
+                binding.progressBar.visibility =
+                    View.GONE
+                showRates(
+                    rates = state.rates,
+                    lastUpdatedText =
+                        state.lastUpdatedText,
+                    message = state.message
+                )
+            }
+
+            is CurrencyUiState.NoInternet -> {
+                showError(state.message)
+            }
+
+            is CurrencyUiState.ServiceUnavailable -> {
+                showError(state.message)
+            }
+
+            is CurrencyUiState.XmlParseError -> {
+                showError(state.message)
+            }
+
+            is CurrencyUiState.Empty -> {
+                showError(state.message)
+            }
         }
     }
 
-    private fun loadData(
-        response: ExchangeRateResponse?
+    private fun showRates(
+        rates: List<CurrencyRate>,
+        lastUpdatedText: String,
+        message: String?
     ) {
-
-        if (
-            response == null ||
-            response.conversion_rates.isEmpty()
-        ) {
-            binding.rvCurrencies.visibility = View.GONE
-            return
-        }
-
-        val rates =
-            response.conversion_rates
-
-        binding.tvError.visibility = View.GONE
-        binding.rvCurrencies.visibility = View.VISIBLE
-
-        val usdRate =
-            getSafeRate(rates, "USD")
-
-        val eurRate =
-            getSafeRate(rates, "EUR")
-
-        val gbpRate =
-            getSafeRate(rates, "GBP")
-
-        transactionViewModel.dolarKuru.value =
-            usdRate
-
-        transactionViewModel.euroKuru.value =
-            eurRate
-
-        transactionViewModel.sterlinKuru.value =
-            gbpRate
-
-        val currencyList =
-            mutableListOf<CurrencyItem>()
-
-        val gramGoldPrice =
-            currencyManager.getSavedGramGoldPrice()
-
-        if (
-            gramGoldPrice != null &&
-            gramGoldPrice.isFinite() &&
-            gramGoldPrice > 0.0
-        ) {
-            currencyList.add(
+        adapter.updateData(
+            rates.map { rate ->
                 CurrencyItem(
-                    "GRAM ALTIN",
-                    "Gram Altın",
-                    gramGoldPrice,
-                    R.drawable.ic_gold
+                    code = rate.currencyCode,
+                    name = rate.name,
+                    unit = rate.unit,
+                    forexBuying = rate.forexBuying,
+                    forexSelling = rate.forexSelling,
+                    flagResId =
+                        CurrencyFlagProvider.getFlagResId(
+                            rate.currencyCode
+                        )
                 )
-            )
-        }
-
-        currencyList.addAll(
-            listOf(
-                CurrencyItem(
-                    "USD",
-                    "ABD Doları",
-                    usdRate,
-                    R.drawable.flag_usd
-                ),
-                CurrencyItem(
-                    "EUR",
-                    "Euro",
-                    eurRate,
-                    R.drawable.flag_eur
-                ),
-                CurrencyItem(
-                    "GBP",
-                    "İngiliz Sterlini",
-                    gbpRate,
-                    R.drawable.flag_gbp
-                ),
-                CurrencyItem(
-                    "CHF",
-                    "İsviçre Frangı",
-                    getSafeRate(rates, "CHF"),
-                    R.drawable.flag_chf
-                ),
-                CurrencyItem(
-                    "JPY",
-                    "Japon Yeni",
-                    getSafeRate(rates, "JPY"),
-                    R.drawable.flag_jpy
-                ),
-                CurrencyItem(
-                    "CAD",
-                    "Kanada Doları",
-                    getSafeRate(rates, "CAD"),
-                    R.drawable.flag_cad
-                ),
-                CurrencyItem(
-                    "AUD",
-                    "Avustralya Doları",
-                    getSafeRate(rates, "AUD"),
-                    R.drawable.flag_aud
-                ),
-                CurrencyItem(
-                    "RUB",
-                    "Rus Rublesi",
-                    getSafeRate(rates, "RUB"),
-                    R.drawable.flag_rub
-                ),
-                CurrencyItem(
-                    "CNY",
-                    "Çin Yuanı",
-                    getSafeRate(rates, "CNY"),
-                    R.drawable.flag_cny
-                )
-            )
+            }
         )
 
-        adapter.updateData(currencyList)
+        updateTransactionRates(rates)
+        updateLastUpdatedText(lastUpdatedText)
+
+        binding.rvCurrencies.visibility =
+            View.VISIBLE
+
+        if (message.isNullOrBlank()) {
+            binding.tvError.visibility =
+                View.GONE
+        } else {
+            binding.tvError.text =
+                message
+            binding.tvError.visibility =
+                View.VISIBLE
+        }
+    }
+
+    private fun showError(
+        message: String
+    ) {
+        binding.progressBar.visibility =
+            View.GONE
+        binding.rvCurrencies.visibility =
+            View.GONE
+        binding.tvLastUpdated.visibility =
+            View.GONE
+        binding.tvError.text =
+            message
+        binding.tvError.visibility =
+            View.VISIBLE
     }
 
     private fun updateLastUpdatedText(
-        response: ExchangeRateResponse?,
-        fetchedAtOverride: Long? = null
+        lastUpdatedText: String
     ) {
-
-        /*
-         * Ekranda API'nin kendi veri yayınlama zamanı yerine,
-         * uygulamanın veriyi gerçekten indirdiği zamanı gösteriyoruz.
-         *
-         * Eski kurulumlarda henüz yerel zaman kaydı olmayabilir.
-         * Bu durumda bir defaya mahsus olarak API zamanına düşülür.
-         */
-        val fetchedAt =
-            fetchedAtOverride
-                ?.takeIf { it > 0L }
-                ?: currencyManager
-                    .getRatesFetchedAt()
-                    .takeIf { it > 0L }
-                ?: response
-                    ?.lastUpdateUnix
-                    ?.takeIf { it > 0L }
-                    ?.times(1000L)
-
-        if (fetchedAt == null) {
-
+        if (lastUpdatedText.isBlank()) {
             binding.tvLastUpdated.visibility =
                 View.GONE
-
             return
         }
-
-        val formattedDate =
-            SimpleDateFormat(
-                "dd.MM.yyyy HH:mm:ss",
-                Locale.forLanguageTag("tr-TR")
-            ).format(Date(fetchedAt))
-
-        Log.d(
-            "KUR_DEBUG",
-            "Son güncelleme etiketi gösteriliyor: $formattedDate"
-        )
 
         binding.tvLastUpdated.text =
             getString(
                 R.string.last_updated,
-                formattedDate
+                lastUpdatedText
             )
-
         binding.tvLastUpdated.visibility =
             View.VISIBLE
     }
 
-    private fun getOfflineMessage(): String {
+    private fun updateTransactionRates(
+        rates: List<CurrencyRate>
+    ) {
+        rates.unitRate("USD")?.let { rate ->
+            transactionViewModel.dolarKuru.value =
+                rate
+        }
 
-        return if (
-            currencyManager.getSavedRates() != null
-        ) {
-            "İnternet bağlantısı yok. " +
-                    "Son kaydedilen veriler gösteriliyor."
-        } else {
-            "İnternet bağlantısı yok. " +
-                    "Lütfen bağlantınızı kontrol edin."
+        rates.unitRate("EUR")?.let { rate ->
+            transactionViewModel.euroKuru.value =
+                rate
+        }
+
+        rates.unitRate("GBP")?.let { rate ->
+            transactionViewModel.sterlinKuru.value =
+                rate
         }
     }
 
-    private fun showError(message: String) {
+    private fun List<CurrencyRate>.unitRate(
+        currencyCode: String
+    ): Double? {
+        val rate =
+            firstOrNull {
+                it.currencyCode == currencyCode
+            } ?: return null
 
-        binding.tvError.text = message
-        binding.tvError.visibility = View.VISIBLE
+        val value =
+            rate.forexSelling
+                ?: rate.forexBuying
+                ?: return null
 
-        /*
-         * Kayıtlı kur varsa liste ekranda kalır.
-         * Hiç kayıt yoksa liste gizlenir.
-         */
-        if (
-            currencyManager.getSavedRates() == null
-        ) {
-            binding.rvCurrencies.visibility = View.GONE
-        } else {
-            binding.rvCurrencies.visibility = View.VISIBLE
-        }
-    }
-
-    private fun isInternetAvailable(): Boolean {
-
-        val connectivityManager =
-            requireContext().getSystemService(
-                Context.CONNECTIVITY_SERVICE
-            ) as ConnectivityManager
-
-        val activeNetwork =
-            connectivityManager.activeNetwork
-                ?: return false
-
-        val capabilities =
-            connectivityManager.getNetworkCapabilities(
-                activeNetwork
-            ) ?: return false
-
-        val hasInternetCapability =
-            capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_INTERNET
-            )
-
-        val isInternetValidated =
-            capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_VALIDATED
-            )
-
-        return hasInternetCapability &&
-                isInternetValidated
+        return (value / rate.unit)
+            .takeIf {
+                it.isFinite() &&
+                    it > 0.0
+            }
     }
 
     override fun onDestroyView() {

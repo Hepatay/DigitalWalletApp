@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.NumberPicker
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -24,6 +25,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -94,6 +97,11 @@ class MonthlyReportBottomSheetDialogFragment :
         binding.btnNextReportMonth
             .setOnClickListener {
                 selectAdjacentMonth(1)
+            }
+
+        binding.tvReportMonth
+            .setOnClickListener {
+                showMonthYearPicker()
             }
     }
 
@@ -462,11 +470,123 @@ class MonthlyReportBottomSheetDialogFragment :
         val adjacent =
             current.shiftMonth(amount)
 
+        if (adjacent > TransactionDateUtils.currentMonthKey()) {
+            Snackbar
+                .make(
+                    binding.root,
+                    "Gelecek aylar için rapor seçilemez.",
+                    Snackbar.LENGTH_SHORT
+                )
+                .show()
+            return
+        }
+
         if (adjacent != current) {
             budgetReportViewModel.selectMonth(
                 adjacent
             )
         }
+    }
+
+    private fun showMonthYearPicker() {
+        val currentKey =
+            budgetReportViewModel
+                .selectedMonthKey
+                .value
+                .takeIf(TransactionDateUtils::isValidMonthKey)
+                ?: TransactionDateUtils.currentMonthKey()
+
+        val nowKey =
+            TransactionDateUtils.currentMonthKey()
+        val nowYear = nowKey / 100
+        val nowMonth = nowKey % 100
+
+        val pickerContainer =
+            LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity =
+                    android.view.Gravity.CENTER
+                setPadding(
+                    dp(20),
+                    dp(8),
+                    dp(20),
+                    0
+                )
+            }
+
+        val monthPicker =
+            NumberPicker(requireContext()).apply {
+                minValue = 1
+                maxValue = 12
+                displayedValues = MONTH_NAMES
+                value = currentKey % 100
+                wrapSelectorWheel = false
+            }
+
+        val yearPicker =
+            NumberPicker(requireContext()).apply {
+                minValue = nowYear - 10
+                maxValue = nowYear
+                value =
+                    (currentKey / 100)
+                        .coerceIn(minValue, maxValue)
+                wrapSelectorWheel = false
+            }
+
+        fun updateMonthLimitForYear(year: Int) {
+            val currentMonthValue =
+                monthPicker.value
+
+            monthPicker.displayedValues = null
+            monthPicker.minValue = 1
+            monthPicker.maxValue =
+                if (year == nowYear) {
+                    nowMonth
+                } else {
+                    12
+                }
+            monthPicker.displayedValues =
+                MONTH_NAMES.take(monthPicker.maxValue)
+                    .toTypedArray()
+            monthPicker.value =
+                currentMonthValue
+                    .coerceIn(1, monthPicker.maxValue)
+        }
+
+        updateMonthLimitForYear(yearPicker.value)
+
+        yearPicker.setOnValueChangedListener { _, _, newValue ->
+            updateMonthLimitForYear(newValue)
+        }
+
+        pickerContainer.addView(monthPicker)
+        pickerContainer.addView(yearPicker)
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Ay ve yıl seç")
+            .setView(pickerContainer)
+            .setNegativeButton("İptal", null)
+            .setPositiveButton("Uygula") { _, _ ->
+                val selectedKey =
+                    yearPicker.value * 100 +
+                        monthPicker.value
+
+                if (selectedKey > nowKey) {
+                    Snackbar
+                        .make(
+                            binding.root,
+                            "Gelecek aylar için rapor seçilemez.",
+                            Snackbar.LENGTH_SHORT
+                        )
+                        .show()
+                    return@setPositiveButton
+                }
+
+                budgetReportViewModel.selectMonth(
+                    selectedKey
+                )
+            }
+            .show()
     }
 
     private fun Int.shiftMonth(
@@ -566,6 +686,22 @@ class MonthlyReportBottomSheetDialogFragment :
                 Color.parseColor("#8D6E63"),
                 Color.parseColor("#26A69A"),
                 Color.parseColor("#78909C")
+            )
+
+        private val MONTH_NAMES =
+            arrayOf(
+                "Ocak",
+                "Şubat",
+                "Mart",
+                "Nisan",
+                "Mayıs",
+                "Haziran",
+                "Temmuz",
+                "Ağustos",
+                "Eylül",
+                "Ekim",
+                "Kasım",
+                "Aralık"
             )
     }
 }

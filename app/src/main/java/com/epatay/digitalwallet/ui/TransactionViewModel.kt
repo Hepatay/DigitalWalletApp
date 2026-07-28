@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionDatabase
 import com.epatay.digitalwallet.data.TransactionDateUtils
+import com.epatay.digitalwallet.data.DecimalMath
 import com.epatay.digitalwallet.data.TransactionFilter
 import com.epatay.digitalwallet.data.TransactionRepository
 import com.epatay.digitalwallet.data.TransactionType
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -37,7 +39,8 @@ internal fun calculateMonthlyExpense(
     transactions: List<Transaction>,
     monthKey: Int
 ): Double {
-    return transactions
+    return DecimalMath.sumMoney(
+        transactions
         .asSequence()
         .filter { transaction ->
             transaction.type ==
@@ -46,7 +49,9 @@ internal fun calculateMonthlyExpense(
                     transaction.occurredOn
                 ) == monthKey
         }
-        .sumOf(Transaction::amount)
+        .map(Transaction::amount)
+        .asIterable()
+    )
 }
 
 internal fun calculateMonthlyBudgetSummary(
@@ -54,6 +59,10 @@ internal fun calculateMonthlyBudgetSummary(
     transactions: List<Transaction>,
     calendar: Calendar
 ): MonthlyBudgetSummary {
+    val normalizedMonthlyLimit =
+        DecimalMath.normalizeMoney(monthlyLimit)
+            ?.coerceAtLeast(0.0)
+            ?: 0.0
     val currentMonthExpense =
         calculateMonthlyExpense(
             transactions = transactions,
@@ -64,7 +73,10 @@ internal fun calculateMonthlyBudgetSummary(
         )
 
     val rawRemainingLimit =
-        monthlyLimit - currentMonthExpense
+        DecimalMath.subtractMoney(
+            normalizedMonthlyLimit,
+            currentMonthExpense
+        ) ?: 0.0
     val remainingLimit =
         rawRemainingLimit.coerceAtLeast(0.0)
     val exceededAmount =
@@ -84,16 +96,25 @@ internal fun calculateMonthlyBudgetSummary(
             .coerceAtLeast(1)
     val dailySpendingLimit =
         if (rawRemainingLimit > 0.0) {
-            remainingLimit / budgetingDayCount
+            java.math.BigDecimal
+                .valueOf(remainingLimit)
+                .divide(
+                    java.math.BigDecimal.valueOf(
+                        budgetingDayCount.toLong()
+                    ),
+                    2,
+                    java.math.RoundingMode.HALF_UP
+                )
+                .toDouble()
         } else {
             0.0
         }
 
     val usagePercent =
-        if (monthlyLimit > 0.0) {
+        if (normalizedMonthlyLimit > 0.0) {
             (
                 currentMonthExpense /
-                    monthlyLimit *
+                    normalizedMonthlyLimit *
                     100.0
                 )
                 .roundToInt()
@@ -105,7 +126,7 @@ internal fun calculateMonthlyBudgetSummary(
         }
 
     return MonthlyBudgetSummary(
-        monthlyLimit = monthlyLimit,
+        monthlyLimit = normalizedMonthlyLimit,
         currentMonthExpense = currentMonthExpense,
         remainingLimit = remainingLimit,
         exceededAmount = exceededAmount,
@@ -156,13 +177,29 @@ class TransactionViewModel(
             initialValue = emptyList()
         )
 
-        totalIncome = repository.totalIncome.stateIn(
+        totalIncome = allTransactions.map { transactions ->
+            DecimalMath.sumMoney(
+                transactions
+                    .asSequence()
+                    .filter { it.type == TransactionType.INCOME }
+                    .map(Transaction::amount)
+                    .asIterable()
+            )
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0.0
         )
 
-        totalExpense = repository.totalExpense.stateIn(
+        totalExpense = allTransactions.map { transactions ->
+            DecimalMath.sumMoney(
+                transactions
+                    .asSequence()
+                    .filter { it.type == TransactionType.EXPENSE }
+                    .map(Transaction::amount)
+                    .asIterable()
+            )
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0.0
@@ -311,13 +348,23 @@ class TransactionViewModel(
         context: Context,
         limit: Double
     ) {
+        val normalized =
+            DecimalMath.normalizeMoney(limit)
+                ?.takeIf { it > 0.0 }
+                ?: return
+
         val prefs = context.getSharedPreferences(
             "wallet_prefs",
             Context.MODE_PRIVATE
         )
 
         prefs.edit()
-            .putFloat("monthly_limit", limit.toFloat())
+            .putString(
+                MONTHLY_LIMIT_DECIMAL_KEY,
+                java.math.BigDecimal
+                    .valueOf(normalized)
+                    .toPlainString()
+            )
             .apply()
     }
 
@@ -328,10 +375,28 @@ class TransactionViewModel(
             Context.MODE_PRIVATE
         )
 
-        return prefs.getFloat(
-            "monthly_limit",
-            50000.0F
-        ).toDouble()
+        val decimalLimit =
+            prefs.getString(
+                MONTHLY_LIMIT_DECIMAL_KEY,
+                null
+            )
+                ?.toBigDecimalOrNull()
+                ?.takeIf { it > java.math.BigDecimal.ZERO }
+                ?.toDouble()
+
+        if (decimalLimit != null && decimalLimit.isFinite()) {
+            return decimalLimit
+        }
+
+        val legacyLimit =
+            prefs.getFloat(
+                LEGACY_MONTHLY_LIMIT_KEY,
+                DEFAULT_MONTHLY_LIMIT.toFloat()
+            ).toDouble()
+
+        return DecimalMath.normalizeMoney(legacyLimit)
+            ?.takeIf { it > 0.0 }
+            ?: DEFAULT_MONTHLY_LIMIT
     }
 
     /**
@@ -383,3 +448,10 @@ class TransactionViewModel(
     }
 
 }
+
+private const val MONTHLY_LIMIT_DECIMAL_KEY =
+    "monthly_limit_decimal"
+private const val LEGACY_MONTHLY_LIMIT_KEY =
+    "monthly_limit"
+private const val DEFAULT_MONTHLY_LIMIT =
+    50_000.0

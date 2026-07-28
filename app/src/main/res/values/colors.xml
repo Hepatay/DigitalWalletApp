@@ -2,4 +2,14 @@
 <resources>
     <!-- Uygulama renkleri -->
     <color name="primary_green">#4A7C59</color>
+    <color name="surface_main">#F8F9FA</color>
+    <color name="surface_sheet">#FFFFFF</color>
+    <color name="surface_dialog">#FCFCFD</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_variant_soft">#E7E9EC</color>
+    <color name="surface_main_dark">#111318</color>
+    <color name="surface_sheet_dark">#1A1C20</color>
+    <color name="surface_dialog_dark">#202329</color>
+    <color name="surface_card_dark">#191B20</color>
+    <color name="surface_variant_soft_dark">#2A2D34</color>
 </resources>

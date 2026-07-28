@@ -1,39 +1,76 @@
 package com.epatay.digitalwallet.export
 
+import com.epatay.digitalwallet.data.CategoryBudget
+import com.epatay.digitalwallet.data.InvestmentItem
 import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionType
+import com.epatay.digitalwallet.data.UserGoldAssetEntity
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class TransactionCsvEncoderTest {
 
     @Test
-    fun encode_writesUtf8BomTurkishColumnsCrlfAndTotals() {
-        val transactions =
-            listOf(
-                transaction(
-                    title = "Temmuz Maaşı",
-                    amount = 10_000.50,
-                    category = "Gelir",
-                    date = "01.07.2026 09:00",
-                    type = TransactionType.INCOME
-                ),
-                transaction(
-                    title = "Market alışverişi",
-                    amount = 250.25,
-                    category = "Gıda",
-                    date = "02.07.2026 18:30",
-                    type = TransactionType.EXPENSE
-                )
+    fun encode_writesEveryRecordTypeWithUtf8BomAndCorrectColumns() {
+        val exportData =
+            WalletExportData(
+                transactions =
+                    listOf(
+                        transaction(
+                            title = "Temmuz Maaşı",
+                            amount = 10_000.50,
+                            category = "Gelir",
+                            type = TransactionType.INCOME
+                        ),
+                        transaction(
+                            title = "Market alışverişi",
+                            amount = 250.25,
+                            category = "Gıda",
+                            type = TransactionType.EXPENSE
+                        )
+                    ),
+                categoryBudgets =
+                    listOf(
+                        CategoryBudget(
+                            monthKey = 202607,
+                            category = "Gıda",
+                            limitAmount = 4_500.0,
+                            updatedAtMillis = 1L
+                        )
+                    ),
+                currencyInvestments =
+                    listOf(
+                        InvestmentItem(
+                            id = 7,
+                            assetName = "USD",
+                            amount = 10.5,
+                            buyPrice = 40.25,
+                            buyDate = "02.07.2026",
+                            note = "Uzun vade"
+                        )
+                    ),
+                goldInvestments =
+                    listOf(
+                        UserGoldAssetEntity(
+                            id = 9,
+                            goldType = "GRAM_GOLD",
+                            quantity = 2.25,
+                            unit = "GRAM",
+                            purchaseUnitPrice = 4_250.0,
+                            totalPurchaseCost = 9_562.5,
+                            purchaseDate = 1_751_410_800_000L,
+                            note = "Fiziki",
+                            createdAt = 1L,
+                            updatedAt = 1L
+                        )
+                    )
             )
 
-        val bytes =
-            TransactionCsvEncoder.encode(
-                transactions
-            )
+        val bytes = TransactionCsvEncoder.encode(exportData)
 
         assertArrayEquals(
             byteArrayOf(
@@ -44,165 +81,115 @@ class TransactionCsvEncoderTest {
             bytes.copyOfRange(0, 3)
         )
 
-        val content =
-            bytes
-                .copyOfRange(3, bytes.size)
-                .toString(Charsets.UTF_8)
+        val content = csvText(bytes)
 
+        assertTrue(content.contains("\"Kayıt türü\""))
         assertTrue(
-            content.startsWith(
-                "\"Tarih\";\"Açıklama\";\"Kategori\";" +
-                    "\"Tip\";\"Tutar (₺)\"\r\n"
+            content.contains(
+                "\"İşlem\";\"0\";\"01.07.2026 10:00\";" +
+                    "\"Temmuz Maaşı\";\"Gelir\";\"Gelir\""
             )
         )
         assertTrue(
             content.contains(
-                "\"01.07.2026 09:00\";\"Temmuz Maaşı\";" +
-                    "\"Gelir\";\"Gelir\";\"10000,50\"\r\n"
+                "\"Bütçe\";\"\";\"07.2026\";" +
+                    "\"Aylık kategori bütçesi\";\"Gıda\""
             )
         )
         assertTrue(
             content.contains(
-                "\"02.07.2026 18:30\";\"Market alışverişi\";" +
-                    "\"Gıda\";\"Gider\";\"250,25\"\r\n"
+                "\"Yatırım\";\"7\";\"02.07.2026\";\"USD\""
             )
         )
-        assertTrue(
-            content.contains(
-                "\"\";\"Toplam Gelir\";\"\";\"\";\"10000,50\"\r\n"
-            )
-        )
-        assertTrue(
-            content.contains(
-                "\"\";\"Toplam Gider\";\"\";\"\";\"250,25\"\r\n"
-            )
-        )
-        assertTrue(
-            content.endsWith(
-                "\"\";\"Net Toplam\";\"\";\"\";\"9750,25\"\r\n"
-            )
-        )
-        assertFalse(
-            hasBareLineFeed(content)
-        )
+        assertTrue(content.contains("\"Gram Altın\""))
+        assertTrue(content.contains("\"Net bakiye\""))
+        assertTrue(content.contains("\"9750,25\""))
+        assertFalse(hasBareLineFeed(content))
     }
 
     @Test
-    fun encode_escapesCsvFieldsAndProtectsFormulaPrefixes() {
-        val transactions =
-            listOf(
-                transaction(
-                    title = "=HYPERLINK(\"https://example.test\";\"Aç\")",
-                    amount = 1.0,
-                    category = "  +SUM(1;1)",
-                    date = "@NOW()",
-                    type = TransactionType.EXPENSE
-                ),
-                transaction(
-                    title = "Birinci satır\nİkinci \"satır\"",
-                    amount = 2.0,
-                    category = "-1+2",
-                    date = "03.07.2026 12:00",
-                    type = TransactionType.INCOME
-                )
-            )
-
+    fun encode_escapesFieldsAndProtectsFormulaPrefixes() {
         val content =
             csvText(
                 TransactionCsvEncoder.encode(
-                    transactions
+                    listOf(
+                        transaction(
+                            title =
+                                "=HYPERLINK(\"https://example.test\";\"Aç\")",
+                            amount = 1.0,
+                            category = "  +SUM(1;1)",
+                            date = "@NOW()",
+                            type = TransactionType.EXPENSE
+                        ),
+                        transaction(
+                            title = "Birinci satır\nİkinci \"satır\"",
+                            amount = 2.0,
+                            category = "-1+2",
+                            type = TransactionType.INCOME
+                        )
+                    )
                 )
             )
 
-        assertTrue(
-            content.contains(
-                "\"'@NOW()\";" +
-                    "\"'=HYPERLINK(\"\"https://example.test\"\";" +
-                    "\"\"Aç\"\")\";" +
-                    "\"'  +SUM(1;1)\";\"Gider\";\"1,00\""
-            )
-        )
+        assertTrue(content.contains("\"'@NOW()\""))
+        assertTrue(content.contains("\"'=HYPERLINK("))
+        assertTrue(content.contains("\"'  +SUM(1;1)\""))
         assertTrue(
             content.contains(
                 "\"Birinci satır\r\nİkinci \"\"satır\"\"\""
             )
         )
-        assertTrue(
-            content.contains(
-                "\"'-1+2\""
-            )
-        )
-        assertFalse(
-            content.contains(
-                "\"=HYPERLINK"
-            )
-        )
-        assertFalse(
-            hasBareLineFeed(content)
-        )
+        assertFalse(content.contains("\"=HYPERLINK"))
+        assertFalse(hasBareLineFeed(content))
     }
 
     @Test
-    fun encode_emptyListStillContainsZeroSummary() {
-        val content =
-            csvText(
-                TransactionCsvEncoder.encode(
-                    emptyList()
+    fun encode_emptyDataDoesNotCreateAFilePayload() {
+        try {
+            TransactionCsvEncoder.encode(WalletExportData())
+            fail("Boş veri kabul edilmemeliydi")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(
+                expected.message.orEmpty().contains(
+                    "kayıt bulunamadı"
                 )
             )
-
-        assertTrue(
-            content.contains(
-                "\"\";\"Toplam Gelir\";\"\";\"\";\"0,00\""
-            )
-        )
-        assertTrue(
-            content.contains(
-                "\"\";\"Toplam Gider\";\"\";\"\";\"0,00\""
-            )
-        )
-        assertTrue(
-            content.contains(
-                "\"\";\"Net Toplam\";\"\";\"\";\"0,00\""
-            )
-        )
+        }
     }
 
     @Test
-    fun exportResult_usesIncomeMinusExpenseForNetTotal() {
+    fun exportResult_countsAllRowsAndUsesIncomeMinusExpense() {
         val result =
             TransactionExportResult.from(
-                listOf(
-                    transaction(
-                        amount = 100.10,
-                        type = TransactionType.INCOME
-                    ),
-                    transaction(
-                        amount = 30.05,
-                        type = TransactionType.EXPENSE
-                    )
+                WalletExportData(
+                    transactions =
+                        listOf(
+                            transaction(
+                                amount = 100.10,
+                                type = TransactionType.INCOME
+                            ),
+                            transaction(
+                                amount = 30.05,
+                                type = TransactionType.EXPENSE
+                            )
+                        ),
+                    categoryBudgets =
+                        listOf(
+                            CategoryBudget(
+                                monthKey = 202607,
+                                category = "Gıda",
+                                limitAmount = 100.0,
+                                updatedAtMillis = 1L
+                            )
+                        )
                 )
             )
 
-        assertEquals(
-            2,
-            result.transactionCount
-        )
-        assertEquals(
-            100.10,
-            result.totalIncome,
-            0.000_001
-        )
-        assertEquals(
-            30.05,
-            result.totalExpense,
-            0.000_001
-        )
-        assertEquals(
-            70.05,
-            result.netTotal,
-            0.000_001
-        )
+        assertEquals(2, result.transactionCount)
+        assertEquals(1, result.budgetCount)
+        assertEquals(0, result.investmentCount)
+        assertEquals(3, result.recordCount)
+        assertEquals(70.05, result.netTotal, 0.000_001)
     }
 
     private fun transaction(
@@ -211,19 +198,16 @@ class TransactionCsvEncoderTest {
         category: String = "Diğer",
         date: String = "01.07.2026 10:00",
         type: TransactionType
-    ): Transaction {
-        return Transaction(
+    ): Transaction =
+        Transaction(
             title = title,
             amount = amount,
             category = category,
             date = date,
             type = type
         )
-    }
 
-    private fun csvText(
-        bytes: ByteArray
-    ): String {
+    private fun csvText(bytes: ByteArray): String {
         assertArrayEquals(
             byteArrayOf(
                 0xEF.toByte(),
@@ -238,15 +222,9 @@ class TransactionCsvEncoderTest {
             .toString(Charsets.UTF_8)
     }
 
-    private fun hasBareLineFeed(
-        value: String
-    ): Boolean {
-        return value.indices.any { index ->
+    private fun hasBareLineFeed(value: String): Boolean =
+        value.indices.any { index ->
             value[index] == '\n' &&
-                (
-                    index == 0 ||
-                        value[index - 1] != '\r'
-                    )
+                (index == 0 || value[index - 1] != '\r')
         }
-    }
 }

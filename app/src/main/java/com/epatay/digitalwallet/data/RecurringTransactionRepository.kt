@@ -39,13 +39,17 @@ class RecurringTransactionRepository(
     suspend fun insert(
         recurringTransaction: RecurringTransaction
     ): Long {
+        val normalized =
+            recurringTransaction.normalizedForStorage()
+                ?: return INVALID_INSERT_ID
+
         return database.withTransaction {
             val recurringId =
                 recurringTransactionDao.insert(
-                    recurringTransaction
+                    normalized
                 )
 
-            recurringTransaction.lastGeneratedPeriod
+            normalized.lastGeneratedPeriod
                 ?.let { periodKey ->
                     recurringOccurrenceDao.insert(
                         RecurringOccurrence(
@@ -65,10 +69,16 @@ class RecurringTransactionRepository(
     suspend fun update(
         recurringTransaction: RecurringTransaction
     ): RecurringUpdateResult {
+        val normalized =
+            recurringTransaction.normalizedForStorage()
+                ?: return RecurringUpdateResult(
+                    shouldCancelReminder = false
+                )
+
         return database.withTransaction {
             val previous =
                 recurringTransactionDao.getById(
-                    recurringTransaction.id
+                    normalized.id
                 )
 
             if (previous == null) {
@@ -78,27 +88,27 @@ class RecurringTransactionRepository(
             }
 
             recurringTransactionDao.updateEditableFields(
-                id = recurringTransaction.id,
-                title = recurringTransaction.title,
-                amount = recurringTransaction.amount,
-                category = recurringTransaction.category,
-                type = recurringTransaction.type,
+                id = normalized.id,
+                title = normalized.title,
+                amount = normalized.amount,
+                category = normalized.category,
+                type = normalized.type,
                 dayOfMonth =
-                    recurringTransaction.dayOfMonth,
+                    normalized.dayOfMonth,
                 autoCreate =
-                    recurringTransaction.autoCreate,
+                    normalized.autoCreate,
                 notificationEnabled =
-                    recurringTransaction
+                    normalized
                         .notificationEnabled,
-                isActive = recurringTransaction.isActive
+                isActive = normalized.isActive
             )
 
-            recurringTransaction.lastGeneratedPeriod
+            normalized.lastGeneratedPeriod
                 ?.let { periodKey ->
                     recurringOccurrenceDao.insert(
                         RecurringOccurrence(
                             recurringId =
-                                recurringTransaction.id,
+                                normalized.id,
                             periodKey = periodKey,
                             createdAtMillis =
                                 System.currentTimeMillis()
@@ -110,7 +120,7 @@ class RecurringTransactionRepository(
                 shouldCancelReminder =
                     shouldCancelReminderAfterUpdate(
                         previous = previous,
-                        updated = recurringTransaction
+                        updated = normalized
                     )
             )
         }
@@ -122,5 +132,38 @@ class RecurringTransactionRepository(
         recurringTransactionDao.delete(
             recurringTransaction
         )
+    }
+
+    private fun RecurringTransaction.normalizedForStorage():
+        RecurringTransaction? {
+        val normalizedAmount =
+            DecimalMath.normalizeMoney(amount)
+                ?.takeIf { it > 0.0 }
+                ?: return null
+        val normalizedTitle = title.trim()
+        val normalizedCategory =
+            if (type == TransactionType.INCOME) {
+                "Gelir"
+            } else {
+                category.trim()
+            }
+
+        if (
+            normalizedTitle.isEmpty() ||
+            normalizedCategory.isEmpty() ||
+            dayOfMonth !in 1..31
+        ) {
+            return null
+        }
+
+        return copy(
+            title = normalizedTitle,
+            amount = normalizedAmount,
+            category = normalizedCategory
+        )
+    }
+
+    private companion object {
+        const val INVALID_INSERT_ID = -1L
     }
 }

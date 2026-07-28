@@ -21,5 +21,3 @@
 -keepattributes Signature,*Annotation*
 
 # Gson bu yanıt modellerini alan adları üzerinden okur.
--keep class com.epatay.digitalwallet.data.ExchangeRateResponse { *; }
--keep class com.epatay.digitalwallet.data.GoldPriceResponse { *; }

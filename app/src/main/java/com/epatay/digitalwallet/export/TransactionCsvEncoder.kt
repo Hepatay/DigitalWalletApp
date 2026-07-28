@@ -1,9 +1,39 @@
 package com.epatay.digitalwallet.export
 
+import com.epatay.digitalwallet.data.CategoryBudget
+import com.epatay.digitalwallet.data.DecimalMath
+import com.epatay.digitalwallet.data.GoldInputUnit
+import com.epatay.digitalwallet.data.GoldType
+import com.epatay.digitalwallet.data.InvestmentItem
 import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionType
+import com.epatay.digitalwallet.data.UserGoldAssetEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class WalletExportData(
+    val transactions: List<Transaction> = emptyList(),
+    val categoryBudgets: List<CategoryBudget> = emptyList(),
+    val currencyInvestments: List<InvestmentItem> = emptyList(),
+    val goldInvestments: List<UserGoldAssetEntity> = emptyList()
+) {
+    val isEmpty: Boolean
+        get() =
+            transactions.isEmpty() &&
+                categoryBudgets.isEmpty() &&
+                currencyInvestments.isEmpty() &&
+                goldInvestments.isEmpty()
+
+    val recordCount: Int
+        get() =
+            transactions.size +
+                categoryBudgets.size +
+                currencyInvestments.size +
+                goldInvestments.size
+}
 
 internal object TransactionCsvEncoder {
 
@@ -19,46 +49,163 @@ internal object TransactionCsvEncoder {
 
     fun encode(
         transactions: List<Transaction>
+    ): ByteArray =
+        encode(
+            WalletExportData(
+                transactions = transactions
+            )
+        )
+
+    fun encode(
+        exportData: WalletExportData
     ): ByteArray {
-        val totals = TransactionExportTotals.from(transactions)
+        require(!exportData.isEmpty) {
+            "Dışa aktarılacak kayıt bulunamadı."
+        }
+
+        val totals =
+            TransactionExportTotals.from(
+                exportData.transactions
+            )
         val csv = buildString {
             appendRow(
-                "Tarih",
-                "Açıklama",
+                "Kayıt türü",
+                "Kayıt no",
+                "Tarih / Ay",
+                "Açıklama / Varlık",
                 "Kategori",
-                "Tip",
-                "Tutar (₺)"
+                "İşlem / Varlık türü",
+                "Miktar",
+                "Birim",
+                "Birim alış fiyatı (₺)",
+                "Tutar / Limit (₺)",
+                "Not",
+                numericColumns = NUMERIC_COLUMNS
             )
 
-            transactions.forEach { transaction ->
+            exportData.transactions.forEach { transaction ->
                 appendRow(
+                    "İşlem",
+                    transaction.id.toString(),
                     transaction.date,
                     transaction.title,
                     transaction.category,
                     transaction.type.displayName(),
-                    formatAmount(transaction.amount),
-                    protectFormulas = true
+                    "",
+                    "",
+                    "",
+                    formatAmountOrBlank(transaction.amount),
+                    "",
+                    numericColumns = NUMERIC_COLUMNS
+                )
+            }
+
+            exportData.categoryBudgets.forEach { budget ->
+                appendRow(
+                    "Bütçe",
+                    "",
+                    formatMonthKey(budget.monthKey),
+                    "Aylık kategori bütçesi",
+                    budget.category,
+                    "Bütçe limiti",
+                    "",
+                    "",
+                    "",
+                    formatAmountOrBlank(budget.limitAmount),
+                    "",
+                    numericColumns = NUMERIC_COLUMNS
+                )
+            }
+
+            exportData.currencyInvestments.forEach { investment ->
+                val totalPurchaseCost =
+                    DecimalMath.multiplyMoney(
+                        investment.amount,
+                        investment.buyPrice
+                    )
+
+                appendRow(
+                    "Yatırım",
+                    investment.id.toString(),
+                    investment.buyDate,
+                    investment.assetName,
+                    "",
+                    "Döviz",
+                    formatDecimalOrBlank(
+                        investment.amount,
+                        scale = 8
+                    ),
+                    "birim",
+                    formatDecimalOrBlank(
+                        investment.buyPrice,
+                        scale = 6
+                    ),
+                    totalPurchaseCost
+                        ?.let(::formatAmountOrBlank)
+                        .orEmpty(),
+                    investment.note.orEmpty(),
+                    numericColumns = NUMERIC_COLUMNS
+                )
+            }
+
+            exportData.goldInvestments.forEach { investment ->
+                val goldType =
+                    runCatching {
+                        GoldType.valueOf(investment.goldType)
+                    }.getOrNull()
+                val totalPurchaseCost =
+                    investment.totalPurchaseCost
+                        ?.takeIf(Double::isFinite)
+                        ?: investment.purchaseUnitPrice?.let { price ->
+                            DecimalMath.multiplyMoney(
+                                investment.quantity,
+                                price
+                            )
+                        }
+
+                appendRow(
+                    "Yatırım",
+                    investment.id.toString(),
+                    formatDate(investment.purchaseDate),
+                    goldType?.displayName ?: investment.goldType,
+                    "",
+                    "Altın",
+                    formatDecimalOrBlank(
+                        investment.quantity,
+                        scale = 8
+                    ),
+                    when (goldType?.inputUnit) {
+                        GoldInputUnit.GRAM -> "gram"
+                        GoldInputUnit.PIECE -> "adet"
+                        null -> investment.unit
+                    },
+                    investment.purchaseUnitPrice
+                        ?.let { price ->
+                            formatDecimalOrBlank(
+                                price,
+                                scale = 6
+                            )
+                        }
+                        .orEmpty(),
+                    totalPurchaseCost
+                        ?.let(::formatAmountOrBlank)
+                        .orEmpty(),
+                    investment.note.orEmpty(),
+                    numericColumns = NUMERIC_COLUMNS
                 )
             }
 
             append(LINE_SEPARATOR)
-            appendRow(
-                "",
-                "Özet",
-                "",
-                "",
-                ""
-            )
             appendSummaryRow(
-                "Toplam Gelir",
+                "Toplam gelir",
                 totals.totalIncome
             )
             appendSummaryRow(
-                "Toplam Gider",
+                "Toplam gider",
                 totals.totalExpense
             )
             appendSummaryRow(
-                "Net Toplam",
+                "Net bakiye",
                 totals.netTotal
             )
         }
@@ -71,17 +218,24 @@ internal object TransactionCsvEncoder {
         amount: BigDecimal
     ) {
         appendRow(
+            "Özet",
+            "",
             "",
             label,
             "",
             "",
-            formatAmount(amount)
+            "",
+            "",
+            "",
+            formatAmount(amount),
+            "",
+            numericColumns = NUMERIC_COLUMNS
         )
     }
 
     private fun StringBuilder.appendRow(
         vararg cells: String,
-        protectFormulas: Boolean = false
+        numericColumns: Set<Int>
     ) {
         cells.forEachIndexed { index, cell ->
             if (index > 0) {
@@ -91,9 +245,7 @@ internal object TransactionCsvEncoder {
             append(
                 escapeCell(
                     value = cell,
-                    protectFormula =
-                        protectFormulas &&
-                            index != AMOUNT_COLUMN_INDEX
+                    protectFormula = index !in numericColumns
                 )
             )
         }
@@ -123,49 +275,76 @@ internal object TransactionCsvEncoder {
                 normalizedLineEndings
             }
 
-        return buildString(
-            safeValue.length + 2
-        ) {
+        return buildString(safeValue.length + 2) {
             append('"')
-            append(
-                safeValue.replace(
-                    "\"",
-                    "\"\""
-                )
-            )
+            append(safeValue.replace("\"", "\"\""))
             append('"')
         }
     }
 
-    private fun formatAmount(
+    private fun formatAmountOrBlank(
         value: Double
-    ): String {
-        require(value.isFinite()) {
-            "Dışa aktarılacak tutar sonlu olmalıdır."
-        }
+    ): String =
+        value
+            .takeIf(Double::isFinite)
+            ?.let(BigDecimal::valueOf)
+            ?.let(::formatAmount)
+            .orEmpty()
 
-        return formatAmount(
-            BigDecimal.valueOf(value)
-        )
-    }
+    private fun formatDecimalOrBlank(
+        value: Double,
+        scale: Int
+    ): String =
+        value
+            .takeIf(Double::isFinite)
+            ?.let(BigDecimal::valueOf)
+            ?.setScale(scale, RoundingMode.HALF_UP)
+            ?.stripTrailingZeros()
+            ?.toPlainString()
+            ?.replace('.', ',')
+            .orEmpty()
 
     private fun formatAmount(
         value: BigDecimal
-    ): String {
-        return value
+    ): String =
+        value
             .setScale(2, RoundingMode.HALF_UP)
             .toPlainString()
             .replace('.', ',')
-    }
 
-    private fun TransactionType.displayName(): String {
-        return when (this) {
-            TransactionType.INCOME -> "Gelir"
-            TransactionType.EXPENSE -> "Gider"
+    private fun formatMonthKey(
+        monthKey: Int
+    ): String {
+        val year = monthKey / 100
+        val month = monthKey % 100
+
+        return if (year in 1..9999 && month in 1..12) {
+            String.format(Locale.ROOT, "%02d.%04d", month, year)
+        } else {
+            ""
         }
     }
 
-    private const val AMOUNT_COLUMN_INDEX = 4
+    private fun formatDate(
+        millis: Long?
+    ): String =
+        millis?.takeIf { it > 0L }
+            ?.let { timestamp ->
+                SimpleDateFormat(
+                    "dd.MM.yyyy",
+                    Locale.ROOT
+                ).format(Date(timestamp))
+            }
+            .orEmpty()
+
+    private fun TransactionType.displayName(): String =
+        when (this) {
+            TransactionType.INCOME -> "Gelir"
+            TransactionType.EXPENSE -> "Gider"
+        }
+
+    private val NUMERIC_COLUMNS =
+        setOf(1, 6, 8, 9)
 
     private val FORMULA_PREFIXES =
         setOf('=', '+', '-', '@')
@@ -186,12 +365,11 @@ internal data class TransactionExportTotals(
             var expense = BigDecimal.ZERO
 
             transactions.forEach { transaction ->
-                require(transaction.amount.isFinite()) {
-                    "Dışa aktarılacak tutar sonlu olmalıdır."
-                }
-
                 val amount =
-                    BigDecimal.valueOf(transaction.amount)
+                    transaction.amount
+                        .takeIf(Double::isFinite)
+                        ?.let(BigDecimal::valueOf)
+                        ?: return@forEach
 
                 when (transaction.type) {
                     TransactionType.INCOME ->

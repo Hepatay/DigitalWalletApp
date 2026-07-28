@@ -9,15 +9,18 @@ import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import androidx.core.content.getSystemService
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.epatay.digitalwallet.data.DecimalInputResult
+import com.epatay.digitalwallet.data.DecimalInputValidator
 import com.epatay.digitalwallet.data.TransactionDateUtils
 import com.epatay.digitalwallet.databinding.BottomSheetCategoryBudgetsBinding
 import com.epatay.digitalwallet.databinding.BottomSheetEditCategoryBudgetBinding
@@ -28,6 +31,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.Collator
@@ -471,6 +475,15 @@ class CategoryBudgetsBottomSheetDialogFragment :
                 selectedCategory =
                     itemToEdit?.category
             )
+        var selectedCategoryId: String? =
+            itemToEdit
+                ?.category
+                ?.let { category ->
+                    categoryIdFor(
+                        categoryOptions,
+                        category
+                    )
+                }
 
         formBinding.etCategoryBudgetCategory.apply {
             setAdapter(
@@ -482,16 +495,27 @@ class CategoryBudgetsBottomSheetDialogFragment :
                 )
             )
             threshold = 0
-            inputType =
-                InputType.TYPE_CLASS_TEXT or
-                    InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-            isCursorVisible = true
-            showSoftInputOnFocus = true
+            inputType = InputType.TYPE_NULL
+            isCursorVisible = false
+            showSoftInputOnFocus = false
             setOnClickListener {
+                hideKeyboard(formBinding.etCategoryBudgetAmount)
                 showDropDown()
+            }
+            setOnItemClickListener { _, _, position, _ ->
+                selectedCategoryId =
+                    categoryOptions.getOrNull(position)
+                        ?.let { category ->
+                            categoryIdFor(
+                                categoryOptions,
+                                category
+                            )
+                        }
+                hideKeyboard(formBinding.etCategoryBudgetAmount)
             }
             setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
+                    hideKeyboard(formBinding.etCategoryBudgetAmount)
                     showDropDown()
                 }
             }
@@ -528,20 +552,18 @@ class CategoryBudgetsBottomSheetDialogFragment :
                         ?.trim()
                         .orEmpty()
 
-                val amount =
-                    parseAmount(
-                        formBinding.etCategoryBudgetAmount
-                            .text
-                            ?.toString()
-                            ?.trim()
-                            .orEmpty()
+                val amountResult =
+                    DecimalInputValidator.positiveMoney(
+                        rawValue =
+                            formBinding.etCategoryBudgetAmount.text,
+                        fieldName = "Bütçe tutarı"
                     )
 
-                if (category.isBlank()) {
+                if (selectedCategoryId == null) {
                     formBinding
                         .layoutCategoryBudgetCategory
                         .error =
-                        "Kategori girin veya seçin"
+                        "Listeden geçerli bir kategori seçin"
                     return@setOnClickListener
                 }
 
@@ -549,17 +571,18 @@ class CategoryBudgetsBottomSheetDialogFragment :
                     .layoutCategoryBudgetCategory
                     .error = null
 
-                if (
-                    amount == null ||
-                    !amount.isFinite() ||
-                    amount <= 0.0
-                ) {
+                if (amountResult is DecimalInputResult.Invalid) {
                     formBinding
                         .layoutCategoryBudgetAmount
                         .error =
-                        "Sıfırdan büyük geçerli bir tutar girin"
+                        amountResult.message
                     return@setOnClickListener
                 }
+
+                val amount =
+                    (amountResult as DecimalInputResult.Valid)
+                        .value
+                        .toDouble()
 
                 formBinding
                     .layoutCategoryBudgetAmount
@@ -570,15 +593,13 @@ class CategoryBudgetsBottomSheetDialogFragment :
                     limitAmount = amount
                 )
 
-                Toast.makeText(
-                    dialogContext,
+                showInAppMessage(
                     if (isEditing) {
                         "Kategori bütçesi güncellendi"
                     } else {
                         "Kategori bütçesi eklendi"
-                    },
-                    Toast.LENGTH_SHORT
-                ).show()
+                    }
+                )
 
                 formDialog.dismiss()
             }
@@ -611,11 +632,9 @@ class CategoryBudgetsBottomSheetDialogFragment :
                         viewModel
                             .deleteBudget(category)
 
-                        Toast.makeText(
-                            dialogContext,
-                            "Kategori bütçesi silindi",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showInAppMessage(
+                            "Kategori bütçesi silindi"
+                        )
 
                         formDialog.dismiss()
                     }
@@ -757,24 +776,6 @@ class CategoryBudgetsBottomSheetDialogFragment :
         }
     }
 
-    private fun parseAmount(
-        rawAmount: String
-    ): Double? {
-        val normalized =
-            if (
-                rawAmount.contains(",") &&
-                rawAmount.contains(".")
-            ) {
-                rawAmount
-                    .replace(".", "")
-                    .replace(",", ".")
-            } else {
-                rawAmount.replace(",", ".")
-            }
-
-        return normalized.toDoubleOrNull()
-    }
-
     private fun dp(
         value: Int
     ): Int {
@@ -782,6 +783,44 @@ class CategoryBudgetsBottomSheetDialogFragment :
             value *
                 resources.displayMetrics.density
             ).toInt()
+    }
+
+    private fun hideKeyboard(
+        view: View
+    ) {
+        requireContext()
+            .getSystemService<InputMethodManager>()
+            ?.hideSoftInputFromWindow(
+                view.windowToken,
+                0
+            )
+        view.clearFocus()
+    }
+
+    private fun showInAppMessage(
+        message: String
+    ) {
+        Snackbar
+            .make(
+                binding.root,
+                message,
+                Snackbar.LENGTH_SHORT
+            )
+            .show()
+    }
+
+    private fun categoryIdFor(
+        categories: List<String>,
+        category: String
+    ): String? {
+        val index =
+            categories.indexOf(category)
+
+        return if (index >= 0) {
+            "budget_category_$index"
+        } else {
+            null
+        }
     }
 
     private fun <T : Dialog> trackChildDialog(

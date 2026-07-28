@@ -10,5 +10,6 @@ data class InvestmentItem(
     val assetName: String,         // Örn: "Altın", "USD", "Euro"
     val amount: Double,         // Ne kadar alındı? (Örn: 10.5)
     val buyPrice: Double,          // Alındığı anki fiyat/kur (Örn: 32.50)
-    val buyDate: String            // Alış tarihi ve saati
+    val buyDate: String,           // Alış tarihi ve saati
+    val note: String? = null
 )

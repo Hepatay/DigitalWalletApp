@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_portfolio"
+        android:icon="@drawable/ic_nav_portfolio"
+        android:title="@string/tab_portfolio" />
+
+    <item
+        android:id="@+id/nav_budget"
+        android:icon="@drawable/ic_nav_budget"
+        android:title="@string/tab_budget" />
+
+    <item
+        android:id="@+id/nav_markets"
+        android:icon="@drawable/ic_nav_markets"
+        android:title="@string/tab_markets" />
+
+</menu>

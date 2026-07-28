@@ -1,6 +1,8 @@
 package com.epatay.digitalwallet.ui
 
 import android.Manifest
+import android.content.ClipData
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
@@ -9,20 +11,27 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.epatay.digitalwallet.R
+import com.epatay.digitalwallet.data.DecimalInputResult
+import com.epatay.digitalwallet.data.DecimalInputValidator
 import com.epatay.digitalwallet.data.RecurringTransaction
 import com.epatay.digitalwallet.data.Transaction
+import com.epatay.digitalwallet.data.TransactionDatabase
 import com.epatay.digitalwallet.data.TransactionDateUtils
 import com.epatay.digitalwallet.data.TransactionFilter
 import com.epatay.digitalwallet.data.TransactionType
@@ -30,6 +39,7 @@ import com.epatay.digitalwallet.databinding.BottomSheetAddExpenseBinding
 import com.epatay.digitalwallet.databinding.BottomSheetAddRecurringBinding
 import com.epatay.digitalwallet.databinding.FragmentDashboardBinding
 import com.epatay.digitalwallet.export.TransactionExportManager
+import com.epatay.digitalwallet.export.WalletExportData
 import com.epatay.digitalwallet.recurring.RecurringDateUtils
 import com.epatay.digitalwallet.recurring.RecurringTransactionScheduler
 import com.github.mikephil.charting.data.PieData
@@ -39,6 +49,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -46,6 +57,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+private const val XLSX_MIME_TYPE =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
@@ -60,11 +74,17 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     private lateinit var adapter: TransactionAdapter
 
     private var currentTransactions: List<Transaction> = emptyList()
-    private var currentFilteredTransactions:
-        List<Transaction> = emptyList()
-
     private var currentRecurringTransactions:
         List<RecurringTransaction> = emptyList()
+
+    private var pendingCsvExportData:
+        WalletExportData? = null
+
+    private var pendingXlsxExportData:
+        WalletExportData? = null
+
+    private var pendingPdfTransactions:
+        List<Transaction>? = null
 
     private val activeBottomSheetDialogs =
         mutableSetOf<BottomSheetDialog>()
@@ -78,8 +98,26 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             if (uri != null) {
                 exportTransactions(
                     uri = uri,
-                    asPdf = false
+                    format = ExportFormat.CSV
                 )
+            } else {
+                pendingCsvExportData = null
+            }
+        }
+
+    private val createXlsxDocumentLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.CreateDocument(
+                XLSX_MIME_TYPE
+            )
+        ) { uri ->
+            if (uri != null) {
+                exportTransactions(
+                    uri = uri,
+                    format = ExportFormat.XLSX
+                )
+            } else {
+                pendingXlsxExportData = null
             }
         }
 
@@ -92,8 +130,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             if (uri != null) {
                 exportTransactions(
                     uri = uri,
-                    asPdf = true
+                    format = ExportFormat.PDF
                 )
+            } else {
+                pendingPdfTransactions = null
             }
         }
 
@@ -107,11 +147,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     requireContext()
                 )
             } else if (isAdded) {
-                Toast.makeText(
-                    requireContext(),
+                showInAppMessage(
                     "Hatırlatma bildirimi için bildirim izni gerekli.",
-                    Toast.LENGTH_LONG
-                ).show()
+                    Snackbar.LENGTH_LONG
+                )
             }
         }
 
@@ -175,9 +214,6 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         viewLifecycleOwner.lifecycleScope.launch {
             transactionViewModel.filteredTransactions
                 .collectLatest { transactions ->
-                    currentFilteredTransactions =
-                        transactions
-
                     adapter.updateData(transactions)
 
                     val isEmpty =
@@ -257,19 +293,44 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 )
             }
 
+        ViewCompat.setOnApplyWindowInsetsListener(
+            binding.root
+        ) { _, insets ->
+            val compactSearch =
+                insets.isVisible(
+                    WindowInsetsCompat.Type.ime()
+                ) && binding.etTransactionSearch.hasFocus()
+
+            val imeBottom =
+                insets.getInsets(
+                    WindowInsetsCompat.Type.ime()
+                ).bottom
+
+            binding.root.setPadding(
+                binding.root.paddingLeft,
+                binding.root.paddingTop,
+                binding.root.paddingRight,
+                if (compactSearch) {
+                    imeBottom
+                } else {
+                    0
+                }
+            )
+
+            updateSearchLayout(compactSearch)
+            insets
+        }
+
+        binding.etTransactionSearch.setOnFocusChangeListener {
+                _, _ ->
+            ViewCompat.requestApplyInsets(binding.root)
+        }
+
         binding.btnFilterTransactions.setOnClickListener {
             TransactionFilterBottomSheetDialogFragment()
                 .show(
                     parentFragmentManager,
                     "transaction_filters"
-                )
-        }
-
-        binding.btnCategoryBudgets.setOnClickListener {
-            CategoryBudgetsBottomSheetDialogFragment()
-                .show(
-                    parentFragmentManager,
-                    "category_budgets"
                 )
         }
 
@@ -293,14 +354,6 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             showExportFormatDialog()
         }
 
-        binding.btnManageRecurring.setOnClickListener {
-            if (currentRecurringTransactions.isEmpty()) {
-                showRecurringBottomSheet()
-            } else {
-                showRecurringManager()
-            }
-        }
-
         viewLifecycleOwner.lifecycleScope.launch {
             recurringTransactionViewModel
                 .allRecurringTransactions
@@ -321,6 +374,22 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             updateDailyBudgetUI()
             updateRecurringPreview()
         }
+    }
+
+    private fun updateSearchLayout(
+        compact: Boolean
+    ) {
+        val supportingVisibility =
+            if (compact) View.GONE else View.VISIBLE
+
+        binding.cardDashboard.visibility =
+            supportingVisibility
+        binding.cardRecurring.visibility =
+            supportingVisibility
+        binding.scrollQuickActions.visibility =
+            supportingVisibility
+        binding.fabAddExpense.visibility =
+            supportingVisibility
     }
 
     private fun updateFilterSummary(
@@ -412,46 +481,99 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     }
 
     private fun showExportFormatDialog() {
-        if (currentFilteredTransactions.isEmpty()) {
-            Toast.makeText(
-                requireContext(),
-                "Dışa aktarılacak işlem bulunamadı.",
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            runCatching {
+                loadWalletExportData()
+            }.onSuccess { exportData ->
+                if (!isAdded) {
+                    return@onSuccess
+                }
 
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("İşlemleri dışa aktar")
-            .setItems(
-                arrayOf(
-                    "Excel uyumlu CSV (.csv)",
-                    "PDF belgesi (.pdf)"
-                )
-            ) { _, selectedIndex ->
-                val timestamp =
-                    SimpleDateFormat(
-                        "yyyyMMdd-HHmm",
-                        Locale.ROOT
-                    ).format(Date())
-
-                if (selectedIndex == 0) {
-                    createCsvDocumentLauncher.launch(
-                        "dijital-cuzdan-islemler-$timestamp.csv"
+                if (exportData.isEmpty) {
+                    showInAppMessage(
+                        "Dışa aktarılacak kayıt bulunamadı."
                     )
-                } else {
-                    createPdfDocumentLauncher.launch(
-                        "dijital-cuzdan-islemler-$timestamp.pdf"
+                    return@onSuccess
+                }
+
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Kayıtları dışa aktar")
+                    .setItems(
+                        arrayOf(
+                            "Excel dosyası (.xlsx)",
+                            "Excel uyumlu CSV (.csv)",
+                            "İşlem raporu PDF (.pdf)"
+                        )
+                    ) { _, selectedIndex ->
+                        val timestamp =
+                            SimpleDateFormat(
+                                "yyyyMMdd-HHmm",
+                                Locale.ROOT
+                            ).format(Date())
+
+                        if (selectedIndex == 0) {
+                            pendingXlsxExportData = exportData
+                            createXlsxDocumentLauncher.launch(
+                                "VarlıkCep-kayıtlar-$timestamp.xlsx"
+                            )
+                        } else if (selectedIndex == 1) {
+                            pendingCsvExportData = exportData
+                            createCsvDocumentLauncher.launch(
+                                "VarlıkCep-kayıtlar-$timestamp.csv"
+                            )
+                        } else if (
+                            exportData.transactions.isNotEmpty()
+                        ) {
+                            pendingPdfTransactions =
+                                exportData.transactions
+                            createPdfDocumentLauncher.launch(
+                                "VarlıkCep-işlemler-$timestamp.pdf"
+                            )
+                        } else {
+                            showInAppMessage(
+                                "PDF için gelir veya gider kaydı bulunamadı."
+                            )
+                        }
+                    }
+                    .setNegativeButton("İptal", null)
+                    .show()
+            }.onFailure { error ->
+                if (isAdded) {
+                    showInAppMessage(
+                        error.message
+                            ?: "Kayıtlar hazırlanamadı.",
+                        Snackbar.LENGTH_LONG
                     )
                 }
             }
-            .setNegativeButton("İptal", null)
-            .show()
+        }
+    }
+
+    private suspend fun loadWalletExportData():
+        WalletExportData {
+        val database =
+            TransactionDatabase.getDatabase(
+                requireContext()
+            )
+
+        return WalletExportData(
+            transactions =
+                database.transactionDao()
+                    .getAllTransactionsSnapshot(),
+            categoryBudgets =
+                database.categoryBudgetDao().getAll(),
+            currencyInvestments =
+                database.investmentDao()
+                    .getAllInvestmentsSnapshot(),
+            goldInvestments =
+                database.userGoldAssetDao()
+                    .getAllSnapshot()
+        )
     }
 
     private fun exportTransactions(
         uri: Uri,
-        asPdf: Boolean
+        format: ExportFormat
     ) {
         if (!isAdded) {
             return
@@ -459,49 +581,115 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         lifecycleScope.launch {
             runCatching {
-                val transactions =
-                    transactionViewModel
-                        .getFilteredSnapshot()
-
-                check(transactions.isNotEmpty()) {
-                    "Dışa aktarılacak işlem bulunamadı."
-                }
-
                 val manager =
                     TransactionExportManager(
                         requireContext().contentResolver
                     )
 
-                if (asPdf) {
-                    manager.exportPdf(
-                        uri,
-                        transactions
-                    )
-                } else {
-                    manager.exportCsv(
-                        uri,
-                        transactions
-                    )
+                when (format) {
+                    ExportFormat.XLSX -> {
+                        val exportData =
+                            pendingXlsxExportData
+                                ?: error(
+                                    "Dışa aktarılacak kayıt bulunamadı."
+                                )
+                        pendingXlsxExportData = null
+
+                        manager.exportXlsx(
+                            uri,
+                            exportData
+                        )
+                    }
+
+                    ExportFormat.CSV -> {
+                        val exportData =
+                            pendingCsvExportData
+                                ?: error(
+                                    "Dışa aktarılacak kayıt bulunamadı."
+                                )
+                        pendingCsvExportData = null
+
+                        manager.exportCsv(
+                            uri,
+                            exportData
+                        )
+                    }
+
+                    ExportFormat.PDF -> {
+                        val transactions =
+                            pendingPdfTransactions
+                                ?: error(
+                                    "Dışa aktarılacak işlem bulunamadı."
+                                )
+                        pendingPdfTransactions = null
+
+                        manager.exportPdf(
+                            uri,
+                            transactions
+                        )
+                    }
                 }
             }.onSuccess { result ->
                 if (isAdded) {
-                    Toast.makeText(
-                        requireContext(),
-                        "${result.transactionCount} işlem dışa aktarıldı.",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showExportCompletedDialog(
+                        uri = uri,
+                        mimeType = format.mimeType,
+                        recordCount = result.recordCount
+                    )
                 }
             }.onFailure { error ->
                 if (isAdded) {
-                    Toast.makeText(
-                        requireContext(),
+                    showInAppMessage(
                         error.message
                             ?: "Dosya oluşturulamadı.",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        Snackbar.LENGTH_LONG
+                    )
                 }
             }
         }
+    }
+
+    private fun showExportCompletedDialog(
+        uri: Uri,
+        mimeType: String,
+        recordCount: Int
+    ) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Dosya oluşturuldu")
+            .setMessage(
+                "$recordCount kayıt seçtiğiniz konuma kaydedildi."
+            )
+            .setNegativeButton("Kapat", null)
+            .setPositiveButton("Paylaş") { _, _ ->
+                val shareIntent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = mimeType
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        clipData =
+                            ClipData.newRawUri(
+                                "VarlıkCep dışa aktarımı",
+                                uri
+                            )
+                        addFlags(
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+
+                runCatching {
+                    startActivity(
+                        Intent.createChooser(
+                            shareIntent,
+                            "Dosyayı paylaş"
+                        )
+                    )
+                }.onFailure {
+                    showInAppMessage(
+                        "Dosyayı paylaşabilecek bir uygulama bulunamadı.",
+                        Snackbar.LENGTH_LONG
+                    )
+                }
+            }
+            .show()
     }
 
     private fun updateDailyBudgetUI() {
@@ -902,18 +1090,6 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     "Aktif düzenli kayıt yok."
             }
 
-        binding.btnManageRecurring.text =
-            when {
-                currentRecurringTransactions.isEmpty() ->
-                    "Yeni"
-
-                currentRecurringTransactions.size > 1 ->
-                    "Tümü (${currentRecurringTransactions.size})"
-
-                else ->
-                    "Yönet"
-            }
-
         upcoming.forEach { (recurring, dueDate) ->
             binding.llRecurringPreview.addView(
                 createRecurringPreviewRow(
@@ -1193,14 +1369,16 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             skipCollapsed = true
         }
 
-        val categories = arrayOf(
-            "Gıda",
-            "Ulaşım",
-            "Fatura",
-            "Eğitim",
-            "Eğlence",
-            "Diğer"
-        )
+        val categories = EXPENSE_CATEGORIES
+        var selectedRecurringCategoryId: String? =
+            recurringToEdit
+                ?.category
+                ?.let { category ->
+                    categoryIdFor(
+                        categories,
+                        category
+                    )
+                }
 
         dialogBinding.etRecurringCategory.apply {
             setAdapter(
@@ -1216,10 +1394,23 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             showSoftInputOnFocus = false
             isCursorVisible = false
             setOnClickListener {
+                hideKeyboard(dialogBinding.etRecurringAmount)
                 showDropDown()
+            }
+            setOnItemClickListener { _, _, position, _ ->
+                selectedRecurringCategoryId =
+                    categories.getOrNull(position)
+                        ?.let { category ->
+                            categoryIdFor(
+                                categories,
+                                category
+                            )
+                        }
+                hideKeyboard(dialogBinding.etRecurringAmount)
             }
             setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
+                    hideKeyboard(dialogBinding.etRecurringAmount)
                     showDropDown()
                 }
             }
@@ -1357,11 +1548,9 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         recurringTransactionViewModel
                             .delete(recurring)
 
-                        Toast.makeText(
-                            requireContext(),
-                            "Düzenli kayıt silindi",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showInAppMessage(
+                            "Düzenli kayıt silindi"
+                        )
 
                         bottomSheetDialog.dismiss()
                     }
@@ -1378,13 +1567,11 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         ?.trim()
                         .orEmpty()
 
-                val amount =
-                    parseAmount(
-                        dialogBinding.etRecurringAmount
-                            .text
-                            ?.toString()
-                            ?.trim()
-                            .orEmpty()
+                val amountResult =
+                    DecimalInputValidator.positiveMoney(
+                        rawValue =
+                            dialogBinding.etRecurringAmount.text,
+                        fieldName = "Tutar"
                     )
 
                 val dayOfMonth =
@@ -1415,27 +1602,28 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 dialogBinding.layoutRecurringTitle.error =
                     null
 
-                if (
-                    amount == null ||
-                    !amount.isFinite() ||
-                    amount <= 0.0
-                ) {
+                if (amountResult is DecimalInputResult.Invalid) {
                     dialogBinding.layoutRecurringAmount.error =
-                        "Geçerli bir tutar girin"
+                        amountResult.message
                     return@setOnClickListener
                 }
+
+                val amount =
+                    (amountResult as DecimalInputResult.Valid)
+                        .value
+                        .toDouble()
 
                 dialogBinding.layoutRecurringAmount.error =
                     null
 
                 if (
                     !isIncome &&
-                    category.isBlank()
+                    selectedRecurringCategoryId == null
                 ) {
                     dialogBinding
                         .layoutRecurringCategory
                         .error =
-                        "Kategori seçin"
+                        "Listeden geçerli bir kategori seçin"
                     return@setOnClickListener
                 }
 
@@ -1543,15 +1731,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     requestNotificationPermissionIfNeeded()
                 }
 
-                Toast.makeText(
-                    requireContext(),
+                showInAppMessage(
                     if (recurringToEdit == null) {
                         "Düzenli kayıt eklendi"
                     } else {
                         "Düzenli kayıt güncellendi"
-                    },
-                    Toast.LENGTH_SHORT
-                ).show()
+                    }
+                )
 
                 bottomSheetDialog.dismiss()
             }
@@ -1575,25 +1761,6 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
     }
 
-    private fun parseAmount(
-        rawAmount: String
-    ): Double? {
-
-        val normalized =
-            if (
-                rawAmount.contains(",") &&
-                rawAmount.contains(".")
-            ) {
-                rawAmount
-                    .replace(".", "")
-                    .replace(",", ".")
-            } else {
-                rawAmount.replace(",", ".")
-            }
-
-        return normalized.toDoubleOrNull()
-    }
-
     private fun dp(
         value: Int
     ): Int {
@@ -1601,6 +1768,55 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             value *
                 resources.displayMetrics.density
             ).toInt()
+    }
+
+    private fun hideKeyboard(
+        view: View
+    ) {
+        requireContext()
+            .getSystemService<InputMethodManager>()
+            ?.hideSoftInputFromWindow(
+                view.windowToken,
+                0
+            )
+        view.clearFocus()
+    }
+
+    private fun showInAppMessage(
+        message: String,
+        length: Int = Snackbar.LENGTH_SHORT
+    ) {
+        if (_binding != null) {
+            Snackbar
+                .make(
+                    binding.root,
+                    message,
+                    length
+                )
+                .show()
+        } else {
+            Toast
+                .makeText(
+                    requireContext(),
+                    message,
+                    Toast.LENGTH_SHORT
+                )
+                .show()
+        }
+    }
+
+    private fun categoryIdFor(
+        categories: List<String>,
+        category: String
+    ): String? {
+        val index =
+            categories.indexOf(category)
+
+        return if (index >= 0) {
+            "expense_category_$index"
+        } else {
+            null
+        }
     }
 
     private fun trackBottomSheet(
@@ -1639,14 +1855,16 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         val isEditing =
             transactionToEdit != null
 
-        val categories = arrayOf(
-            "Gıda",
-            "Ulaşım",
-            "Fatura",
-            "Eğitim",
-            "Eğlence",
-            "Diğer"
-        )
+        val categories = EXPENSE_CATEGORIES
+        var selectedTransactionCategoryId: String? =
+            transactionToEdit
+                ?.category
+                ?.let { category ->
+                    categoryIdFor(
+                        categories,
+                        category
+                    )
+                }
 
         dialogBinding.etCategory.apply {
 
@@ -1661,19 +1879,29 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             inputType =
                 android.text.InputType.TYPE_NULL
 
+            keyListener = null
             showSoftInputOnFocus = false
             isCursorVisible = false
+            isFocusable = false
+            isFocusableInTouchMode = false
+            isClickable = true
 
             setOnClickListener {
+                hideKeyboard(dialogBinding.etExpenseAmount)
                 showDropDown()
             }
-
-            setOnFocusChangeListener { _, hasFocus ->
-
-                if (hasFocus) {
-                    showDropDown()
-                }
+            setOnItemClickListener { _, _, position, _ ->
+                selectedTransactionCategoryId =
+                    categories.getOrNull(position)
+                        ?.let { category ->
+                            categoryIdFor(
+                                categories,
+                                category
+                            )
+                        }
+                hideKeyboard(dialogBinding.etExpenseAmount)
             }
+
         }
 
         fun updateTransactionForm(
@@ -1744,6 +1972,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     null
 
                 dialogBinding.etCategory.clearFocus()
+                selectedTransactionCategoryId = null
             }
         }
 
@@ -1852,31 +2081,44 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                                 R.id.rbIncome
                     }
 
-                val amount =
-                    parseAmount(amountText)
+                val amountResult =
+                    DecimalInputValidator.positiveMoney(
+                        rawValue = amountText,
+                        fieldName = "Tutar"
+                    )
 
-                if (
-                    amount == null ||
-                    !amount.isFinite() ||
-                    amount <= 0.0
-                ) {
-
-                    dialogBinding.layoutExpenseAmount.error =
-                        "Geçerli bir tutar girin"
+                if (title.isEmpty()) {
+                    dialogBinding.layoutExpenseTitle.error =
+                        "Açıklama boş bırakılamaz"
 
                     return@setOnClickListener
                 }
+
+                dialogBinding.layoutExpenseTitle.error = null
+
+                if (amountResult is DecimalInputResult.Invalid) {
+
+                    dialogBinding.layoutExpenseAmount.error =
+                        amountResult.message
+
+                    return@setOnClickListener
+                }
+
+                val amount =
+                    (amountResult as DecimalInputResult.Valid)
+                        .value
+                        .toDouble()
 
                 dialogBinding.layoutExpenseAmount.error =
                     null
 
                 if (
                     !isIncome &&
-                    selectedCategory.isEmpty()
+                    selectedTransactionCategoryId == null
                 ) {
 
                     dialogBinding.layoutCategory.error =
-                        "Lütfen kategori seçin"
+                        "Listeden geçerli bir kategori seçin"
 
                     return@setOnClickListener
                 }
@@ -1920,25 +2162,11 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         )
                 ) {
 
-                    Toast.makeText(
-                        requireContext(),
+                    showInAppMessage(
                         "DİKKAT: Bu işlem aylık gider limitini aşacak!",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        Snackbar.LENGTH_LONG
+                    )
                 }
-
-                val finalTitle =
-                    when {
-
-                        title.isNotEmpty() ->
-                            title
-
-                        isIncome ->
-                            "Gelir"
-
-                        else ->
-                            "Gider"
-                    }
 
                 val finalCategory =
                     if (isIncome) {
@@ -1954,7 +2182,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                          * id, tarih ve işlem türü korunur.
                          */
                         transactionToEdit.copy(
-                            title = finalTitle,
+                            title = title,
                             amount = amount,
                             category = finalCategory
                         )
@@ -1962,14 +2190,14 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     } else {
 
                         Transaction(
-                            title = finalTitle,
+                            title = title,
                             amount = amount,
                             category = finalCategory,
 
                             date =
                             SimpleDateFormat(
                                 "dd.MM.yyyy HH:mm",
-                                Locale.getDefault()
+                                Locale.ROOT
                             ).format(Date()),
 
                             type =
@@ -1994,9 +2222,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     )
                 }
 
-                Toast.makeText(
-                    requireContext(),
-
+                showInAppMessage(
                     when {
 
                         isEditing && isIncome ->
@@ -2010,10 +2236,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                         else ->
                             "Gider eklendi"
-                    },
-
-                    Toast.LENGTH_SHORT
-                ).show()
+                    }
+                )
 
                 bottomSheetDialog.dismiss()
             }
@@ -2061,11 +2285,9 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     transaction
                 )
 
-                Toast.makeText(
-                    requireContext(),
-                    "İşlem silindi",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showInAppMessage(
+                    "İşlem silindi"
+                )
             }
             .show()
     }
@@ -2091,6 +2313,15 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             android.text.InputType.TYPE_CLASS_NUMBER or
                     android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
 
+        input.keyListener =
+            android.text.method.DigitsKeyListener.getInstance(
+                "0123456789,."
+            )
+        input.filters =
+            arrayOf(
+                android.text.InputFilter.LengthFilter(24)
+            )
+
         input.setText(
             currentLimit.toString()
         )
@@ -2110,38 +2341,48 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             )
             .setView(input)
 
-        builder.setPositiveButton(
-            "Kaydet"
-        ) { _, _ ->
-
-            val newLimit =
-                input.text
-                    ?.toString()
-                    ?.trim()
-                    ?.replace(",", ".")
-                    ?.toDoubleOrNull()
-                    ?: currentLimit
-
-            transactionViewModel.saveMonthlyLimit(
-                requireContext(),
-                newLimit
-            )
-
-            Toast.makeText(
-                requireContext(),
-                "Limit güncellendi!",
-                Toast.LENGTH_SHORT
-            ).show()
-
-            updateDailyBudgetUI()
-        }
+        builder.setPositiveButton("Kaydet", null)
 
         builder.setNegativeButton(
             "İptal",
             null
         )
 
-        builder.show()
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(
+                androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE
+            ).setOnClickListener {
+                when (
+                    val result =
+                        DecimalInputValidator.positiveMoney(
+                            rawValue = input.text,
+                            fieldName = "Aylık limit"
+                        )
+                ) {
+                    is DecimalInputResult.Invalid ->
+                        input.error = result.message
+
+                    is DecimalInputResult.Valid -> {
+                        input.error = null
+                        transactionViewModel.saveMonthlyLimit(
+                            requireContext(),
+                            result.value.toDouble()
+                        )
+
+                        showInAppMessage(
+                            "Limit güncellendi"
+                        )
+
+                        updateDailyBudgetUI()
+                        dialog.dismiss()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
     }
 
     override fun onDestroyView() {
@@ -2154,5 +2395,25 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         super.onDestroyView()
         _binding = null
+    }
+
+    private enum class ExportFormat(
+        val mimeType: String
+    ) {
+        XLSX(XLSX_MIME_TYPE),
+        CSV("text/csv"),
+        PDF("application/pdf")
+    }
+
+    private companion object {
+        val EXPENSE_CATEGORIES =
+            listOf(
+                "Gıda",
+                "Ulaşım",
+                "Fatura",
+                "Eğitim",
+                "Eğlence",
+                "Diğer"
+            )
     }
 }

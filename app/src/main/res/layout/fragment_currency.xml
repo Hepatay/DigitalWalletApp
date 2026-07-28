@@ -47,50 +47,22 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
-        tools:text="Son güncelleme: 25.07.2026 00:45:30"
+        tools:text="Son Güncelleme: 28.07.2026"
         tools:visibility="visible" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/amountInputLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="@string/amount"
-        app:boxBackgroundColor="?attr/colorSurface"
-        app:boxBackgroundMode="outline"
-        app:boxStrokeColor="?attr/colorPrimary"
-        app:hintTextColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvLastUpdated"
-        app:placeholderText="@string/amount_example">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etAmount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            android:inputType="numberDecimal"
-            android:maxLines="1"
-            android:textColor="?attr/colorOnSurface"
-            android:textColorHint="?attr/colorOnSurfaceVariant"
-            android:textSize="16sp" />
-
-    </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
         android:id="@+id/tvError"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
-        android:text="İnternet bağlantınızı kontrol edin."
         android:textColor="?attr/colorError"
         android:textSize="13sp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/amountInputLayout"
+        app:layout_constraintTop_toBottomOf="@id/tvLastUpdated"
+        tools:text="Internet baglantisi yok. Son kaydedilen veriler gosteriliyor."
         tools:visibility="visible" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -99,8 +71,8 @@
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:clipToPadding="false"
-        android:paddingBottom="12dp"
-        app:layout_constraintBottom_toTopOf="@id/btnUpdate"
+        android:paddingBottom="112dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvError"
@@ -118,62 +90,5 @@
         app:layout_constraintTop_toTopOf="@id/rvCurrencies"
         app:trackColor="?attr/colorSurfaceVariant"
         tools:visibility="visible" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnUpdate"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:minHeight="52dp"
-        android:text="Kurları Güncelle"
-        android:textAllCaps="false"
-        android:textSize="15sp"
-        app:cornerRadius="14dp"
-        app:icon="@android:drawable/ic_popup_sync"
-        app:iconGravity="textStart"
-        app:iconPadding="8dp"
-        app:layout_constraintBottom_toTopOf="@id/footerLinks"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/footerLinks"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <TextView
-            android:id="@+id/tvRatesAttribution"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:minWidth="48dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="@string/rates_attribution"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/tvPrivacy"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:minWidth="48dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="@string/privacy_title"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="11sp" />
-
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -16,7 +16,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
-        android:text="Yatırımlarım"
+        android:text="Varlıklarım"
         android:textColor="?attr/colorOnSurface"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -99,6 +99,17 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
+                <TextView
+                    android:id="@+id/tvPortfolioWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:textColor="?attr/colorError"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    tools:text="Güncel fiyatı bulunmayan 1 varlık toplamın dışında tutuldu."
+                    tools:visibility="visible" />
+
                 <!-- Dinamik yatırım detayları -->
                 <LinearLayout
                     android:id="@+id/llInvestmentDetails"
@@ -145,12 +156,11 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
-        android:layout_marginBottom="8dp"
         android:clipToPadding="false"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="12dp"
-        app:layout_constraintBottom_toTopOf="@id/fabAddInvestment"
+        android:paddingBottom="104dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardGrandTotal"
@@ -166,7 +176,7 @@
         android:orientation="vertical"
         android:padding="20dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/fabAddInvestment"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardGrandTotal"
@@ -215,27 +225,7 @@
         android:src="@android:drawable/ic_input_add"
         app:backgroundTint="?attr/colorPrimary"
         app:tint="?attr/colorOnPrimary"
-        app:layout_constraintBottom_toTopOf="@id/tvDisclaimer"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Yasal uyarı -->
-    <TextView
-        android:id="@+id/tvDisclaimer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
-        android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="6dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:text="@string/investment_disclaimer_with_attribution"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:textSize="11sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

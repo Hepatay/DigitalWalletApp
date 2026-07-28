@@ -138,7 +138,7 @@ class BudgetReportViewModelTest {
             0.001
         )
         assertEquals(
-            3_000.0 / 31.0,
+            96.77,
             augustSummary.dailySpendingLimit,
             0.001
         )

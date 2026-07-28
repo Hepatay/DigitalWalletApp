@@ -1,434 +1,173 @@
-💼 VarlıkCep — Kişisel Finans ve Portföy Takibi
+# VarlıkCep
+
+VarlıkCep; gelir, gider, bütçe, birikim hedefi ve yatırım varlıklarını tek
+uygulamada takip etmeye yardımcı olan, Kotlin ile geliştirilmiş yerel öncelikli
+bir Android uygulamasıdır.
+
+Uygulama ödeme, para transferi veya yatırım danışmanlığı hizmeti sunmaz.
+Gösterilen döviz, altın ve portföy değerleri bilgilendirme amaçlı referans
+verilerdir ve yatırım tavsiyesi değildir.
+
+## Proje bilgileri
+
+| Alan | Değer |
+| --- | --- |
+| Platform | Android 7.0 (API 24) ve üzeri |
+| Dil | Kotlin |
+| Arayüz | XML, Material Components, ViewBinding |
+| Yerel veri | Room Database |
+| Paket adı | `com.epatay.digitalwallet` |
+| Sürüm | `1.0.0` |
+
+## Özellikler
+
+### Bütçe ve işlemler
+
+- Gelir ve gider ekleme, düzenleme ve silme
+- Pozitif tutar, sayı biçimi ve zorunlu alan doğrulaması
+- Yalnızca listeden seçilebilen gider kategorileri
+- Aylık bütçe, kalan bütçe ve günlük harcanabilir tutar hesaplaması
+- Kategori bazlı bütçeler ve aylık raporlar
+- Metin, kategori, işlem türü ve tarih aralığına göre arama ve filtreleme
+- Düzenli gelir/gider tanımlama ve yaklaşan kayıt bildirimleri
+- Birikim hedefi, para ekleme/çekme ve ilerleme takibi
+
+### Piyasalar ve döviz çevirici
+
+- TCMB günlük döviz alış ve satış kurları
+- TL dönüşümleri ve USD→EUR gibi çapraz döviz hesaplamaları
+- Son başarılı kur verisini Room üzerinde çevrimdışı gösterme
+- Desteklenen para birimleri için uygulama paketindeki yerel PNG bayraklar
+- İnternetten bayrak görseli indirmeyen çevrimdışı görsel yapı
+- apinoktam üzerinden altın alış ve satış referans fiyatları
+- Döviz ve altın için ayrı Piyasalar sekmeleri
+
+### Portföy
+
+- Döviz ve altın varlığı ekleme, güncelleme ve silme
+- Alış fiyatı, miktar, toplam maliyet ve referans güncel kur takibi
+- Güncel tahmini değer ile kâr/zarar hesaplama
+- Dövizler için bayraklarla uyumlu sabit grafik renkleri
+- Altın varlıkları için sarı grafik gösterimi
+- Kullanıcı verilerini koruyan Room migration zinciri
+
+### Dışa aktarma
+
+- Microsoft Excel, Google Sheets ve LibreOffice ile uyumlu gerçek `.xlsx`
+  çalışma kitabı
+- UTF-8 ve doğru CSV escape kurallarıyla `.csv` dışa aktarma
+- Gelir ve gider işlemleri için `.pdf` rapor
+- Gelir, gider, kategori bütçesi, döviz yatırımı ve altın yatırımı sütunları
+- Android Storage Access Framework ile kullanıcı tarafından seçilen konuma
+  kaydetme
+- Uygun MIME türleri ve güvenli stream/workbook kapatma
+
+### Kullanıcı arayüzü
+
+- Portföyüm, Bütçem ve Piyasalar için sabit alt navigasyon
+- Sistem çubukları, klavye ve reklam alanını dikkate alan WindowInsets yapısı
+- İçeriği kapatmayan ortak banner reklam alanı
+- Responsive kartlar ve yatay taşma oluşturmayan ekran düzeni
+- Klavye açıldığında sabit kalan alt navigasyon
+- Uygulama içinden erişilebilen Yasal, Gizlilik ve yatırım uyarısı bağlantıları
+- Türkçe karakterleri koruyan UI, Room, arama ve dışa aktarma akışları
+
+## Veri kaynakları
+
+- Döviz kurları: [Türkiye Cumhuriyet Merkez Bankası](https://www.tcmb.gov.tr/kurlar/today.xml)
+- Altın referans fiyatları: [apinoktam](https://apinoktam.erenozdemir.com.tr/)
+- Reklam: Google Mobile Ads SDK
+- İzin tercihleri: Google User Messaging Platform
+
+Piyasa verileri gecikebilir veya geçici olarak erişilemez olabilir. Uygulama bu
+durumda son başarılı yerel veriyi gösterebilir.
+
+## Teknik yapı
+
+- ViewModel ve Repository katmanları
+- Room DAO, Flow ve StateFlow
+- Kotlin Coroutines ve WorkManager
+- Retrofit/OkHttp tabanlı HTTPS bağlantıları
+- TCMB XML ayrıştırma katmanı
+- MPAndroidChart grafik bileşenleri
+- FastExcel ile OOXML `.xlsx` üretimi
+- Android scoped storage ve Activity Result API
+
+Ana kaynak dizinleri:
+
+```text
+app/src/main/java/com/epatay/digitalwallet/
+├── data/       Room, ağ kaynakları, doğrulama ve hesaplama
+├── export/     XLSX, CSV ve PDF dışa aktarma
+├── recurring/  Düzenli kayıt ve bildirim işleri
+└── ui/         Fragment, ViewModel ve adapter sınıfları
+```
 
-VarlıkCep, gelirlerinizi, giderlerinizi, bütçelerinizi, birikim hedeflerinizi ve yatırım varlıklarınızı tek bir uygulama üzerinden takip etmenizi sağlayan modern bir Android uygulamasıdır.
+## Ekran görüntüleri
 
-Uygulama; kişisel finans yönetimini kolaylaştırmayı, günlük referans döviz ve gram altın verilerini anlaşılır bir arayüzle sunmayı ve kullanıcıların mali durumlarını daha düzenli takip etmelerine yardımcı olmayı amaçlar.
+| Bütçem | Portföyüm | Piyasalar |
+| --- | --- | --- |
+| ![Bütçem](docs/play-store/screenshots/01-dashboard.png) | ![Portföyüm](docs/play-store/screenshots/02-portfolio.png) | ![Piyasalar](docs/play-store/screenshots/03-markets.png) |
 
-Sürüm: 1.0.0Platform: AndroidDil: KotlinPaket adı: com.epatay.digitalwallet
+## Kurulum
 
-📌 İçindekiler
+Gereksinimler:
 
-Özellikler
+- Güncel Android Studio
+- JDK 17 veya üzeri
+- Android SDK
+- Android 7.0 veya üzeri cihaz/emülatör
 
-Kullanılan teknolojiler
+Projeyi klonlayın:
 
-Proje yapısı
-
-Ekran görüntüleri
-
-Kurulum
-
-Gizlilik
-
-Yol haritası
-
-Yasal uyarı
-
-Geliştirici
-
-✨ Özellikler
-
-💱 Döviz ve Gram Altın Takibi
-
-USD, EUR, GBP, CHF, JPY, CAD, AUD, RUB ve CNY kurlarını görüntüleme
-
-Gram altın için güncel referans fiyat gösterimi
-
-Kur verilerini API üzerinden yenileme
-
-Para birimlerini özel ikon ve bayraklarla listeleme
-
-Kullanıcının girdiği miktarı tüm para birimlerine anında dönüştürme
-
-Ek hesaplama butonu gerektirmeyen gerçek zamanlı dönüşüm
-
-Son başarılı kur güncelleme zamanını görüntüleme
-
-İnternet bağlantısı olmadığında son kaydedilen verileri gösterme
-
-💰 Gelir ve Gider Yönetimi
-
-Gelir ve gider kaydı oluşturma
-
-Kayıtları düzenleme ve silme
-
-Maaş, kira, fatura ve abonelik gibi düzenli işlemler tanımlama
-
-İsteğe bağlı aylık otomatik işlem oluşturma
-
-Yaklaşan ödeme ve gelirleri ana ekranda görüntüleme
-
-Yaklaşan tarihler için bildirim alma
-
-Metin, kategori, işlem türü ve tarih aralığına göre filtreleme
-
-Toplam gelir, toplam gider ve mevcut bakiye hesaplama
-
-Verileri Room Database ile cihazda kalıcı olarak saklama
-
-📊 Bütçe ve Raporlama
-
-Kategori bazlı aylık bütçe belirleme
-
-Harcama limitinin kullanım oranını takip etme
-
-Aylık gelir, gider ve bakiye özeti
-
-Kategori bazlı gider dağılımı
-
-Grafik destekli finansal raporlar
-
-Filtrelenen işlemleri Excel uyumlu CSV formatında dışa aktarma
-
-İşlem raporlarını PDF olarak dışa aktarma
-
-🎯 Birikim Hedefleri
-
-Birikim hedefi oluşturma
-
-Hedef tutarı ve mevcut birikimi takip etme
-
-Hedefe para ekleme
-
-Hedeften para çekme
-
-Birikim hareketlerini kayıt altında tutma
-
-Hedef ilerlemesini görsel olarak izleme
-
-📈 Yatırım ve Portföy Takibi
-
-Döviz, altın ve diğer yatırım varlıklarını portföye ekleme
-
-Yatırım miktarı ve alış fiyatı kaydetme
-
-Toplam alış maliyetini hesaplama
-
-Son alınan referans fiyatlarla güncel portföy değerini görüntüleme
-
-Kâr ve zarar durumunu takip etme
-
-Yatırımları tarih sırasına göre listeleme
-
-🏠 Ana Panel
-
-Toplam gelir ve gider özeti
-
-Güncel bakiye bilgisi
-
-Aylık limit ve kalan bütçe
-
-Günlük harcanabilir tutar
-
-Yaklaşan düzenli ödeme ve gelir önizlemesi
-
-Aranabilir ve filtrelenebilir işlem listesi
-
-Bütçe, rapor, birikim ve dışa aktarma ekranlarına hızlı erişim
-
-Finans ve portföy bilgilerinin tek ekranda sunulması
-
-📴 Çevrimdışı Kullanım
-
-Son alınan kur verilerini SharedPreferences ile saklama
-
-Finansal kayıtları Room Database ile cihazda tutma
-
-İnternet olmadığında kayıtlı son kur verilerini gösterme
-
-Bağlantı ve sunucu hatalarında kullanıcı dostu bilgilendirme mesajları
-
-🎨 Kullanıcı Arayüzü
-
-Material Design bileşenleri
-
-XML tabanlı ekran tasarımları
-
-ViewBinding kullanımı
-
-ConstraintLayout ve LinearLayout
-
-RecyclerView tabanlı dinamik listeler
-
-Yükleme göstergeleri ve hata durumları
-
-Giriş animasyonu
-
-Farklı varlıklar için özel ikonlar
-
-🛠 Kullanılan Teknolojiler
-
-Alan
-
-Teknoloji
-
-Programlama dili
-
-Kotlin
-
-Platform
-
-Android
-
-Arayüz
-
-XML, Material Components, ConstraintLayout
-
-UI erişimi
-
-ViewBinding
-
-Listeleme
-
-RecyclerView, Adapter Pattern
-
-Mimari bileşenler
-
-ViewModel, Repository
-
-Yerel veritabanı
-
-Room Database
-
-Veri erişimi
-
-DAO
-
-Reaktif veri
-
-Flow, StateFlow, LiveData
-
-Ağ işlemleri
-
-Retrofit
-
-JSON dönüşümü
-
-Gson
-
-Yerel önbellek
-
-SharedPreferences
-
-Asenkron işlemler
-
-Kotlin Coroutines
-
-Arka plan görevleri
-
-WorkManager
-
-Grafik
-
-MPAndroidChart
-
-Reklam
-
-Google Mobile Ads SDK
-
-İzin yönetimi
-
-Google User Messaging Platform
-
-Sürüm kontrolü
-
-Git ve GitHub
-
-🏗 Proje Yapısı
-
-Projede veri katmanı, kullanıcı arayüzü, ağ işlemleri ve arka plan görevleri birbirinden ayrılmıştır.
-
-com.epatay.digitalwallet
-│
-├── data
-│   ├── Transaction
-│   ├── TransactionDao
-│   ├── TransactionDatabase
-│   ├── TransactionRepository
-│   ├── InvestmentItem
-│   ├── InvestmentDao
-│   ├── CurrencyItem
-│   ├── CurrencyManager
-│   └── ExchangeRateResponse
-│
-├── recurring
-│   ├── RecurringTransactionWorker
-│   └── RecurringTransactionScheduler
-│
-└── ui
-├── DashboardFragment
-├── AnalysisFragment
-├── CurrencyFragment
-├── InvestmentFragment
-├── TransactionAdapter
-├── CurrencyAdapter
-├── InvestmentAdapter
-└── ViewModel sınıfları
-
-Proje geliştikçe klasör ve sınıf yapısı değişebilir.
-
-📱 Ekran Görüntüleri
-
-Ana Sayfa
-
-
-
-Portföy
-
-
-
-Döviz ve Altın
-
-
-
-▶️ Kurulum
-
-Gereksinimler
-
-Android Studio
-
-JDK 17
-
-Android SDK
-
-İnternet bağlantısı
-
-Android 7.0 veya daha yeni bir cihaz ya da emülatör
-
-Projeyi çalıştırma
-
-Depoyu bilgisayarınıza klonlayın:
-
+```bash
 git clone https://github.com/Hepatay/DigitalWalletApp.git
-
-Proje klasörüne girin:
-
 cd DigitalWalletApp
+```
 
-Android Studio'yu açın.
+Projeyi Android Studio ile açın, Gradle senkronizasyonunu tamamlayın ve `app`
+konfigürasyonunu çalıştırın. Canlı AdMob ve imzalama değerleri repoya eklenmez;
+yerel yapılandırma dosyaları kullanılmalıdır.
 
-Open seçeneğiyle proje klasörünü seçin.
+Komut satırından doğrulama:
 
-Gradle senkronizasyonunun tamamlanmasını bekleyin.
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
+```
 
-Bir Android emülatörü veya fiziksel cihaz seçin.
+Windows:
 
-Uygulamayı çalıştırın.
+```powershell
+.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
+```
 
-🔐 Gizlilik
+## Gizlilik
 
-VarlıkCep; finansal kayıtları cihaz üzerindeki yerel veritabanında saklar. Uygulamada reklam gösterimi için Google Mobile Ads SDK ve gerekli bölgelerde kullanıcı izinlerini yönetmek için Google User Messaging Platform kullanılmaktadır.
+Finansal kayıtlar Room veritabanında kullanıcının cihazında saklanır. Hesap veya
+bulut senkronizasyonu bulunmaz. Kullanıcı tarafından dışa aktarılan dosyalar,
+yalnızca kullanıcının seçtiği konuma veya paylaşım hedefine yazılır.
 
-Ayrıntılı bilgi:
+- [Güncel gizlilik politikası](https://hepatay.github.io/DigitalWalletApp/)
+- [Depodaki gizlilik politikası](docs/PRIVACY_POLICY_TR.md)
+- [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md)
 
-VarlıkCep Gizlilik Politikası
+## Güvenlik
 
-İmzalama anahtarları, şifreler, local.properties, *.jks, *.keystore ve benzeri özel dosyalar GitHub deposuna yüklenmemelidir.
+İmzalama anahtarları, parolalar, `local.properties`, `keystore.properties`,
+`*.jks`, `*.keystore`, AAB ve APK dosyaları GitHub deposuna eklenmemelidir.
 
-🗺️ Yol Haritası
+Güvenlik veya gizlilik bildirimleri için
+[GitHub Issues](https://github.com/Hepatay/DigitalWalletApp/issues) kullanılabilir.
 
-Tamamlananlar
+## Yasal uyarı
 
-Temel kullanıcı arayüzü
+VarlıkCep bankacılık, ödeme, kredi, aracılık veya yatırım danışmanlığı hizmeti
+sunmaz. Döviz ve altın fiyatları ile portföy, kâr ve zarar hesapları kesin fiyat
+veya alım-satım teklifi değildir. Kullanıcılar finansal kararlarını kendi
+değerlendirmeleri ve gerektiğinde yetkili uzman görüşüyle vermelidir.
 
-RecyclerView ve Adapter entegrasyonu
-
-Referans döviz kuru takibi
-
-Gram altın referans fiyatı
-
-Gerçek zamanlı kur hesaplama
-
-Döviz bayrakları ve özel ikonlar
-
-SharedPreferences ile çevrimdışı kur saklama
-
-Room Database entegrasyonu
-
-Gelir ve gider yönetimi
-
-Yatırım ve portföy kayıt sistemi
-
-Portföy değer hesaplamaları
-
-Dashboard ve kategori grafikleri
-
-Repository ve ViewModel kullanımı
-
-Düzenli ödeme ve gelirler
-
-Aylık otomatik işlem oluşturma
-
-Yaklaşan tarih bildirimleri
-
-Kategori bazlı bütçeler
-
-Aylık finansal raporlar
-
-Arama ve gelişmiş filtreleme
-
-Birikim hedefleri ve hareketleri
-
-CSV ve PDF dışa aktarma
-
-Kullanıcı izin yönetimi
-
-Banner reklam entegrasyonu
-
-Açılış animasyonu ve başlangıç optimizasyonları
-
-Planlananlar
-
-Çeyrek, yarım ve tam altın takibi
-
-Kripto para takibi
-
-Döviz ve yatırım favorileri
-
-Gelişmiş portföy dağılım grafiği
-
-Fiyat değişim yüzdeleri
-
-Dark Mode
-
-PIN ve biyometrik giriş
-
-Fiyat alarmı
-
-Bulut yedekleme
-
-Çoklu cihaz senkronizasyonu
-
-⚠️ Yasal Uyarı
-
-VarlıkCep yalnızca kişisel bütçe, gelir-gider, birikim ve portföy takibi amacıyla geliştirilmiştir.
-
-Uygulamada gösterilen döviz, altın ve yatırım verileri bilgilendirme amaçlı referans değerlerdir. Veriler yatırım tavsiyesi değildir ve herhangi bir yatırım kararının tek dayanağı olarak kullanılmamalıdır.
-
-Kur ve piyasa verilerinde kullanılan servise, internet bağlantısına ve son güncelleme zamanına bağlı gecikmeler oluşabilir.
-
-VarlıkCep;
-
-Bankacılık hizmeti sunmaz.
-
-Para transferi gerçekleştirmez.
-
-Ödeme veya kredi hizmeti sağlamaz.
-
-Yatırım danışmanlığı yapmaz.
-
-Kullanıcı adına yatırım işlemi gerçekleştirmez.
-
-👨‍💻 Geliştirici
+## Geliştirici
 
 Hüseyin Epatay
 
-GitHub: @Hepatay
-
-Proje: DigitalWalletApp
-
-⭐ Destek
-
-Projeyi faydalı bulduysanız GitHub üzerinden yıldız vererek destek olabilirsiniz.
-
-Hata bildirimi ve geliştirme önerileri için GitHub üzerindeki Issues bölümünü kullanabilirsiniz.
+[GitHub: @Hepatay](https://github.com/Hepatay)

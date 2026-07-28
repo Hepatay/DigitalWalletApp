@@ -11,6 +11,7 @@ import com.epatay.digitalwallet.data.TransactionDatabase
 import com.epatay.digitalwallet.data.TransactionDateUtils
 import com.epatay.digitalwallet.data.TransactionRepository
 import com.epatay.digitalwallet.data.TransactionType
+import com.epatay.digitalwallet.data.DecimalMath
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -58,11 +59,19 @@ fun buildCategoryBudgetProgress(
         .map { category ->
             val total = totalsByCategory[category]
             val budget = budgetsByCategory[category]
-            val spentAmount = total?.totalAmount ?: 0.0
-            val limitAmount = budget?.limitAmount
+            val spentAmount =
+                DecimalMath.normalizeMoney(
+                    total?.totalAmount ?: 0.0
+                ) ?: 0.0
+            val limitAmount =
+                budget?.limitAmount
+                    ?.let(DecimalMath::normalizeMoney)
             val rawRemaining =
                 if (limitAmount != null) {
-                    limitAmount - spentAmount
+                    DecimalMath.subtractMoney(
+                        limitAmount,
+                        spentAmount
+                    ) ?: 0.0
                 } else {
                     0.0
                 }

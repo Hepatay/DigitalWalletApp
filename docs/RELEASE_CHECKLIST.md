@@ -5,14 +5,14 @@
 - Android 16 / API 36 `compileSdk` ve `targetSdk`
 - AGP 8.13.2, Gradle 8.13, Kotlin 2.1.20 ve JDK 17
 - R8 küçültme ve kaynak daraltma
-- Room şema dışa aktarma; veri koruyan 2→4, 3→4, 4→5, 5→6, 6→7 ve 7→8 migration
+- Room şema dışa aktarma; veri koruyan migration zinciri ve 9→10 döviz/altın migration'ı
 - Düzenli ödeme/gelir kayıtları, günlük arka plan kontrolü ve yaklaşan tarih bildirimleri
 - Aynı düzenli kaydın aynı ayda ikinci kez oluşmasını engelleyen dönem defteri
 - Kategori bütçeleri, aylık rapor, işlem arama/filtreleme ve birikim hedefleri
 - Excel uyumlu CSV ve çok sayfalı PDF dışa aktarma
 - Finans kayıtları için bulut/cihaz aktarımı yedeklerinin kapatılması
 - HTTPS dışındaki trafiğin kapatılması
-- Exchange Rate API atfı ve günlük referans kur açıklaması
+- TCMB döviz, apinoktam altın ve yerel flag-icons kaynak-lisans açıklamaları
 - Uygulama içi gizlilik özeti
 - Keystore dosyalarının Git dışında tutulması
 - Özgün launcher simgesi ve 512×512 Play Store simgesi
@@ -28,6 +28,10 @@
 - `docs/PRIVACY_POLICY_TR.md` metnini herkese açık HTTPS sayfasında yayımlayın ve URL'yi Play Console'a girin.
 - Nihai imzalı AAB’den önce en az bir fiziksel telefonda kapalı test yapın.
 - Play Console'da Data Safety, Financial Features, içerik derecelendirmesi, hedef kitle, reklam ve uygulama erişimi formlarını doldurun.
+- Data Safety beyanında Google Mobile Ads/UMP SDK'larının cihaz veya reklam tanımlayıcıları, yaklaşık konum, reklam etkileşimleri ve tanılama verilerini işleyebileceğini güncel Google SDK beyanına göre belirtin.
+- Play Console'da **Reklam içerir** seçeneğini işaretleyin.
+- Financial Features formunda uygulamayı ödeme/cüzdan hizmeti olarak değil, kişisel bütçe ve referans portföy takip aracı olarak doğru biçimde beyan edin.
+- Altın API sağlayıcısının kullanım koşullarını yayın öncesinde seçilen kullanım planı bakımından yeniden kontrol edin.
 - Uygulamayı kapalı test kanalında gerçek cihazlarda test edin.
 - Her yeni yüklemede `versionCode` değerini artırın.
 

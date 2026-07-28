@@ -1,8 +1,12 @@
 package com.epatay.digitalwallet.data
 
+import androidx.annotation.DrawableRes
+
 data class CurrencyItem(
-    val code: String,       // Örn: "USD"
-    val name: String,       // Örn: "*ABD Doları"
-    val rateValue: Double,  // Örn: 32
-    val flagIcon: Int
+    val code: String,
+    val name: String,
+    val unit: Int,
+    val forexBuying: Double?,
+    val forexSelling: Double?,
+    @DrawableRes val flagResId: Int
 )

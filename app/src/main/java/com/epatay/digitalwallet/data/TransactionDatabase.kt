@@ -14,9 +14,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RecurringOccurrence::class,
         CategoryBudget::class,
         SavingsGoal::class,
-        SavingsGoalEntry::class
+        SavingsGoalEntry::class,
+        CurrencyRateEntity::class,
+        GoldRateEntity::class,
+        UserGoldAssetEntity::class
     ],
-    version = 8,
+    version = 10,
     exportSchema = true
 )
 abstract class TransactionDatabase : RoomDatabase() {
@@ -36,6 +39,13 @@ abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun savingsGoalDao():
         SavingsGoalDao
+
+    abstract fun currencyRateDao():
+        CurrencyRateDao
+
+    abstract fun goldRateDao(): GoldRateDao
+
+    abstract fun userGoldAssetDao(): UserGoldAssetDao
 
     companion object {
         private val MIGRATION_2_4 = object : Migration(2, 4) {
@@ -336,6 +346,103 @@ abstract class TransactionDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `currency_rates` (
+                        `currencyCode` TEXT NOT NULL,
+                        `unit` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `currencyName` TEXT NOT NULL,
+                        `forexBuying` REAL,
+                        `forexSelling` REAL,
+                        `updateDateTime` TEXT NOT NULL,
+                        `fetchedAtMillis` INTEGER NOT NULL,
+                        PRIMARY KEY(`currencyCode`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `investments_table` ADD COLUMN `note` TEXT"
+                )
+                database.execSQL(
+                    "DELETE FROM `currency_rates` WHERE UPPER(`currencyCode`) = 'XDR'"
+                )
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `gold_rates` (
+                        `type` TEXT NOT NULL,
+                        `displayName` TEXT NOT NULL,
+                        `buyingPrice` REAL,
+                        `sellingPrice` REAL,
+                        `source` TEXT NOT NULL,
+                        `sourceDate` TEXT,
+                        `fetchedAt` INTEGER NOT NULL,
+                        `isReference` INTEGER NOT NULL,
+                        PRIMARY KEY(`type`)
+                    )
+                    """.trimIndent()
+                )
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `user_gold_assets` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `goldType` TEXT NOT NULL,
+                        `quantity` REAL NOT NULL,
+                        `unit` TEXT NOT NULL,
+                        `purchaseUnitPrice` REAL,
+                        `totalPurchaseCost` REAL,
+                        `purchaseDate` INTEGER,
+                        `note` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+
+                val nowExpression =
+                    "CAST(STRFTIME('%s', 'now') AS INTEGER) * 1000"
+                database.execSQL(
+                    """
+                    INSERT INTO `user_gold_assets` (
+                        `goldType`, `quantity`, `unit`,
+                        `purchaseUnitPrice`, `totalPurchaseCost`,
+                        `purchaseDate`, `note`, `createdAt`, `updatedAt`
+                    )
+                    SELECT
+                        'GRAM_GOLD', `amount`, 'GRAM',
+                        `buyPrice`, `amount` * `buyPrice`,
+                        CASE
+                            WHEN SUBSTR(`buyDate`, 1, 10) GLOB
+                                '[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9][0-9]'
+                            THEN CAST(
+                                STRFTIME(
+                                    '%s',
+                                    SUBSTR(`buyDate`, 7, 4) || '-' ||
+                                    SUBSTR(`buyDate`, 4, 2) || '-' ||
+                                    SUBSTR(`buyDate`, 1, 2)
+                                ) AS INTEGER
+                            ) * 1000
+                            ELSE NULL
+                        END,
+                        `note`, $nowExpression, $nowExpression
+                    FROM `investments_table`
+                    WHERE UPPER(TRIM(`assetName`)) = 'GRAM ALTIN'
+                    """.trimIndent()
+                )
+                database.execSQL(
+                    "DELETE FROM `investments_table` " +
+                        "WHERE UPPER(TRIM(`assetName`)) = 'GRAM ALTIN'"
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: TransactionDatabase? = null
 
@@ -352,7 +459,9 @@ abstract class TransactionDatabase : RoomDatabase() {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
-                        MIGRATION_7_8
+                        MIGRATION_7_8,
+                        MIGRATION_8_9,
+                        MIGRATION_9_10
                     )
                     .build()
 

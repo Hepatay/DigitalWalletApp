@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -14,18 +16,19 @@ import android.view.animation.DecelerateInterpolator
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.airbnb.lottie.LottieCompositionFactory
 import com.epatay.digitalwallet.databinding.ActivityMainBinding
 import com.epatay.digitalwallet.recurring.RecurringTransactionScheduler
 import com.epatay.digitalwallet.ui.ViewPagerAdapter
-import com.github.mikephil.charting.BuildConfig
-import com.google.android.material.tabs.TabLayoutMediator
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -36,6 +39,7 @@ import com.google.android.ump.ConsentDebugSettings
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,10 +52,10 @@ class MainActivity : AppCompatActivity() {
          * Toplam intro süresi yaklaşık 2 saniyedir.
          */
         private const val INTRO_LOTTIE_DURATION_MS =
-            3000L
+            1800L
 
         private const val INTRO_FADE_DURATION_MS =
-            300L
+            200L
 
         private const val BRAND_REVEAL_PROGRESS =
             0.52f
@@ -66,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             3000L
 
         private const val INTRO_FALLBACK_TIMEOUT_MS =
-            3900L
+            2600L
 
         /*
          * Yalnızca DEBUG derlemesinde Türkiye'deki cihazı
@@ -99,6 +103,11 @@ class MainActivity : AppCompatActivity() {
             "VARLIKCEP_CONSENT"
     }
 
+    private enum class BannerLayoutMode {
+        COMPACT,
+        FULL_WIDTH
+    }
+
     private lateinit var binding:
             ActivityMainBinding
 
@@ -114,14 +123,31 @@ class MainActivity : AppCompatActivity() {
     private var bannerLoadStarted =
         false
 
+    private var bannerLoaded =
+        false
+
+    private var currentPage =
+        ViewPagerAdapter.DEFAULT_PAGE
+
+    private var imeVisible =
+        false
+
+    private var loadedBannerLayoutMode:
+            BannerLayoutMode? = null
+
     private val bannerAdUnitId:
             String
         get() =
-            if (BuildConfig.DEBUG) {
+            if (isDebugBuild) {
                 TEST_BANNER_AD_UNIT_ID
             } else {
                 LIVE_BANNER_AD_UNIT_ID
             }
+
+    private val isDebugBuild: Boolean
+        get() =
+            applicationInfo.flags and
+                ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     private var timeReceiverRegistered =
         false
@@ -249,6 +275,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.tvLegalLink.setOnClickListener {
+            showLegalNotice()
+        }
+
+        binding.tvPrivacyLink.setOnClickListener {
+            if (isPrivacyOptionsRequired()) {
+                showPrivacyOptionsForm()
+            } else {
+                showPrivacyNotice()
+            }
+        }
+
+        binding.tvInvestmentDisclaimer.setOnClickListener {
+            showLegalNotice()
+        }
+
         /*
          * Intro hazırlığını ilk sırada başlatıyoruz.
          * Böylece sistem splash logosu gereksiz
@@ -268,12 +310,27 @@ class MainActivity : AppCompatActivity() {
                     WindowInsetsCompat.Type.systemBars()
                 )
 
+            val ime =
+                insets.getInsets(
+                    WindowInsetsCompat.Type.ime()
+                )
+
+            val isImeVisible =
+                insets.isVisible(
+                    WindowInsetsCompat.Type.ime()
+                )
+
             view.setPadding(
                 systemBars.left,
                 systemBars.top,
                 systemBars.right,
                 systemBars.bottom
             )
+
+            if (imeVisible != isImeVisible) {
+                imeVisible = isImeVisible
+                updateBottomChromeVisibility()
+            }
 
             insets
         }
@@ -442,7 +499,7 @@ class MainActivity : AppCompatActivity() {
                 .Builder()
 
         if (
-            BuildConfig.DEBUG &&
+            isDebugBuild &&
             FORCE_EEA_CONSENT_TEST
         ) {
 
@@ -574,21 +631,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         val privacyOptionsRequired =
-            consentInformation
-                .privacyOptionsRequirementStatus ==
-                    ConsentInformation
-                        .PrivacyOptionsRequirementStatus
-                        .REQUIRED
+            isPrivacyOptionsRequired()
 
         binding.btnPrivacyOptions.visibility =
-            if (privacyOptionsRequired) {
-
-                View.VISIBLE
-
-            } else {
-
-                View.GONE
-            }
+            View.GONE
 
         Log.d(
             CONSENT_LOG_TAG,
@@ -599,6 +645,73 @@ class MainActivity : AppCompatActivity() {
                         "gizli"
                     }
         )
+    }
+
+    private fun isPrivacyOptionsRequired(): Boolean =
+        ::consentInformation.isInitialized &&
+            consentInformation
+                .privacyOptionsRequirementStatus ==
+            ConsentInformation
+                .PrivacyOptionsRequirementStatus
+                .REQUIRED
+
+    private fun showLegalNotice() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.legal_privacy_title)
+            .setMessage(R.string.legal_privacy_summary)
+            .setNeutralButton(
+                R.string.full_privacy_policy
+            ) { _, _ ->
+                openPrivacyPolicy()
+            }
+            .setPositiveButton(R.string.close, null)
+            .show()
+    }
+
+    private fun showPrivacyNotice() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.privacy_title)
+            .setMessage(R.string.privacy_policy_message)
+            .setNeutralButton(
+                R.string.full_privacy_policy
+            ) { _, _ ->
+                openPrivacyPolicy()
+            }
+            .setPositiveButton(R.string.close, null)
+            .show()
+    }
+
+    private fun openPrivacyPolicy() {
+        runCatching {
+            startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(
+                        getString(R.string.privacy_policy_url)
+                    )
+                )
+            )
+        }
+    }
+
+    private fun updateBottomChromeVisibility() {
+        if (!::binding.isInitialized) {
+            return
+        }
+
+        binding.legalFooter.visibility =
+            View.VISIBLE
+
+        binding.adViewContainer.visibility =
+            if (!imeVisible && bannerLoaded) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        if (!imeVisible) {
+            updateBannerForCurrentPage()
+        }
     }
 
     private fun showPrivacyOptionsForm() {
@@ -667,6 +780,8 @@ class MainActivity : AppCompatActivity() {
             bannerLoadStarted =
                 true
 
+            updateBannerContainerLayoutForCurrentPage()
+
             binding.adViewContainer.post {
 
                 if (
@@ -719,7 +834,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(
             ADS_LOG_TAG,
             "AdMob SDK başlatılıyor. " +
-                    "build=${if (BuildConfig.DEBUG) "DEBUG/TEST" else "RELEASE/CANLI"}"
+                    "build=${if (isDebugBuild) "DEBUG/TEST" else "RELEASE/CANLI"}"
         )
 
         Thread {
@@ -764,20 +879,29 @@ class MainActivity : AppCompatActivity() {
 
         destroyBannerAd()
 
+        bannerLoadStarted =
+            true
+
+        bannerLoaded =
+            false
+
+        val bannerLayoutMode =
+            updateBannerContainerLayoutForCurrentPage()
+
         /*
          * INVISIBLE kullanıyoruz:
          * Alan ölçülebilir fakat reklam yüklenene kadar görünmez.
          */
         binding.adViewContainer.visibility =
-            View.INVISIBLE
+            if (imeVisible) View.GONE else View.INVISIBLE
 
-        binding.adViewContainer.post {
+        binding.adViewContainer.doOnLayout {
 
             if (
                 isFinishing ||
                 isDestroyed
             ) {
-                return@post
+                return@doOnLayout
             }
 
             val containerWidthPixels =
@@ -793,7 +917,10 @@ class MainActivity : AppCompatActivity() {
                 binding.adViewContainer.visibility =
                     View.GONE
 
-                return@post
+                bannerLoadStarted =
+                    false
+
+                return@doOnLayout
             }
 
             val density =
@@ -842,8 +969,21 @@ class MainActivity : AppCompatActivity() {
                             !isDestroyed &&
                             bannerAdView === newAdView
                         ) {
+                            bannerLoaded =
+                                true
+
+                            loadedBannerLayoutMode =
+                                bannerLayoutMode
+
                             binding.adViewContainer.visibility =
-                                View.VISIBLE
+                                if (imeVisible) View.GONE else View.VISIBLE
+
+                            if (
+                                loadedBannerLayoutMode !=
+                                bannerLayoutModeForCurrentPage()
+                            ) {
+                                updateBannerForCurrentPage()
+                            }
                         }
                     }
 
@@ -864,6 +1004,12 @@ class MainActivity : AppCompatActivity() {
                             !isDestroyed &&
                             bannerAdView === newAdView
                         ) {
+                            bannerLoaded =
+                                false
+
+                            bannerLoadStarted =
+                                false
+
                             binding.adViewContainer.visibility =
                                 View.GONE
                         }
@@ -931,9 +1077,105 @@ class MainActivity : AppCompatActivity() {
         bannerAdView =
             null
 
+        bannerLoaded =
+            false
+
+        loadedBannerLayoutMode =
+            null
+
         if (::binding.isInitialized) {
             binding.adViewContainer.visibility =
                 View.GONE
+        }
+    }
+
+    private fun bannerLayoutModeForCurrentPage(): BannerLayoutMode =
+        BannerLayoutMode.FULL_WIDTH
+
+    private fun updateBannerContainerLayoutForCurrentPage(): BannerLayoutMode {
+
+        val mode =
+            bannerLayoutModeForCurrentPage()
+
+        val layoutParams =
+            binding.adViewContainer.layoutParams
+
+        if (layoutParams is ConstraintLayout.LayoutParams) {
+
+            when (mode) {
+
+                BannerLayoutMode.COMPACT,
+
+                BannerLayoutMode.FULL_WIDTH -> {
+                    layoutParams.marginStart =
+                        dpToPx(6f).toInt()
+                    layoutParams.marginEnd =
+                        dpToPx(6f).toInt()
+                    layoutParams.bottomMargin =
+                        dpToPx(4f).toInt()
+                }
+            }
+
+            binding.adViewContainer.layoutParams =
+                layoutParams
+        }
+
+        val footerLayoutParams =
+            binding.legalFooter.layoutParams
+
+        if (footerLayoutParams is ConstraintLayout.LayoutParams) {
+            footerLayoutParams.marginStart = 0
+            footerLayoutParams.marginEnd = 0
+            footerLayoutParams.bottomMargin = 0
+            binding.legalFooter.layoutParams =
+                footerLayoutParams
+        }
+
+        return mode
+    }
+
+    private fun updateBannerForCurrentPage() {
+
+        if (!::binding.isInitialized) {
+            return
+        }
+
+        val bannerLayoutMode =
+            updateBannerContainerLayoutForCurrentPage()
+
+        if (
+            bannerLoaded &&
+            loadedBannerLayoutMode != bannerLayoutMode
+        ) {
+
+            destroyBannerAd()
+
+            bannerLoadStarted =
+                false
+        }
+
+        if (bannerLoaded) {
+
+            binding.adViewContainer.visibility =
+                if (imeVisible) View.GONE else View.VISIBLE
+
+            return
+        }
+
+        if (
+            mobileAdsInitialized &&
+            ::consentInformation.isInitialized &&
+            consentInformation.canRequestAds() &&
+            !imeVisible &&
+            !bannerLoadStarted
+        ) {
+
+            bannerLoadStarted =
+                true
+
+            binding.adViewContainer.post {
+                createAndLoadBannerAd()
+            }
         }
     }
 
@@ -1325,10 +1567,27 @@ class MainActivity : AppCompatActivity() {
             ViewPagerAdapter(this)
 
         binding.viewPager.isUserInputEnabled =
-            true
+            false
 
         binding.viewPager.offscreenPageLimit =
             2
+
+        binding.viewPager.setPageTransformer {
+                page,
+                position ->
+
+            val distance =
+                abs(position).coerceIn(
+                    0f,
+                    1f
+                )
+
+            page.alpha =
+                0.82f +
+                    (1f - distance) * 0.18f
+
+            page.translationX = 0f
+        }
 
         if (shouldSelectDefaultPage) {
 
@@ -1338,31 +1597,32 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        val pageTitles =
-            arrayOf(
-                getString(
-                    R.string.tab_portfolio
-                ),
-                getString(
-                    R.string.tab_budget
-                ),
-                getString(
-                    R.string.tab_markets
+        currentPage =
+            binding.viewPager.currentItem
+
+        binding.bottomNavigation.selectedItemId =
+            currentPage.toNavigationItemId()
+
+        binding.bottomNavigation.setOnItemSelectedListener {
+                item ->
+
+            val targetPage =
+                item.itemId.toPageIndex()
+                    ?: return@setOnItemSelectedListener false
+
+            if (binding.viewPager.currentItem != targetPage) {
+                binding.viewPager.setCurrentItem(
+                    targetPage,
+                    true
                 )
-            )
+            }
 
-        TabLayoutMediator(
-            binding.tabLayout,
-            binding.viewPager
-        ) { tab, position ->
+            true
+        }
 
-            tab.text =
-                pageTitles[position]
-
-            tab.contentDescription =
-                pageTitles[position]
-
-        }.attach()
+        binding.bottomNavigation.setOnItemReselectedListener {
+            // Aynı ekrana tekrar basıldığında veri yeniden yüklenmez.
+        }
 
         updateSwipeHint(
             ViewPagerAdapter.DEFAULT_PAGE
@@ -1384,9 +1644,19 @@ class MainActivity : AppCompatActivity() {
                         updateSwipeHint(
                             position
                         )
+
+                        currentPage =
+                            position
+
+                        binding.bottomNavigation.selectedItemId =
+                            position.toNavigationItemId()
+
+                        updateBannerForCurrentPage()
                     }
                 }
             )
+
+        updateBannerForCurrentPage()
     }
 
     private fun updateSwipeHint(
@@ -1415,4 +1685,34 @@ class MainActivity : AppCompatActivity() {
                     null
             }
     }
+
+    private fun Int.toNavigationItemId(): Int =
+        when (this) {
+            ViewPagerAdapter.INVESTMENTS_PAGE ->
+                R.id.nav_portfolio
+
+            ViewPagerAdapter.DASHBOARD_PAGE ->
+                R.id.nav_budget
+
+            ViewPagerAdapter.CURRENCY_PAGE ->
+                R.id.nav_markets
+
+            else ->
+                R.id.nav_budget
+        }
+
+    private fun Int.toPageIndex(): Int? =
+        when (this) {
+            R.id.nav_portfolio ->
+                ViewPagerAdapter.INVESTMENTS_PAGE
+
+            R.id.nav_budget ->
+                ViewPagerAdapter.DASHBOARD_PAGE
+
+            R.id.nav_markets ->
+                ViewPagerAdapter.CURRENCY_PAGE
+
+            else ->
+                null
+        }
 }

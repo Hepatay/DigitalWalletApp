@@ -187,6 +187,10 @@ dependencies {
         "androidx.lifecycle:lifecycle-livedata-ktx:2.6.2"
     )
 
+    implementation(
+        "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
+    )
+
     // AdMob kullanıcı gizliliği ve onay yönetimi
     implementation(
         "com.google.android.ump:user-messaging-platform:4.0.0"
@@ -229,6 +233,11 @@ dependencies {
         "com.google.android.material:material:1.12.0"
     )
 
+    // GerÃ§ek .xlsx workbook Ã¼retimi
+    implementation(
+        "org.dhatim:fastexcel:0.20.2"
+    )
+
     implementation(
         libs.androidx.activity
     )
@@ -264,6 +273,10 @@ dependencies {
 
     androidTestImplementation(
         libs.androidx.espresso.core
+    )
+
+    androidTestImplementation(
+        "androidx.room:room-testing:$roomVersion"
     )
 }
 

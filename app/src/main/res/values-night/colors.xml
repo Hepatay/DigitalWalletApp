@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <color name="surface_main">#111318</color>
+    <color name="surface_sheet">#1A1C20</color>
+    <color name="surface_dialog">#202329</color>
+    <color name="surface_card">#191B20</color>
+    <color name="surface_variant_soft">#2A2D34</color>
+</resources>

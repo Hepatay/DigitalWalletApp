@@ -8,6 +8,7 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deviceManager.xml
 .DS_Store
 /build
 /captures
@@ -17,3 +18,6 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+*.apk
+*.aab
+/app/release/

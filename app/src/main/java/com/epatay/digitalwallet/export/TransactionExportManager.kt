@@ -24,19 +24,44 @@ class TransactionExportManager(
 
     suspend fun exportCsv(
         uri: Uri,
-        transactions: List<Transaction>
+        exportData: WalletExportData
     ): TransactionExportResult =
         withContext(Dispatchers.IO) {
+            check(!exportData.isEmpty) {
+                "Dışa aktarılacak kayıt bulunamadı."
+            }
+
             writeToUri(uri) { outputStream ->
                 outputStream.write(
                     TransactionCsvEncoder.encode(
-                        transactions
+                        exportData
                     )
                 )
             }
 
             TransactionExportResult.from(
-                transactions
+                exportData
+            )
+        }
+
+    suspend fun exportXlsx(
+        uri: Uri,
+        exportData: WalletExportData
+    ): TransactionExportResult =
+        withContext(Dispatchers.IO) {
+            check(!exportData.isEmpty) {
+                "Dışa aktarılacak kayıt bulunamadı."
+            }
+
+            writeToUri(uri) { outputStream ->
+                TransactionExcelEncoder.write(
+                    outputStream,
+                    exportData
+                )
+            }
+
+            TransactionExportResult.from(
+                exportData
             )
         }
 
@@ -86,10 +111,18 @@ class TransactionExportManager(
 
 data class TransactionExportResult(
     val transactionCount: Int,
+    val budgetCount: Int,
+    val investmentCount: Int,
     val totalIncome: Double,
     val totalExpense: Double,
     val netTotal: Double
 ) {
+    val recordCount: Int
+        get() =
+            transactionCount +
+                budgetCount +
+                investmentCount
+
     internal companion object {
         fun from(
             transactions: List<Transaction>
@@ -101,6 +134,28 @@ data class TransactionExportResult(
 
             return TransactionExportResult(
                 transactionCount = transactions.size,
+                budgetCount = 0,
+                investmentCount = 0,
+                totalIncome = totals.totalIncome.toDouble(),
+                totalExpense = totals.totalExpense.toDouble(),
+                netTotal = totals.netTotal.toDouble()
+            )
+        }
+
+        fun from(
+            exportData: WalletExportData
+        ): TransactionExportResult {
+            val totals =
+                TransactionExportTotals.from(
+                    exportData.transactions
+                )
+
+            return TransactionExportResult(
+                transactionCount = exportData.transactions.size,
+                budgetCount = exportData.categoryBudgets.size,
+                investmentCount =
+                    exportData.currencyInvestments.size +
+                        exportData.goldInvestments.size,
                 totalIncome = totals.totalIncome.toDouble(),
                 totalExpense = totals.totalExpense.toDouble(),
                 netTotal = totals.netTotal.toDouble()

@@ -8,7 +8,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
     app:cardBackgroundColor="?attr/colorSurfaceVariant"
-    app:cardCornerRadius="14dp"
+    app:cardCornerRadius="8dp"
     app:cardElevation="0dp">
 
     <LinearLayout
@@ -20,10 +20,10 @@
 
         <ImageView
             android:id="@+id/ivFlag"
-            android:layout_width="60dp"
+            android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginEnd="16dp"
-            android:contentDescription="Para birimi simgesi"
+            android:layout_marginEnd="14dp"
+            android:contentDescription="@string/currency_icon_content_description"
             android:padding="4dp"
             android:scaleType="centerInside"
             tools:src="@drawable/flag_usd" />
@@ -35,22 +35,40 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/tvCurrencyRate"
+                android:id="@+id/tvCurrencyTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                tools:text="1 USD = 40,25 ₺" />
+                tools:text="USD - ABD Dolari" />
 
             <TextView
-                android:id="@+id/tvCurrencyName"
+                android:id="@+id/tvCurrencyUnit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="12sp"
+                tools:text="1 Birim" />
+
+            <TextView
+                android:id="@+id/tvForexBuying"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="13sp"
+                tools:text="Alis: 43,2500 TL" />
+
+            <TextView
+                android:id="@+id/tvForexSelling"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="12sp"
-                tools:text="ABD Doları" />
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="13sp"
+                tools:text="Satis: 43,3300 TL" />
 
         </LinearLayout>
 

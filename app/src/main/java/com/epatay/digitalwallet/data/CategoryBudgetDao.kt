@@ -32,6 +32,12 @@ interface CategoryBudgetDao {
         monthKey: Int
     ): List<CategoryBudget>
 
+    @Query(
+        "SELECT * FROM category_budgets " +
+            "ORDER BY monthKey DESC, category COLLATE NOCASE ASC"
+    )
+    suspend fun getAll(): List<CategoryBudget>
+
     @Upsert
     suspend fun upsert(
         categoryBudget: CategoryBudget

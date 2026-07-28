@@ -21,6 +21,47 @@ internal fun normalizeTransactionDate(
     )
 }
 
+internal fun normalizeTransactionForStorage(
+    transaction: Transaction
+): Transaction? {
+    val title = transaction.title.trim()
+    val category =
+        if (transaction.type == TransactionType.INCOME) {
+            "Gelir"
+        } else {
+            transaction.category.trim()
+        }
+    val amount =
+        DecimalMath.normalizeMoney(transaction.amount)
+            ?.takeIf { it > 0.0 }
+
+    if (
+        title.isEmpty() ||
+        category.isEmpty() ||
+        amount == null
+    ) {
+        return null
+    }
+
+    val normalized = normalizeTransactionDate(
+        transaction.copy(
+            title = title,
+            category = category,
+            amount = amount
+        )
+    )
+
+    if (
+        normalized.id == 0 &&
+        normalized.occurredOn ==
+            TransactionDateUtils.UNKNOWN_DATE_KEY
+    ) {
+        return null
+    }
+
+    return normalized
+}
+
 class TransactionRepository(
     private val transactionDao: TransactionDao
 ) {
@@ -40,17 +81,22 @@ class TransactionRepository(
     suspend fun insert(
         transaction: Transaction
     ) {
-        transactionDao.insertTransaction(
-            normalizeTransactionDate(transaction)
-        )
+        val normalized =
+            normalizeTransactionForStorage(transaction)
+                ?: return
+
+        transactionDao.insertTransaction(normalized)
     }
 
     suspend fun update(
         transaction: Transaction
     ) {
-        transactionDao.updateTransaction(
-            normalizeTransactionDate(transaction)
-        )
+        val normalized =
+            normalizeTransactionForStorage(transaction)
+                ?.takeIf { it.id > 0 }
+                ?: return
+
+        transactionDao.updateTransaction(normalized)
     }
 
     suspend fun delete(
@@ -89,6 +135,10 @@ class TransactionRepository(
                     ?.takeIf(String::isNotEmpty),
             type = filter.type
         )
+    }
+
+    suspend fun getAllSnapshot(): List<Transaction> {
+        return transactionDao.getAllTransactionsSnapshot()
     }
 
     fun observeMonthlyTotals(

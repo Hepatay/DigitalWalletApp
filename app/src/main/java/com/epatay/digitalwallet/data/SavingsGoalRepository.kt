@@ -2,6 +2,7 @@ package com.epatay.digitalwallet.data
 
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
+import java.math.BigDecimal
 
 class SavingsGoalRepository(
     private val database: TransactionDatabase
@@ -75,11 +76,19 @@ class SavingsGoalRepository(
             }
 
             val newBalance =
-                savingsGoalDao.getSavedAmount(
-                    normalized.goalId
-                ) + normalized.amountDelta
+                BigDecimal.valueOf(
+                    DecimalMath.normalizeMoney(
+                        savingsGoalDao.getSavedAmount(
+                            normalized.goalId
+                        )
+                    ) ?: 0.0
+                ).add(
+                    BigDecimal.valueOf(
+                        normalized.amountDelta
+                    )
+                )
 
-            require(newBalance >= -BALANCE_EPSILON) {
+            require(newBalance >= BigDecimal.ZERO) {
                 "Birikim bakiyesi sıfırın altına düşemez."
             }
 
@@ -96,12 +105,20 @@ class SavingsGoalRepository(
                     ?: return@withTransaction
 
             val balanceAfterDelete =
-                savingsGoalDao.getSavedAmount(
-                    current.goalId
-                ) - current.amountDelta
+                BigDecimal.valueOf(
+                    DecimalMath.normalizeMoney(
+                        savingsGoalDao.getSavedAmount(
+                            current.goalId
+                        )
+                    ) ?: 0.0
+                ).subtract(
+                    BigDecimal.valueOf(
+                        current.amountDelta
+                    )
+                )
 
             require(
-                balanceAfterDelete >= -BALANCE_EPSILON
+                balanceAfterDelete >= BigDecimal.ZERO
             ) {
                 "Bu kayıt silinirse birikim bakiyesi sıfırın altına düşer."
             }
@@ -113,9 +130,13 @@ class SavingsGoalRepository(
     private fun normalizeGoal(
         goal: SavingsGoal
     ): SavingsGoal {
+        val normalizedTargetAmount =
+            DecimalMath.normalizeMoney(goal.targetAmount)
+                ?: goal.targetAmount
         val normalized =
             goal.copy(
-                title = goal.title.trim()
+                title = goal.title.trim(),
+                targetAmount = normalizedTargetAmount
             )
 
         require(normalized.title.isNotEmpty()) {
@@ -159,7 +180,21 @@ class SavingsGoalRepository(
             "Geçersiz birikim tarihi."
         }
 
+        val normalizedAbsoluteAmount =
+            DecimalMath.normalizeMoney(
+                kotlin.math.abs(entry.amountDelta)
+            )
+                ?: throw IllegalArgumentException(
+                    "Geçersiz birikim tutarı."
+                )
+
         return entry.copy(
+            amountDelta =
+                if (entry.amountDelta < 0.0) {
+                    -normalizedAbsoluteAmount
+                } else {
+                    normalizedAbsoluteAmount
+                },
             note =
                 entry.note
                     ?.trim()
@@ -167,7 +202,4 @@ class SavingsGoalRepository(
         )
     }
 
-    private companion object {
-        const val BALANCE_EPSILON = 0.000_001
-    }
 }

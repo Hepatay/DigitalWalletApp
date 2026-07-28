@@ -2,7 +2,7 @@
 
 <resources>
 
-    <!-- Uygulamanın normal teması -->
+    <!-- Uygulamanin normal temasi -->
     <style
         name="Base.Theme.DigitalWallet"
         parent="Theme.Material3.DayNight.NoActionBar">
@@ -13,32 +13,64 @@
         <item name="colorSecondary">#00897B</item>
         <item name="colorOnSecondary">#FFFFFF</item>
 
-        <item name="colorSurface">#F8F9FA</item>
+        <item name="colorSurface">@color/surface_main</item>
         <item name="colorOnSurface">#1A1C1E</item>
 
-        <item name="colorSurfaceVariant">#E7E9EC</item>
+        <item name="colorSurfaceVariant">@color/surface_variant_soft</item>
         <item name="colorOnSurfaceVariant">#49454F</item>
 
-        <item name="android:colorBackground">#F8F9FA</item>
+        <item name="android:colorBackground">@color/surface_main</item>
         <item name="colorOnBackground">#1A1C1E</item>
 
         <item name="colorError">#BA1A1A</item>
         <item name="colorOnError">#FFFFFF</item>
 
-        <item name="android:statusBarColor">#F8F9FA</item>
-        <item name="android:navigationBarColor">#F8F9FA</item>
+        <item name="android:statusBarColor">@color/surface_main</item>
+        <item name="android:navigationBarColor">@color/surface_main</item>
+        <item name="bottomSheetDialogTheme">
+            @style/ThemeOverlay.VarlikCep.BottomSheet
+        </item>
+        <item name="materialAlertDialogTheme">
+            @style/ThemeOverlay.VarlikCep.Dialog
+        </item>
 
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
 
     </style>
 
-    <!-- Uygulamada kullanılacak ana tema -->
     <style
         name="Theme.DigitalWallet"
         parent="Base.Theme.DigitalWallet" />
 
-    <!-- Açılış ekranı teması -->
+    <style
+        name="TextAppearance.VarlikCep.BottomNav"
+        parent="TextAppearance.Material3.LabelSmall">
+
+        <item name="android:textSize">11sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
+
+    </style>
+
+    <style
+        name="ThemeOverlay.VarlikCep.BottomSheet"
+        parent="ThemeOverlay.Material3.BottomSheetDialog">
+
+        <item name="colorSurface">@color/surface_sheet</item>
+
+    </style>
+
+    <style
+        name="ThemeOverlay.VarlikCep.Dialog"
+        parent="ThemeOverlay.Material3.MaterialAlertDialog">
+
+        <item name="colorSurface">@color/surface_dialog</item>
+        <item name="android:colorBackground">@color/surface_dialog</item>
+
+    </style>
+
+    <!-- Acilis ekrani temasi -->
     <style
         name="Theme.VarlikCep.Splash"
         parent="Theme.SplashScreen">

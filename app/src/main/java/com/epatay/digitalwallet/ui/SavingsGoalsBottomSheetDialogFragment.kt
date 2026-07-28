@@ -12,11 +12,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.epatay.digitalwallet.data.DecimalInputResult
+import com.epatay.digitalwallet.data.DecimalInputValidator
 import com.epatay.digitalwallet.data.SavingsGoal
 import com.epatay.digitalwallet.data.SavingsGoalProgress
 import com.epatay.digitalwallet.data.TransactionDateUtils
@@ -31,6 +32,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -529,11 +531,9 @@ class SavingsGoalsBottomSheetDialogFragment :
                         viewModel
                             .deleteGoal(goal)
 
-                        Toast.makeText(
-                            dialogContext,
-                            "Birikim hedefi silindi",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showInAppMessage(
+                            "Birikim hedefi silindi"
+                        )
 
                         dialog.dismiss()
                     }
@@ -552,13 +552,11 @@ class SavingsGoalsBottomSheetDialogFragment :
                         ?.trim()
                         .orEmpty()
 
-                val targetAmount =
-                    parseAmount(
-                        form.etSavingsGoalTargetAmount
-                            .text
-                            ?.toString()
-                            ?.trim()
-                            .orEmpty()
+                val targetAmountResult =
+                    DecimalInputValidator.positiveMoney(
+                        rawValue =
+                            form.etSavingsGoalTargetAmount.text,
+                        fieldName = "Hedef tutarı"
                     )
 
                 if (title.isEmpty()) {
@@ -570,15 +568,19 @@ class SavingsGoalsBottomSheetDialogFragment :
                 form.layoutSavingsGoalTitle.error = null
 
                 if (
-                    targetAmount == null ||
-                    !targetAmount.isFinite() ||
-                    targetAmount <= 0.0
+                    targetAmountResult is
+                        DecimalInputResult.Invalid
                 ) {
                     form.layoutSavingsGoalTargetAmount.error =
-                        "Sıfırdan büyük geçerli bir hedef " +
-                            "tutarı girin."
+                        targetAmountResult.message
                     return@setOnClickListener
                 }
+
+                val targetAmount =
+                    (targetAmountResult as
+                        DecimalInputResult.Valid)
+                        .value
+                        .toDouble()
 
                 form.layoutSavingsGoalTargetAmount.error =
                     null
@@ -601,15 +603,13 @@ class SavingsGoalsBottomSheetDialogFragment :
                     )
                 }
 
-                Toast.makeText(
-                    dialogContext,
+                showInAppMessage(
                     if (goalToEdit == null) {
                         "Birikim hedefi eklendi"
                     } else {
                         "Birikim hedefi güncellendi"
-                    },
-                    Toast.LENGTH_SHORT
-                ).show()
+                    }
+                )
 
                 dialog.dismiss()
             }
@@ -684,24 +684,23 @@ class SavingsGoalsBottomSheetDialogFragment :
 
         form.btnSaveSavingsEntry
             .setOnClickListener {
-                val amount =
-                    parseAmount(
-                        form.etSavingsEntryAmount
-                            .text
-                            ?.toString()
-                            ?.trim()
-                            .orEmpty()
+                val amountResult =
+                    DecimalInputValidator.positiveMoney(
+                        rawValue =
+                            form.etSavingsEntryAmount.text,
+                        fieldName = "Tutar"
                     )
 
-                if (
-                    amount == null ||
-                    !amount.isFinite() ||
-                    amount <= 0.0
-                ) {
+                if (amountResult is DecimalInputResult.Invalid) {
                     form.layoutSavingsEntryAmount.error =
-                        "Sıfırdan büyük geçerli bir tutar girin."
+                        amountResult.message
                     return@setOnClickListener
                 }
+
+                val amount =
+                    (amountResult as DecimalInputResult.Valid)
+                        .value
+                        .toDouble()
 
                 val isWithdrawal =
                     form.rgSavingsEntryType
@@ -753,15 +752,13 @@ class SavingsGoalsBottomSheetDialogFragment :
                     note = note
                 )
 
-                Toast.makeText(
-                    dialogContext,
+                showInAppMessage(
                     if (isWithdrawal) {
                         "Birikimden para çekildi"
                     } else {
                         "Birikime para eklendi"
-                    },
-                    Toast.LENGTH_SHORT
-                ).show()
+                    }
+                )
 
                 dialog.dismiss()
             }
@@ -831,24 +828,6 @@ class SavingsGoalsBottomSheetDialogFragment :
         }
     }
 
-    private fun parseAmount(
-        rawAmount: String
-    ): Double? {
-        val normalized =
-            if (
-                rawAmount.contains(",") &&
-                rawAmount.contains(".")
-            ) {
-                rawAmount
-                    .replace(".", "")
-                    .replace(",", ".")
-            } else {
-                rawAmount.replace(",", ".")
-            }
-
-        return normalized.toDoubleOrNull()
-    }
-
     private fun formatCurrency(
         amount: Double
     ): String {
@@ -902,6 +881,23 @@ class SavingsGoalsBottomSheetDialogFragment :
             value *
                 resources.displayMetrics.density
             ).toInt()
+    }
+
+    private fun showInAppMessage(
+        message: String
+    ) {
+        val root =
+            _binding
+                ?.root
+                ?: return
+
+        Snackbar
+            .make(
+                root,
+                message,
+                Snackbar.LENGTH_SHORT
+            )
+            .show()
     }
 
     private fun <T : Dialog> trackChildDialog(

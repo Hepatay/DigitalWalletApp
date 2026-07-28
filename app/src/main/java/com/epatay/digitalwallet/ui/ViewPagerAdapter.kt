@@ -36,7 +36,7 @@ class ViewPagerAdapter(
                 DashboardFragment()
 
             CURRENCY_PAGE ->
-                CurrencyFragment()
+                MarketsFragment()
 
             else ->
                 throw IllegalArgumentException(

@@ -1,6 +1,6 @@
 # VarlıkCep Gizlilik Politikası
 
-**Son güncelleme:** 24 Temmuz 2026
+**Son güncelleme:** 29 Temmuz 2026
 
 VarlıkCep, kullanıcıların kişisel bütçe, gelir, gider ve yatırım kayıtlarını
 takip edebilmesi amacıyla Hüseyin Epatay tarafından geliştirilmiştir.
@@ -8,6 +8,26 @@ takip edebilmesi amacıyla Hüseyin Epatay tarafından geliştirilmiştir.
 Bu gizlilik politikası; VarlıkCep uygulamasının hangi verileri işlediğini,
 verilerin nasıl kullanıldığını, saklandığını ve üçüncü taraf hizmetlerle
 hangi durumlarda paylaşıldığını açıklar.
+
+## KVKK aydınlatma özeti
+
+- **Veri sorumlusu:** Hüseyin Epatay
+- **İşlenen veriler:** Kullanıcının cihazında oluşturduğu finans kayıtları ile
+  reklam ve ağ sağlayıcılarının otomatik işleyebileceği teknik bağlantı,
+  tanımlayıcı, reklam etkileşimi ve tanılama verileri
+- **İşleme amaçları:** Bütçe/portföy işlevlerini cihazda sunmak, piyasa
+  verilerini göstermek, reklam sunmak ve ölçmek, izin tercihlerini yönetmek,
+  güvenliği sağlamak ve teknik sorunları gidermek
+- **Toplama yöntemi:** Kullanıcının uygulamaya girişi, cihazdaki yerel işlemler
+  ve üçüncü taraf SDK/HTTPS bağlantıları üzerinden otomatik yollar
+- **Hukuki sebep:** Uygulama işlevinin kullanıcının talebiyle sunulması, veri
+  sorumlusunun meşru menfaatleri, hukuki yükümlülüklerin yerine getirilmesi ve
+  açık rıza gereken işlemlerde kullanıcının izni
+- **Aktarım:** Finans kayıtları cihazdan çıkarılmaz. Teknik reklam ve bağlantı
+  verileri aşağıda açıklanan hizmet sağlayıcılar tarafından kendi amaç ve
+  politikaları kapsamında işlenebilir.
+- **Başvuru ve haklar:** Kullanıcılar 6698 sayılı Kanun'un 11. maddesindeki
+  hakları için bu politikanın sonundaki iletişim kanalını kullanabilir.
 
 ## 1. Kullanıcının girdiği finansal veriler
 
@@ -22,6 +42,10 @@ cihazdaki yerel veritabanında saklanır:
 - Yatırım miktarları
 - Alış fiyatları
 - Portföy bilgileri
+- Düzenli gelir ve gider tanımları
+- Kategori bütçeleri
+- Birikim hedefleri ve hareketleri
+- Kullanıcının eklediği açıklama ve notlar
 
 Bu kişisel finans kayıtları geliştiriciye, Google AdMob'a veya piyasa verisi
 sağlayıcılarına gönderilmez.
@@ -35,8 +59,8 @@ Kullanıcının oluşturduğu finansal kayıtlar yalnızca kullanıcının cihaz
 saklanır.
 
 Bulut tabanlı senkronizasyon ve cihazlar arası otomatik veri aktarımı
-kullanılmaz. Android sisteminin veya cihaz üreticisinin kendi yedekleme
-özellikleri ayrıca geçerli olabilir.
+kullanılmaz. Uygulama manifestinde Android sistem yedeklemesi ve cihazlar
+arası veri aktarımı kapatılmıştır.
 
 Yerel veriler aşağıdaki durumlardan birine kadar cihazda kalır:
 
@@ -46,6 +70,19 @@ Yerel veriler aşağıdaki durumlardan birine kadar cihazda kalır:
 
 Yerel veriler silindikten sonra geliştiricinin bu verileri geri getirmesi
 mümkün değildir.
+
+### Dışa aktarma ve paylaşma
+
+Kullanıcı; gelir ve gider kayıtlarını `.xlsx`, `.csv` veya `.pdf` dosyası
+olarak, kategori bütçeleri ile yatırım kayıtlarını ise `.xlsx` veya `.csv`
+dosyası olarak dışa aktarabilir. Bu dosyalar yalnızca kullanıcının Android
+dosya seçicisi üzerinden belirlediği konuma yazılır. Uygulama dışa aktarılan
+dosyaları geliştiriciye otomatik olarak göndermez.
+
+Kullanıcı bir dosyayı başka bir uygulamayla paylaşmayı seçerse dosya, seçilen
+uygulamanın ve hizmet sağlayıcının gizlilik koşullarına tabi olabilir. Dışa
+aktarılan dosyaların saklanması, paylaşılması ve silinmesi kullanıcının
+sorumluluğundadır.
 
 ## 3. Reklamlar ve Google AdMob
 
@@ -91,23 +128,24 @@ bütçe ve portföy özelliklerini kullanmasını engellemez.
 
 ## 5. Gizlilik tercihlerinin değiştirilmesi
 
-Kullanıcılar daha önce verdikleri reklam ve veri işleme tercihlerini
-uygulamadaki **Gizlilik ve çerez ayarları** seçeneği üzerinden yeniden
-açabilir ve değiştirebilir.
+Kullanıcılar daha önce verdikleri reklam ve veri işleme tercihlerini, ilgili
+bölgelerde uygulamanın alt bölümündeki **Gizlilik** bağlantısı üzerinden açılan
+Google User Messaging Platform formuyla yeniden inceleyebilir ve
+değiştirebilir.
 
 Android reklam kimliği ayrıca cihazın Android gizlilik veya reklam
 ayarlarından sıfırlanabilir ya da silinebilir.
 
 ## 6. Üçüncü taraf piyasa verileri
 
-VarlıkCep, döviz ve altın fiyatlarını göstermek için aşağıdaki üçüncü taraf
-servislere HTTPS üzerinden istek gönderebilir:
+VarlıkCep, piyasa bilgilerini göstermek için aşağıdaki servislere HTTPS
+üzerinden istek gönderebilir:
 
-- Exchange Rate API:
-  https://www.exchangerate-api.com/
+- Türkiye Cumhuriyet Merkez Bankası günlük döviz kurları:
+  https://www.tcmb.gov.tr/kurlar/today.xml
 
-- Gold API:
-  https://gold-api.com/
+- apinoktam altın fiyatları (truncgil.com verisi):
+  https://apinoktam.erenozdemir.com.tr/
 
 Bu servisler IP adresi, istek zamanı, cihazın genel bağlantı bilgileri ve
 IP adresinden çıkarılabilen yaklaşık konum gibi teknik bilgileri kendi
@@ -115,6 +153,12 @@ gizlilik politikalarına göre işleyebilir.
 
 VarlıkCep, kullanıcının gelir, gider, bütçe veya yatırım kayıtlarını bu
 servislere göndermez.
+
+Bayrak görselleri uygulama paketinde yerel olarak bulunur; bayrakları
+göstermek için herhangi bir bayrak servisine ağ isteği gönderilmez. Görseller
+yalnızca görsel sunum içindir ve fiyat verisinin kaynağı değildir. Görsellerin
+dayandığı `flag-icons` projesi MIT lisansıyla sunulur. Ayrıntılı üçüncü taraf
+bildirimleri `docs/THIRD_PARTY_NOTICES.md` dosyasındadır.
 
 ## 7. Verilerin güvenliği
 
@@ -149,7 +193,16 @@ Kullanıcının kişisel finans kayıtları yalnızca kendi cihazında
 saklandığından, bu kayıtların silinmesi uygulama içinden veya cihaz
 ayarlarından gerçekleştirilmelidir.
 
-## 10. Gizlilik politikasındaki değişiklikler
+## 10. Finansal bilgi ve sorumluluk sınırı
+
+VarlıkCep ödeme, para transferi, aracılık veya yatırım danışmanlığı hizmeti
+sunmaz. Gösterilen döviz, altın, portföy değeri, kâr ve zarar hesapları genel
+bilgilendirme ve referans amaçlıdır; yatırım tavsiyesi, kesin fiyat veya
+alım-satım teklifi değildir. Veriler gecikebilir, eksik olabilir ve çevrimdışı
+durumda son kaydedilen değerler gösterilebilir. Kuyumcu, banka, şehir, işçilik
+ve piyasa koşullarına göre gerçekleşen fiyatlar farklı olabilir.
+
+## 11. Gizlilik politikasındaki değişiklikler
 
 Bu politika; uygulamanın özellikleri, kullanılan üçüncü taraf hizmetler
 veya yasal gereklilikler değiştiğinde güncellenebilir.
@@ -157,11 +210,11 @@ veya yasal gereklilikler değiştiğinde güncellenebilir.
 Politikanın güncel sürümü bu sayfada yayımlanır ve son güncelleme tarihi
 sayfanın üst kısmında belirtilir.
 
-## 11. Geliştirici ve iletişim
+## 12. Geliştirici ve iletişim
 
 **Uygulama:** VarlıkCep  
 **Geliştirici:** Hüseyin Epatay
 
 Gizlilik politikasıyla ilgili soru, talep veya bildirimler için:
 
-https://github.com/Hepatay
+https://github.com/Hepatay/DigitalWalletApp/issues

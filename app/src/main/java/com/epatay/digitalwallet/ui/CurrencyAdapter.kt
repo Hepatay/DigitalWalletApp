@@ -15,21 +15,43 @@ class CurrencyAdapter(
     private var currencyList: List<CurrencyItem>
 ) : RecyclerView.Adapter<CurrencyAdapter.CurrencyViewHolder>() {
 
-    private var multiplier: Double = 1.0
+    private val turkishLocale =
+        Locale.forLanguageTag("tr-TR")
 
-    class CurrencyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvRate: TextView = view.findViewById(R.id.tvCurrencyRate)
-        val tvName: TextView = view.findViewById(R.id.tvCurrencyName)
-        val ivFlag: ImageView = view.findViewById(R.id.ivFlag)
+    private val rateFormatter =
+        NumberFormat
+            .getNumberInstance(turkishLocale)
+            .apply {
+                minimumFractionDigits = 4
+                maximumFractionDigits = 4
+            }
+
+    class CurrencyViewHolder(
+        view: View
+    ) : RecyclerView.ViewHolder(view) {
+        val tvTitle: TextView =
+            view.findViewById(R.id.tvCurrencyTitle)
+        val tvUnit: TextView =
+            view.findViewById(R.id.tvCurrencyUnit)
+        val tvBuying: TextView =
+            view.findViewById(R.id.tvForexBuying)
+        val tvSelling: TextView =
+            view.findViewById(R.id.tvForexSelling)
+        val ivFlag: ImageView =
+            view.findViewById(R.id.ivFlag)
     }
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
     ): CurrencyViewHolder {
-
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_currency, parent, false)
+        val view =
+            LayoutInflater.from(parent.context)
+                .inflate(
+                    R.layout.item_currency,
+                    parent,
+                    false
+                )
 
         return CurrencyViewHolder(view)
     }
@@ -38,51 +60,55 @@ class CurrencyAdapter(
         holder: CurrencyViewHolder,
         position: Int
     ) {
-        val item = currencyList[position]
+        val item =
+            currencyList[position]
 
-        val totalTry = item.rateValue * multiplier
+        holder.tvTitle.text =
+            "${item.code} - ${item.name}"
 
-        val amountString =
-            NumberFormat
-                .getNumberInstance(
-                    Locale.forLanguageTag("tr-TR")
+        holder.tvUnit.text =
+            if (item.unit > 1) {
+                holder.itemView.context.getString(
+                    R.string.currency_unit_multiple,
+                    item.unit
                 )
-                .apply {
-                    minimumFractionDigits = 0
-                    maximumFractionDigits = 4
-                }
-                .format(multiplier)
+            } else {
+                holder.itemView.context.getString(R.string.currency_unit_single)
+            }
 
-        holder.tvRate.text = String.format(
-            Locale.forLanguageTag("tr-TR"),
-            "%s %s = %,.2f ₺",
-            amountString,
-            item.code,
-            totalTry
-        )
+        holder.tvBuying.text =
+            holder.itemView.context.getString(
+                R.string.currency_buying,
+                formatRate(item.forexBuying)
+            )
 
-        holder.tvName.text = item.name
+        holder.tvSelling.text =
+            holder.itemView.context.getString(
+                R.string.currency_selling,
+                formatRate(item.forexSelling)
+            )
 
-        // Eksik olan satır buydu
-        holder.ivFlag.setImageResource(item.flagIcon)
+        holder.ivFlag.setImageResource(item.flagResId)
     }
 
     override fun getItemCount(): Int {
         return currencyList.size
     }
 
-    fun updateData(newList: List<CurrencyItem>) {
+    fun updateData(
+        newList: List<CurrencyItem>
+    ) {
         currencyList = newList
         notifyDataSetChanged()
     }
 
-    fun updateMultiplier(newMultiplier: Double) {
-        multiplier = if (newMultiplier.isFinite() && newMultiplier > 0.0) {
-            newMultiplier
-        } else {
-            1.0
-        }
-
-        notifyDataSetChanged()
+    private fun formatRate(
+        value: Double?
+    ): String {
+        return value
+            ?.let { rate ->
+                "${rateFormatter.format(rate)} TL"
+            }
+            ?: "-"
     }
 }
