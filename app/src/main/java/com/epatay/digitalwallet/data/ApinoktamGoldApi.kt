@@ -2,10 +2,15 @@ package com.epatay.digitalwallet.data
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Url
 
 interface ApinoktamGoldApi {
-    @GET("public/v1/altin")
-    suspend fun getGoldRates(): ApinoktamGoldResponse
+    @GET
+    suspend fun getGoldRates(
+        @Url endpoint: String,
+        @Header("x-api-key") apiKey: String?
+    ): ApinoktamGoldResponse
 }
 
 data class ApinoktamGoldResponse(

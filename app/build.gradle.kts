@@ -15,6 +15,19 @@ val keystorePropertiesFile =
 val keystoreProperties =
     Properties()
 
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use(::load)
+        }
+    }
+
+val apiNoktamApiKey =
+    localProperties.getProperty("APINOKTAM_API_KEY", "")
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+
 if (keystorePropertiesFile.exists()) {
 
     keystorePropertiesFile
@@ -44,10 +57,16 @@ android {
             36
 
         versionCode =
-            1
+            2
 
         versionName =
-            "1.0.0"
+            "1.1.0"
+
+        buildConfigField(
+            "String",
+            "APINOKTAM_API_KEY",
+            "\"$apiNoktamApiKey\""
+        )
 
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
@@ -137,6 +156,9 @@ android {
     buildFeatures {
 
         viewBinding =
+            true
+
+        buildConfig =
             true
     }
 }

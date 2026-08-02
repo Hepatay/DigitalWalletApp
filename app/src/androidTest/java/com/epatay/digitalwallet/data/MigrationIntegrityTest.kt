@@ -90,6 +90,45 @@ class MigrationIntegrityTest {
         }
     }
 
+    @Test
+    fun migration10To11_preservesGoldRates_andBackfillsSourceTime() {
+        migrationHelper.createDatabase(
+            DATABASE_NAME,
+            10
+        ).apply {
+            execSQL(
+                """
+                INSERT INTO gold_rates
+                    (type, displayName, buyingPrice, sellingPrice, source,
+                     sourceDate, fetchedAt, isReference)
+                VALUES
+                    ('GRAM_GOLD', 'Gram Altın', 6174.46, 6175.37,
+                     'API Noktam / Trunçgil Finans', '2026-08-02 11:30:02',
+                     1785659404000, 1)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        migrationHelper.runMigrationsAndValidate(
+            DATABASE_NAME,
+            11,
+            true,
+            TransactionDatabase.MIGRATION_10_11
+        ).apply {
+            query(
+                "SELECT buyingPrice, sellingPrice, sourceUpdatedAt, fetchedAt " +
+                    "FROM gold_rates WHERE type = 'GRAM_GOLD'"
+            ).use { cursor ->
+                assertEquals(true, cursor.moveToFirst())
+                assertEquals(6174.46, cursor.getDouble(0), 0.0)
+                assertEquals(6175.37, cursor.getDouble(1), 0.0)
+                assertEquals(cursor.getLong(3), cursor.getLong(2))
+            }
+            close()
+        }
+    }
+
     private companion object {
         const val DATABASE_NAME = "transaction_database"
     }

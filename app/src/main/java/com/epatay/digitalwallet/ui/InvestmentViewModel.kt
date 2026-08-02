@@ -11,6 +11,8 @@ import com.epatay.digitalwallet.data.GoldInputUnit
 import com.epatay.digitalwallet.data.GoldRateEntity
 import com.epatay.digitalwallet.data.GoldType
 import com.epatay.digitalwallet.data.InvestmentItem
+import com.epatay.digitalwallet.data.MarketPriceValidator
+import com.epatay.digitalwallet.data.PortfolioCalculator
 import com.epatay.digitalwallet.data.TcmbXmlParser
 import com.epatay.digitalwallet.data.TransactionDatabase
 import com.epatay.digitalwallet.data.UserGoldAssetEntity
@@ -194,18 +196,22 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
     ) {
         currencySellingPrices.clear()
         currencies.forEach { rate ->
-            rate.forexSelling
-                ?.div(rate.unit)
-                ?.takeIf { it.isFinite() && it > 0.0 }
-                ?.let { currencySellingPrices[rate.currencyCode] = it }
+            if (rate.unit > 0) {
+                MarketPriceValidator.validate(
+                    rate.forexBuying?.div(rate.unit),
+                    rate.forexSelling?.div(rate.unit)
+                )?.sellingPrice?.toDouble()?.let {
+                    currencySellingPrices[rate.currencyCode] = it
+                }
+            }
         }
 
         goldSellingPrices.clear()
         goldRates.forEach { rate ->
             val type = runCatching { GoldType.valueOf(rate.type) }.getOrNull()
-            val price = rate.sellingPrice
-            if (type != null && price != null && price.isFinite() && price > 0.0) {
-                goldSellingPrices[type] = price
+            val prices = MarketPriceValidator.validate(rate.buyingPrice, rate.sellingPrice)
+            if (type != null && prices != null) {
+                goldSellingPrices[type] = prices.sellingPrice.toDouble()
             }
         }
     }
@@ -215,17 +221,19 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
     ): PortfolioAssetItem {
         val code = assetName.trim().uppercase(Locale.ROOT)
         val rate = rates.firstOrNull { it.currencyCode == code }
-        val marketBuying =
-            rate?.forexBuying
-                ?.div(rate.unit)
-                ?.takeIf { it.isFinite() && it > 0.0 }
-        val cost =
-            DecimalMath.multiplyMoney(amount, buyPrice)
-                ?: 0.0
-        val currentValue =
-            marketBuying?.let { currentPrice ->
-                DecimalMath.multiplyMoney(amount, currentPrice)
+        val prices =
+            rate?.takeIf { it.unit > 0 }?.let {
+                MarketPriceValidator.validate(
+                    it.forexBuying?.div(it.unit),
+                    it.forexSelling?.div(it.unit)
+                )
             }
+        val calculation =
+            PortfolioCalculator.calculate(
+                quantity = amount,
+                userPurchaseUnitPrice = buyPrice,
+                marketBuyingPrice = prices?.buyingPrice?.toDouble()
+            )
 
         return PortfolioAssetItem(
             stableKey = "currency-$id",
@@ -235,17 +243,19 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             quantity = amount,
             unitLabel = "birim",
             purchaseUnitPrice = buyPrice,
-            totalPurchaseCost = cost,
+            totalPurchaseCost = calculation?.totalCost?.toDouble(),
             purchaseDateText = buyDate,
             note = note,
-            marketBuyingPrice = marketBuying,
-            currentValue = currentValue,
-            profitLoss =
-                currentValue?.let { value ->
-                    DecimalMath.subtractMoney(value, cost)
-                },
+            marketBuyingPrice = prices?.buyingPrice?.toDouble(),
+            marketSellingPrice = prices?.sellingPrice?.toDouble(),
+            spread = prices?.spread?.toDouble(),
+            spreadPercentage = prices?.spreadPercentage?.toDouble(),
+            currentValue = calculation?.estimatedSaleValue?.toDouble(),
+            profitLoss = calculation?.profitLoss?.toDouble(),
+            profitLossPercentage = calculation?.profitLossPercentage?.toDouble(),
             source = rate?.let { "TCMB" },
             sourceUpdatedAt = rate?.fetchedAtMillis,
+            sourceFetchedAt = rate?.fetchedAtMillis,
             legacyInvestment = this
         )
     }
@@ -255,14 +265,16 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
     ): PortfolioAssetItem {
         val type = runCatching { GoldType.valueOf(goldType) }.getOrNull()
         val rate = rates.firstOrNull { it.type == goldType }
-        val marketBuying =
-            rate?.buyingPrice?.takeIf { it.isFinite() && it > 0.0 }
-        val currentValue =
-            marketBuying?.let { currentPrice ->
-                DecimalMath.multiplyMoney(quantity, currentPrice)
+        val prices =
+            rate?.let {
+                MarketPriceValidator.validate(it.buyingPrice, it.sellingPrice)
             }
-        val cost =
-            totalPurchaseCost?.let(DecimalMath::normalizeMoney)
+        val calculation =
+            PortfolioCalculator.calculate(
+                quantity = quantity,
+                userPurchaseUnitPrice = purchaseUnitPrice,
+                marketBuyingPrice = prices?.buyingPrice?.toDouble()
+            )
 
         return PortfolioAssetItem(
             stableKey = "gold-$id",
@@ -273,19 +285,19 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             unitLabel =
                 if (type?.inputUnit == GoldInputUnit.GRAM) "gram" else "adet",
             purchaseUnitPrice = purchaseUnitPrice,
-            totalPurchaseCost = cost,
+            totalPurchaseCost = calculation?.totalCost?.toDouble(),
             purchaseDateText = purchaseDate.formatDate(),
             note = note,
-            marketBuyingPrice = marketBuying,
-            currentValue = currentValue,
-            profitLoss =
-                if (currentValue != null && cost != null) {
-                    DecimalMath.subtractMoney(currentValue, cost)
-                } else {
-                    null
-                },
+            marketBuyingPrice = prices?.buyingPrice?.toDouble(),
+            marketSellingPrice = prices?.sellingPrice?.toDouble(),
+            spread = prices?.spread?.toDouble(),
+            spreadPercentage = prices?.spreadPercentage?.toDouble(),
+            currentValue = calculation?.estimatedSaleValue?.toDouble(),
+            profitLoss = calculation?.profitLoss?.toDouble(),
+            profitLossPercentage = calculation?.profitLossPercentage?.toDouble(),
             source = rate?.source,
-            sourceUpdatedAt = rate?.fetchedAt,
+            sourceUpdatedAt = rate?.sourceUpdatedAt,
+            sourceFetchedAt = rate?.fetchedAt,
             goldAsset = this,
             goldType = type
         )

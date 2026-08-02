@@ -71,6 +71,11 @@ class RoomGoldRateRepository(
                     GoldCacheReason.SERVICE_UNAVAILABLE,
                     GoldLoadResult.ServiceUnavailable
                 )
+            } catch (exception: GoldDataValidationException) {
+                cached.orFallback(
+                    GoldCacheReason.INVALID_REMOTE_DATA,
+                    GoldLoadResult.InvalidData
+                )
             } catch (exception: IllegalStateException) {
                 cached.orFallback(
                     GoldCacheReason.PARSE_ERROR,
@@ -87,12 +92,7 @@ class RoomGoldRateRepository(
     private fun List<GoldRate>.orFallback(
         reason: GoldCacheReason,
         error: GoldLoadResult
-    ): GoldLoadResult =
-        if (isNotEmpty()) {
-            GoldLoadResult.Cached(this, reason)
-        } else {
-            error
-        }
+    ): GoldLoadResult = GoldFallbackPolicy.resolve(this, reason, error)
 
     private fun hasValidatedInternet(): Boolean {
         val manager =
@@ -114,6 +114,19 @@ class RoomGoldRateRepository(
     }
 }
 
+object GoldFallbackPolicy {
+    fun resolve(
+        cachedRates: List<GoldRate>,
+        reason: GoldCacheReason,
+        error: GoldLoadResult
+    ): GoldLoadResult =
+        if (cachedRates.isNotEmpty()) {
+            GoldLoadResult.Cached(cachedRates, reason)
+        } else {
+            error
+        }
+}
+
 sealed interface GoldLoadResult {
     data class Success(val rates: List<GoldRate>) : GoldLoadResult
     data class Cached(
@@ -123,6 +136,7 @@ sealed interface GoldLoadResult {
     data object NoInternet : GoldLoadResult
     data object ServiceUnavailable : GoldLoadResult
     data object ParseError : GoldLoadResult
+    data object InvalidData : GoldLoadResult
     data object Empty : GoldLoadResult
 }
 
@@ -130,5 +144,6 @@ enum class GoldCacheReason {
     NO_INTERNET,
     SERVICE_UNAVAILABLE,
     PARSE_ERROR,
+    INVALID_REMOTE_DATA,
     EMPTY_REMOTE_DATA
 }

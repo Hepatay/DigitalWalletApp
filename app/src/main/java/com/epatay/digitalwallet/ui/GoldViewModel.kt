@@ -56,6 +56,10 @@ class GoldViewModel(application: Application) : AndroidViewModel(application) {
                         GoldUiState.Error(
                             "Altın fiyatı yanıtı okunamadı."
                         )
+                    GoldLoadResult.InvalidData ->
+                        GoldUiState.Error(
+                            "Altın fiyatı verileri doğrulanamadı."
+                        )
                     GoldLoadResult.Empty -> GoldUiState.Empty
                 }
         }
@@ -69,6 +73,8 @@ class GoldViewModel(application: Application) : AndroidViewModel(application) {
                 "Veri sağlayıcısına erişilemedi. Son kaydedilen referans fiyatlar gösteriliyor."
             GoldCacheReason.PARSE_ERROR ->
                 "Yeni veri okunamadı. Son kaydedilen referans fiyatlar gösteriliyor."
+            GoldCacheReason.INVALID_REMOTE_DATA ->
+                "Yeni fiyatlar geçersiz veya eski. Son kaydedilen referans fiyatlar gösteriliyor."
             GoldCacheReason.EMPTY_REMOTE_DATA ->
                 "Yeni veri bulunamadı. Son kaydedilen referans fiyatlar gösteriliyor."
         }

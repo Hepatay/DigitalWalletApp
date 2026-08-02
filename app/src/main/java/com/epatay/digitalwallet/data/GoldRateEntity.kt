@@ -12,6 +12,7 @@ data class GoldRateEntity(
     val sellingPrice: Double?,
     val source: String,
     val sourceDate: String?,
+    val sourceUpdatedAt: Long,
     val fetchedAt: Long,
     val isReference: Boolean
 )
@@ -22,12 +23,17 @@ fun GoldRateEntity.toGoldRate(): GoldRate? {
             .getOrNull()
             ?: return null
 
+    val prices =
+        MarketPriceValidator.validate(buyingPrice, sellingPrice)
+            ?: return null
+
     return GoldRate(
         type = goldType,
-        buyingPrice = buyingPrice,
-        sellingPrice = sellingPrice,
+        buyingPrice = prices.buyingPrice.toDouble(),
+        sellingPrice = prices.sellingPrice.toDouble(),
         source = source,
         sourceDate = sourceDate,
+        sourceUpdatedAt = sourceUpdatedAt,
         fetchedAt = fetchedAt,
         isReference = isReference
     )
@@ -41,6 +47,7 @@ fun GoldRate.toEntity(): GoldRateEntity =
         sellingPrice = sellingPrice,
         source = source,
         sourceDate = sourceDate,
+        sourceUpdatedAt = sourceUpdatedAt,
         fetchedAt = fetchedAt,
         isReference = isReference
     )
