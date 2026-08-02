@@ -21,6 +21,8 @@ object GoldRateFormatter {
     fun price(value: Double?): String =
         value?.let { "${currency.format(it)} TL" } ?: "-"
 
+    fun percentage(value: Double): String = currency.format(value)
+
     fun fetchedAt(value: Long): String = fetchedAt.format(Date(value))
 
     fun sourceDate(value: String?): String =

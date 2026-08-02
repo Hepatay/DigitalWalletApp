@@ -130,6 +130,14 @@
 
         </RadioGroup>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="Otomatik öneri piyasa satış fiyatıdır. Gerçek alış fiyatınızı Manuel seçeneğiyle girebilirsiniz."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layoutManualRate"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"

@@ -86,7 +86,31 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/ivFlag"
-            tools:text="Referans güncel kur: 4.820,50 TL" />
+            tools:text="Piyasa alış fiyatı: 4.820,50 TL" />
+
+        <TextView
+            android:id="@+id/tvMarketSelling"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvCurrentRate"
+            tools:text="Piyasa satış fiyatı: 4.846,75 TL" />
+
+        <TextView
+            android:id="@+id/tvSpread"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvMarketSelling"
+            tools:text="Makas: 26,25 TL (%0,54)" />
 
         <TextView
             android:id="@+id/tvCurrentValue"
@@ -98,8 +122,8 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvCurrentRate"
-            tools:text="Tahmini güncel değer: 60.256,25 TL" />
+            app:layout_constraintTop_toBottomOf="@id/tvSpread"
+            tools:text="Tahmini satış değeri: 60.256,25 TL" />
 
         <TextView
             android:id="@+id/tvBuyPrice"
@@ -111,7 +135,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvCurrentValue"
-            tools:text="Alış fiyatı: 4.320,00 TL" />
+            tools:text="Kullanıcı alış fiyatı: 4.320,00 TL" />
 
         <TextView
             android:id="@+id/tvTotalBuyCost"
@@ -138,6 +162,18 @@
             tools:text="+6.256,25 TL Kâr" />
 
         <TextView
+            android:id="@+id/tvValuationExplanation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Tahmini satış değeri piyasa alış fiyatına göre hesaplanır. İlk fark alış-satış makasından kaynaklanabilir."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvProfitLoss" />
+
+        <TextView
             android:id="@+id/tvSource"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -146,7 +182,7 @@
             android:textSize="11sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvProfitLoss"
+            app:layout_constraintTop_toBottomOf="@id/tvValuationExplanation"
             tools:text="Kaynak: TCMB • 28.07.2026 15:30" />
 
         <TextView

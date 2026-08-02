@@ -29,13 +29,16 @@ class GoldAdapter : RecyclerView.Adapter<GoldAdapter.GoldViewHolder>() {
             "Alış: ${GoldRateFormatter.price(rate.buyingPrice)}"
         holder.binding.tvGoldSelling.text =
             "Satış: ${GoldRateFormatter.price(rate.sellingPrice)}"
+        holder.binding.tvGoldSpread.text =
+            "Makas: ${GoldRateFormatter.price(rate.spread)} " +
+                "(%${GoldRateFormatter.percentage(rate.spreadPercentage)})"
         holder.binding.tvGoldSource.text = "Kaynak: ${rate.source}"
         holder.binding.tvGoldSourceDate.text =
-            "Veri tarihi: ${GoldRateFormatter.sourceDate(rate.sourceDate)}"
+            "Kaynak veri zamanı: ${GoldRateFormatter.fetchedAt(rate.sourceUpdatedAt)}"
         holder.binding.tvGoldFetchedAt.text =
-            "Uygulamada güncellendi: ${GoldRateFormatter.fetchedAt(rate.fetchedAt)}"
+            "Uygulamanın çektiği zaman: ${GoldRateFormatter.fetchedAt(rate.fetchedAt)}"
         holder.binding.tvGoldReference.text =
-            if (rate.isReference) "Referans fiyat" else "Piyasa fiyatı"
+            if (rate.isReference) "Referans bilgi amaçlıdır" else "Piyasa fiyatı"
     }
 
     override fun getItemCount(): Int = rates.size

@@ -43,7 +43,7 @@ class InvestmentAdapter(
             "${formatQuantity(item.quantity)} ${item.unitLabel}"
         binding.tvBuyDate.text = item.purchaseDateText
         binding.tvBuyPrice.text =
-            "Alış fiyatı: ${formatRate(item.purchaseUnitPrice)}"
+            "Kullanıcı alış fiyatı: ${formatRate(item.purchaseUnitPrice)}"
         binding.tvTotalBuyCost.text =
             "Toplam maliyet: ${formatCurrency(item.totalPurchaseCost)}"
 
@@ -58,15 +58,22 @@ class InvestmentAdapter(
         val marketBuying = item.marketBuyingPrice
         if (marketBuying == null || item.currentValue == null) {
             binding.tvCurrentRate.text = "Güncel fiyat bilgisi bulunamadı."
-            binding.tvCurrentValue.text = "Tahmini güncel değer: -"
+            binding.tvMarketSelling.text = "Piyasa satış fiyatı: -"
+            binding.tvSpread.text = "Makas: -"
+            binding.tvCurrentValue.text = "Tahmini satış değeri: -"
             binding.tvProfitLoss.text = "Kâr/Zarar: -"
             binding.tvProfitLoss.setTextColor(Color.parseColor("#888888"))
         } else {
             binding.tvCurrentRate.text =
-                "Referans güncel kur: ${formatRate(marketBuying)}"
+                "Piyasa alış fiyatı: ${formatRate(marketBuying)}"
+            binding.tvMarketSelling.text =
+                "Piyasa satış fiyatı: ${formatRate(item.marketSellingPrice)}"
+            binding.tvSpread.text =
+                "Makas: ${formatCurrency(item.spread)} " +
+                    "(%${formatNumber(item.spreadPercentage)})"
             binding.tvCurrentValue.text =
-                "Tahmini güncel değer: ${formatCurrency(item.currentValue)}"
-            bindProfitLoss(binding, item.profitLoss)
+                "Tahmini satış değeri: ${formatCurrency(item.currentValue)}"
+            bindProfitLoss(binding, item.profitLoss, item.profitLossPercentage)
         }
 
         binding.tvSource.text =
@@ -74,11 +81,17 @@ class InvestmentAdapter(
                 append("Kaynak: ")
                 append(item.source ?: "Bulunamadı")
                 item.sourceUpdatedAt?.let {
-                    append(" • ")
+                    append(" • Veri: ")
                     append(GoldRateFormatter.fetchedAt(it))
                 }
+                item.sourceFetchedAt
+                    ?.takeIf { it != item.sourceUpdatedAt }
+                    ?.let {
+                        append(" • Çekildi: ")
+                        append(GoldRateFormatter.fetchedAt(it))
+                    }
             }
-        binding.tvReference.text = "Referans değer • Yatırım tavsiyesi değildir"
+        binding.tvReference.text = "Referans bilgi amaçlıdır • Yatırım tavsiyesi değildir"
         binding.tvNote.text = item.note.orEmpty()
         binding.tvNote.visibility =
             if (item.note.isNullOrBlank()) View.GONE else View.VISIBLE
@@ -89,7 +102,8 @@ class InvestmentAdapter(
 
     private fun bindProfitLoss(
         binding: ItemInvestmentBinding,
-        difference: Double?
+        difference: Double?,
+        percentage: Double?
     ) {
         if (difference == null) {
             binding.tvProfitLoss.text = "Kâr/Zarar: -"
@@ -104,12 +118,12 @@ class InvestmentAdapter(
             }
             difference > 0.0 -> {
                 binding.tvProfitLoss.text =
-                    "+${formatCurrency(difference)} Kâr"
+                    "+${formatCurrency(difference)} Kâr (%${formatNumber(percentage)})"
                 binding.tvProfitLoss.setTextColor(Color.parseColor("#2E7D32"))
             }
             else -> {
                 binding.tvProfitLoss.text =
-                    "-${formatCurrency(abs(difference))} Zarar"
+                    "-${formatCurrency(abs(difference))} Zarar (%${formatNumber(percentage)})"
                 binding.tvProfitLoss.setTextColor(Color.parseColor("#C62828"))
             }
         }
@@ -142,6 +156,14 @@ class InvestmentAdapter(
                 minimumFractionDigits = 2
                 maximumFractionDigits = 2
             }.format(it) + " TL"
+        } ?: "-"
+
+    private fun formatNumber(value: Double?): String =
+        value?.let {
+            NumberFormat.getNumberInstance(TR_LOCALE).apply {
+                minimumFractionDigits = 2
+                maximumFractionDigits = 2
+            }.format(it)
         } ?: "-"
 
     private companion object {
