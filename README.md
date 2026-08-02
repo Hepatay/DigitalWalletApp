@@ -17,7 +17,7 @@ verilerdir ve yatırım tavsiyesi değildir.
 | Arayüz | XML, Material Components, ViewBinding |
 | Yerel veri | Room Database |
 | Paket adı | `com.epatay.digitalwallet` |
-| Sürüm | `1.0.0` |
+| Sürüm | `1.1.0` (`versionCode 2`) |
 
 ## Özellikler
 
@@ -39,14 +39,16 @@ verilerdir ve yatırım tavsiyesi değildir.
 - Son başarılı kur verisini Room üzerinde çevrimdışı gösterme
 - Desteklenen para birimleri için uygulama paketindeki yerel PNG bayraklar
 - İnternetten bayrak görseli indirmeyen çevrimdışı görsel yapı
-- apinoktam üzerinden altın alış ve satış referans fiyatları
+- API Noktam üzerinden, Trunçgil Finans kaynaklı altın alış ve satış referans fiyatları
+- Gram, çeyrek, yarım, tam ve Ata/Cumhuriyet altını için alış, satış, makas ve makas yüzdesi
 - Döviz ve altın için ayrı Piyasalar sekmeleri
 
 ### Portföy
 
 - Döviz ve altın varlığı ekleme, güncelleme ve silme
-- Alış fiyatı, miktar, toplam maliyet ve referans güncel kur takibi
-- Güncel tahmini değer ile kâr/zarar hesaplama
+- Kullanıcının gerçek alış fiyatını elle girebilmesi veya piyasa satış fiyatını öneri olarak kullanabilmesi
+- Piyasa alış/satış fiyatı, makas, toplam maliyet ve tahmini satış değeri takibi
+- Tahmini satış değeri ile kâr/zarar hesaplama
 - Dövizler için bayraklarla uyumlu sabit grafik renkleri
 - Altın varlıkları için sarı grafik gösterimi
 - Kullanıcı verilerini koruyan Room migration zinciri
@@ -75,12 +77,26 @@ verilerdir ve yatırım tavsiyesi değildir.
 ## Veri kaynakları
 
 - Döviz kurları: [Türkiye Cumhuriyet Merkez Bankası](https://www.tcmb.gov.tr/kurlar/today.xml)
-- Altın referans fiyatları: [apinoktam](https://apinoktam.erenozdemir.com.tr/)
+- Altın referans fiyatları: [API Noktam](https://apinoktam.erenozdemir.com.tr/) / Trunçgil Finans
 - Reklam: Google Mobile Ads SDK
 - İzin tercihleri: Google User Messaging Platform
 
 Piyasa verileri gecikebilir veya geçici olarak erişilemez olabilir. Uygulama bu
-durumda son başarılı yerel veriyi gösterebilir.
+durumda Room'daki son başarılı veriyi **Son kaydedilen referans fiyat**
+uyarısıyla gösterebilir. Kaynağın veri zamanı ile uygulamanın veriyi çektiği
+zaman ayrı alanlardır.
+
+### Alış, satış ve makas
+
+- **Piyasa alış fiyatı**, kullanıcının varlığı bugün elden çıkarması hâlindeki
+  tahmini değer için kullanılır.
+- **Piyasa satış fiyatı**, yeni varlık formunda yalnızca önerilen alış fiyatıdır;
+  kullanıcı gerçek birim alış fiyatını manuel girebilir.
+- **Makas**, `satış - alış`; **makas yüzdesi** ise
+  `(satış - alış) / alış × 100` olarak hesaplanır.
+- Yeni bir yatırımın piyasa satış fiyatıyla kaydedilip piyasa alış fiyatıyla
+  değerlenmesi nedeniyle makas kadar ekside başlaması normaldir; negatif sonuç
+  gizlenmez veya yapay olarak sıfırlanmaz.
 
 ## Teknik yapı
 
@@ -125,9 +141,19 @@ git clone https://github.com/Hepatay/DigitalWalletApp.git
 cd DigitalWalletApp
 ```
 
-Projeyi Android Studio ile açın, Gradle senkronizasyonunu tamamlayın ve `app`
-konfigürasyonunu çalıştırın. Canlı AdMob ve imzalama değerleri repoya eklenmez;
-yerel yapılandırma dosyaları kullanılmalıdır.
+Projeyi Android Studio ile açmadan önce kökteki, Git tarafından yok sayılan
+`local.properties` dosyasına Android SDK yolunun yanına API Noktam anahtarını
+ekleyebilirsiniz:
+
+```properties
+sdk.dir=C\:\\Android\\Sdk
+APINOKTAM_API_KEY=ak_live_ornek_degeri_buraya_yazin
+```
+
+Anahtar tanımlandığında uygulama kimlik doğrulamalı `/v1/altin` ucunu, anahtar
+yokken anahtarsız demo ucunu kullanır. Ardından Gradle senkronizasyonunu
+tamamlayıp `app` konfigürasyonunu çalıştırın. Canlı AdMob, API ve imzalama
+değerleri repoya eklenmez; yerel yapılandırma dosyaları kullanılır.
 
 Komut satırından doğrulama:
 
@@ -155,6 +181,11 @@ yalnızca kullanıcının seçtiği konuma veya paylaşım hedefine yazılır.
 
 İmzalama anahtarları, parolalar, `local.properties`, `keystore.properties`,
 `*.jks`, `*.keystore`, AAB ve APK dosyaları GitHub deposuna eklenmemelidir.
+
+`local.properties`/`BuildConfig` kullanımı anahtarın kaynak depoda görünmesini
+engeller; ancak bir mobil istemciye eklenen sır APK içinden kararlı bir
+saldırgana karşı tamamen gizlenemez. Üretimde anahtar kısıtları, kota takibi,
+düzenli rotasyon ve mümkünse sunucu tarafı aracı katman kullanılmalıdır.
 
 Güvenlik veya gizlilik bildirimleri için
 [GitHub Issues](https://github.com/Hepatay/DigitalWalletApp/issues) kullanılabilir.
