@@ -13,6 +13,7 @@ izler. Sürümler `MAJOR.MINOR.PATCH` biçimindedir.
 - Makas, portföy değeri, Türkçe sayı biçimi, ters alan, geçersiz veri ve offline
   fallback regresyon testleri.
 - Room 10→11 veri koruyan migration ve migration instrumented testi.
+- Portföyüm, Bütçem ve Piyasalar ana ekranları arasında yatay kaydırma.
 
 ### Değiştirildi
 

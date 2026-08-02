@@ -12,6 +12,8 @@
 - Para hesaplamaları BigDecimal tabanlı ortak katmanda toplandı; Türkçe para biçimi
   ve kritik hesap senaryoları için yeni testler eklendi.
 - Room 10→11 geçişi kullanıcı verilerini silmeden uygulanıyor.
+- Portföyüm, Bütçem ve Piyasalar ekranları arasında sağa-sola kaydırma eklendi;
+  alt menü seçimi kaydırılan ekranla birlikte güncelleniyor.
 
 Finansal veriler yalnızca referans ve bilgilendirme amaçlıdır; yatırım tavsiyesi
 değildir.

@@ -1567,7 +1567,7 @@ class MainActivity : AppCompatActivity() {
             ViewPagerAdapter(this)
 
         binding.viewPager.isUserInputEnabled =
-            false
+            true
 
         binding.viewPager.offscreenPageLimit =
             2
