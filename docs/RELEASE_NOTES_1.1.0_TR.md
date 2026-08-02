@@ -14,6 +14,11 @@
 - Room 10→11 geçişi kullanıcı verilerini silmeden uygulanıyor.
 - Portföyüm, Bütçem ve Piyasalar ekranları arasında sağa-sola kaydırma eklendi;
   alt menü seçimi kaydırılan ekranla birlikte güncelleniyor.
+- TCMB'nin kaynak veri tarihi ile uygulamanın veriyi cihaza çektiği zaman artık
+  portföy kartında ayrı “Veri” ve “Çekildi” etiketleriyle gösteriliyor.
+- Bütçem ekranı sadeleştirildi: yaklaşan ödemeler, bütçe araçları ve işlemler
+  açılıp kapatılabiliyor; kategori bütçeleri doğrudan erişilebilir durumda.
+- Altın kartlarının görseli yenilendi.
 
 Finansal veriler yalnızca referans ve bilgilendirme amaçlıdır; yatırım tavsiyesi
 değildir.

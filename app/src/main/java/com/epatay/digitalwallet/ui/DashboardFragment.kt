@@ -74,8 +74,14 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     private lateinit var adapter: TransactionAdapter
 
     private var currentTransactions: List<Transaction> = emptyList()
+    private var currentFilteredTransactionCount = 0
     private var currentRecurringTransactions:
         List<RecurringTransaction> = emptyList()
+
+    private var recurringExpanded = false
+    private var quickActionsExpanded = false
+    private var transactionsExpanded = true
+    private var hasActiveFilters = false
 
     private var pendingCsvExportData:
         WalletExportData? = null
@@ -162,6 +168,36 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         _binding = FragmentDashboardBinding.bind(view)
 
+        recurringExpanded =
+            savedInstanceState?.getBoolean(STATE_RECURRING_EXPANDED)
+                ?: false
+        quickActionsExpanded =
+            savedInstanceState?.getBoolean(STATE_QUICK_ACTIONS_EXPANDED)
+                ?: false
+        transactionsExpanded =
+            savedInstanceState?.getBoolean(STATE_TRANSACTIONS_EXPANDED)
+                ?: true
+
+        binding.layoutRecurringHeader.setOnClickListener {
+            recurringExpanded = !recurringExpanded
+            renderExpandableSections()
+        }
+
+        binding.layoutQuickActionsHeader.setOnClickListener {
+            quickActionsExpanded = !quickActionsExpanded
+            renderExpandableSections()
+        }
+
+        binding.layoutTransactionsHeader.setOnClickListener {
+            transactionsExpanded = !transactionsExpanded
+            if (!transactionsExpanded) {
+                hideKeyboard(binding.etTransactionSearch)
+            }
+            renderExpandableSections()
+        }
+
+        renderExpandableSections()
+
         binding.btnSettings.setOnClickListener {
             showSetLimitDialog()
         }
@@ -219,11 +255,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     val isEmpty =
                         transactions.isEmpty()
 
-                    binding.rvTransactions.visibility =
-                        if (isEmpty) View.GONE else View.VISIBLE
-
-                    binding.layoutEmptyTransactions.visibility =
-                        if (isEmpty) View.VISIBLE else View.GONE
+                    currentFilteredTransactionCount = transactions.size
+                    renderTransactionContent(isEmpty)
 
                     binding.tvTransactionsTitle.text =
                         "İşlemler (${transactions.size})"
@@ -342,6 +375,14 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 )
         }
 
+        binding.btnCategoryBudgets.setOnClickListener {
+            CategoryBudgetsBottomSheetDialogFragment()
+                .show(
+                    parentFragmentManager,
+                    CategoryBudgetsBottomSheetDialogFragment.TAG
+                )
+        }
+
         binding.btnSavingsGoals.setOnClickListener {
             SavingsGoalsBottomSheetDialogFragment()
                 .show(
@@ -390,6 +431,67 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             supportingVisibility
         binding.fabAddExpense.visibility =
             supportingVisibility
+    }
+
+    private fun renderExpandableSections() {
+        binding.layoutRecurringContent.visibility =
+            if (recurringExpanded) View.VISIBLE else View.GONE
+        binding.ivRecurringChevron.rotation =
+            if (recurringExpanded) 180f else 0f
+        binding.layoutRecurringHeader.contentDescription =
+            if (recurringExpanded) {
+                "Yaklaşan ödemeleri kapat"
+            } else {
+                "Yaklaşan ödemeleri aç"
+            }
+
+        binding.layoutQuickActionsContent.visibility =
+            if (quickActionsExpanded) View.VISIBLE else View.GONE
+        binding.ivQuickActionsChevron.rotation =
+            if (quickActionsExpanded) 180f else 0f
+        binding.layoutQuickActionsHeader.contentDescription =
+            if (quickActionsExpanded) {
+                "Bütçe araçlarını kapat"
+            } else {
+                "Bütçe araçlarını aç"
+            }
+
+        binding.ivTransactionsChevron.rotation =
+            if (transactionsExpanded) 180f else 0f
+        binding.layoutTransactionsHeader.contentDescription =
+            if (transactionsExpanded) {
+                "İşlemleri kapat"
+            } else {
+                "İşlemleri aç"
+            }
+        renderTransactionContent(
+            isEmpty = currentFilteredTransactionCount == 0
+        )
+    }
+
+    private fun renderTransactionContent(
+        isEmpty: Boolean
+    ) {
+        binding.layoutTransactionSearchTools.visibility =
+            if (transactionsExpanded) View.VISIBLE else View.GONE
+        binding.tvActiveFilters.visibility =
+            if (transactionsExpanded && hasActiveFilters) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        binding.rvTransactions.visibility =
+            if (transactionsExpanded && !isEmpty) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        binding.layoutEmptyTransactions.visibility =
+            if (transactionsExpanded && isEmpty) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
     }
 
     private fun updateFilterSummary(
@@ -456,12 +558,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 parts.joinToString(" • ")
             }
 
-        binding.tvActiveFilters.visibility =
-            if (parts.isEmpty()) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
+        hasActiveFilters = parts.isNotEmpty()
+        renderTransactionContent(
+            isEmpty = currentFilteredTransactionCount == 0
+        )
     }
 
     private fun formatDateKey(
@@ -1064,6 +1164,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         val upcoming =
             upcomingAll.take(1)
+
+        binding.tvRecurringTitle.text =
+            if (upcomingAll.isEmpty()) {
+                "Yaklaşan ödemeler"
+            } else {
+                "Yaklaşan ödemeler (${upcomingAll.size})"
+            }
 
         binding.llRecurringPreview.removeAllViews()
 
@@ -2385,6 +2492,24 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         dialog.show()
     }
 
+    override fun onSaveInstanceState(
+        outState: Bundle
+    ) {
+        outState.putBoolean(
+            STATE_RECURRING_EXPANDED,
+            recurringExpanded
+        )
+        outState.putBoolean(
+            STATE_QUICK_ACTIONS_EXPANDED,
+            quickActionsExpanded
+        )
+        outState.putBoolean(
+            STATE_TRANSACTIONS_EXPANDED,
+            transactionsExpanded
+        )
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
         activeBottomSheetDialogs
             .toList()
@@ -2406,6 +2531,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     }
 
     private companion object {
+        const val STATE_RECURRING_EXPANDED =
+            "dashboard_recurring_expanded"
+        const val STATE_QUICK_ACTIONS_EXPANDED =
+            "dashboard_quick_actions_expanded"
+        const val STATE_TRANSACTIONS_EXPANDED =
+            "dashboard_transactions_expanded"
+
         val EXPENSE_CATEGORIES =
             listOf(
                 "Gıda",

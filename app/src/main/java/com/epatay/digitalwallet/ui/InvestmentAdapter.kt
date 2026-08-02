@@ -48,7 +48,7 @@ class InvestmentAdapter(
             "Toplam maliyet: ${formatCurrency(item.totalPurchaseCost)}"
 
         if (item.kind == PortfolioAssetKind.GOLD) {
-            binding.ivFlag.setImageResource(R.drawable.ic_golds)
+            binding.ivFlag.setImageResource(R.drawable.ic_gold_coin)
         } else {
             binding.ivFlag.setImageResource(
                 CurrencyFlagProvider.getFlagResId(item.code)
@@ -76,21 +76,25 @@ class InvestmentAdapter(
             bindProfitLoss(binding, item.profitLoss, item.profitLossPercentage)
         }
 
-        binding.tvSource.text =
-            buildString {
-                append("Kaynak: ")
-                append(item.source ?: "Bulunamadı")
-                item.sourceUpdatedAt?.let {
-                    append(" • Veri: ")
-                    append(GoldRateFormatter.fetchedAt(it))
+        val sourceUpdate =
+            item.sourceUpdatedText
+                ?.takeIf(String::isNotBlank)
+                ?: item.sourceUpdatedAt?.let(
+                    GoldRateFormatter::fetchedAt
+                )
+        val fetchedAt =
+            item.sourceFetchedAt
+                ?.takeIf {
+                    item.sourceUpdatedText != null ||
+                        it != item.sourceUpdatedAt
                 }
-                item.sourceFetchedAt
-                    ?.takeIf { it != item.sourceUpdatedAt }
-                    ?.let {
-                        append(" • Çekildi: ")
-                        append(GoldRateFormatter.fetchedAt(it))
-                    }
-            }
+                ?.let(GoldRateFormatter::fetchedAt)
+        binding.tvSource.text =
+            PortfolioSourceLabelFormatter.format(
+                source = item.source,
+                sourceUpdatedText = sourceUpdate,
+                fetchedAtText = fetchedAt
+            )
         binding.tvReference.text = "Referans bilgi amaçlıdır • Yatırım tavsiyesi değildir"
         binding.tvNote.text = item.note.orEmpty()
         binding.tvNote.visibility =

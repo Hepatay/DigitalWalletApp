@@ -28,7 +28,7 @@
                 android:layout_height="36dp"
                 android:contentDescription="@null"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_golds" />
+                android:src="@drawable/ic_gold_coin" />
 
             <TextView
                 android:id="@+id/tvGoldName"

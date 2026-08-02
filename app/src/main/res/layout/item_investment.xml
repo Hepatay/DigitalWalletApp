@@ -24,7 +24,7 @@
             android:scaleType="centerInside"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:src="@drawable/ic_golds" />
+            tools:src="@drawable/ic_gold_coin" />
 
         <ImageButton
             android:id="@+id/btnDeleteInvestment"

@@ -43,12 +43,15 @@
 
 ## 1.1.0 yerel doğrulaması — 02.08.2026
 
-- Birim test: 51/51 başarılı; fiyat eşleştirme, makas, portföy değeri,
+- Birim test: 52/52 başarılı; fiyat eşleştirme, makas, portföy değeri,
   Türkçe biçim, geçersiz veri ve offline fallback kapsamda.
 - Emülatör instrumented test: 3/3 başarılı; 9→10 ve 10→11 veri koruma
   migration'ları kapsamda.
 - Debug APK, R8’li release APK ve release AAB derlemesi başarılı.
-- Debug/release lint: 0 hata, 366 yayın engellemeyen uyarı.
+- Debug/release lint: 0 hata, 369 yayın engellemeyen uyarı.
+- Emülatörde TCMB kaynak tarihi / cihaz çekim zamanı ayrımı, açılır-kapanır
+  Bütçem bölümleri, yeni altın görseli ve AdMob debug test reklamı görsel olarak
+  doğrulandı.
 - Emülatörde 1.0.0 (`versionCode 1`) → 1.1.0 (`versionCode 2`) üzerine
   kurulum ve soğuk açılış başarılı; crash buffer boş.
 - Upload key tanımlı olmadığı için üretilen release APK/AAB imzasızdır ve Play'e

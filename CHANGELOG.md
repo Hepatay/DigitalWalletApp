@@ -14,6 +14,8 @@ izler. Sürümler `MAJOR.MINOR.PATCH` biçimindedir.
   fallback regresyon testleri.
 - Room 10→11 veri koruyan migration ve migration instrumented testi.
 - Portföyüm, Bütçem ve Piyasalar ana ekranları arasında yatay kaydırma.
+- Bütçem ekranında açılıp kapanabilen “Yaklaşan ödemeler”, “Bütçe araçları” ve
+  “İşlemler” bölümleri.
 
 ### Değiştirildi
 
@@ -21,6 +23,8 @@ izler. Sürümler `MAJOR.MINOR.PATCH` biçimindedir.
 - Otomatik alış fiyatı önerisi piyasa satış fiyatı olarak açıkça etiketlendi;
   manuel gerçek alış fiyatı girişi korunur.
 - Altın kaynağı “API Noktam / Trunçgil Finans” olarak açıkça gösterilir.
+- Eski altın JPEG'i yerine şeffaf, yüksek okunabilirlikli yeni altın sikke
+  görseli kullanılır.
 - `versionCode` 2 ve `versionName` 1.1.0 olarak güncellendi.
 
 ### Düzeltildi
@@ -29,6 +33,8 @@ izler. Sürümler `MAJOR.MINOR.PATCH` biçimindedir.
 - Eksik, yinelenmiş, eski, sıfır, negatif, aşırı büyük ve ters alış/satış
   verilerinin başarılı veri olarak Room'a yazılması.
 - Başarısız yenilemenin son sağlam fiyat setini silme riski.
+- Döviz kartında TCMB kaynak tarihiyle cihazın veriyi çektiği zamanın aynı tarih
+  gibi gösterilmesi.
 
 ### Güvenlik
 

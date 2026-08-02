@@ -31,6 +31,7 @@ data class PortfolioAssetItem(
     val source: String?,
     val sourceUpdatedAt: Long?,
     val sourceFetchedAt: Long?,
+    val sourceUpdatedText: String? = null,
     val legacyInvestment: InvestmentItem? = null,
     val goldAsset: UserGoldAssetEntity? = null,
     val goldType: GoldType? = null

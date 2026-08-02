@@ -254,7 +254,8 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             profitLoss = calculation?.profitLoss?.toDouble(),
             profitLossPercentage = calculation?.profitLossPercentage?.toDouble(),
             source = rate?.let { "TCMB" },
-            sourceUpdatedAt = rate?.fetchedAtMillis,
+            sourceUpdatedText = rate?.updateDateTime,
+            sourceUpdatedAt = null,
             sourceFetchedAt = rate?.fetchedAtMillis,
             legacyInvestment = this
         )

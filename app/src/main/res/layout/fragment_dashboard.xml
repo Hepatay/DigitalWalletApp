@@ -355,26 +355,39 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="4dp">
+            android:animateLayoutChanges="true"
+            android:orientation="vertical">
 
             <LinearLayout
+                android:id="@+id/layoutRecurringHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:minHeight="48dp"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
 
                 <TextView
+                    android:id="@+id/tvRecurringTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Yaklaşanlar"
+                    android:text="Yaklaşan ödemeler"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/ivRecurringChevron"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="Yaklaşan ödemeleri aç veya kapat"
+                    android:padding="15dp"
+                    app:srcCompat="@drawable/ic_expand_more"
+                    app:tint="?attr/colorOnSurfaceVariant" />
 
                 <ImageButton
                     android:id="@+id/btnAddRecurring"
@@ -388,101 +401,191 @@
 
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvRecurringEmpty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="36dp"
-                android:gravity="center_vertical"
-                android:paddingEnd="6dp"
-                android:text="Henüz düzenli kayıt yok."
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="12sp" />
-
             <LinearLayout
-                android:id="@+id/llRecurringPreview"
+                android:id="@+id/layoutRecurringContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
                 android:orientation="vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="6dp"
                 android:visibility="gone"
-                tools:visibility="visible" />
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tvRecurringEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="36dp"
+                    android:text="Henüz düzenli kayıt yok."
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:id="@+id/llRecurringPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/scrollQuickActions"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_marginTop="6dp"
         android:layout_marginEnd="12dp"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:minHeight="52dp"
-        android:orientation="horizontal"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardRecurring">
+        app:layout_constraintTop_toBottomOf="@id/cardRecurring"
+        app:strokeColor="?attr/colorOutline"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:minHeight="52dp"
-            android:orientation="horizontal">
+            android:animateLayoutChanges="true"
+            android:orientation="vertical">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMonthlyReport"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/layoutQuickActionsHeader"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="2"
-                android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:text="Aylık rapor"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="48dp"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSavingsGoals"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="2"
-                android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:text="Birikim hedefleri"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnExportTransactions"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bütçe araçları"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Kategori, rapor, hedef ve dışa aktarma"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/ivQuickActionsChevron"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="Bütçe araçlarını aç veya kapat"
+                    android:padding="15dp"
+                    app:srcCompat="@drawable/ic_expand_more"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutQuickActionsContent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_weight="1"
-                android:maxLines="2"
-                android:minHeight="52dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:text="Dışa aktar"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                android:orientation="vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCategoryBudgets"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:text="Kategori bütçeleri"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMonthlyReport"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:text="Aylık rapor"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSavingsGoals"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:text="Birikim hedefleri"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnExportTransactions"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:text="Dışa aktar"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout
         android:id="@+id/layoutTransactionTools"
@@ -497,27 +600,50 @@
         app:layout_constraintTop_toBottomOf="@id/scrollQuickActions">
 
         <LinearLayout
+            android:id="@+id/layoutTransactionsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvTransactionsTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="İşlemler"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/ivTransactionsChevron"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="İşlemleri aç veya kapat"
+                android:padding="15dp"
+                app:srcCompat="@drawable/ic_expand_more"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutTransactionSearchTools"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:minHeight="52dp"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tvTransactionsTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="İşlemler"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/layoutTransactionSearch"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
                 android:layout_weight="1"
                 android:hint="İşlem ara"
                 android:minHeight="48dp"
