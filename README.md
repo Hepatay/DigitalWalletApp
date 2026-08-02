@@ -134,38 +134,6 @@ Gereksinimler:
 - Android SDK
 - Android 7.0 veya üzeri cihaz/emülatör
 
-Projeyi klonlayın:
-
-```bash
-git clone https://github.com/Hepatay/DigitalWalletApp.git
-cd DigitalWalletApp
-```
-
-Projeyi Android Studio ile açmadan önce kökteki, Git tarafından yok sayılan
-`local.properties` dosyasına Android SDK yolunun yanına API Noktam anahtarını
-ekleyebilirsiniz:
-
-```properties
-sdk.dir=C\:\\Android\\Sdk
-APINOKTAM_API_KEY=ak_live_ornek_degeri_buraya_yazin
-```
-
-Anahtar tanımlandığında uygulama kimlik doğrulamalı `/v1/altin` ucunu, anahtar
-yokken anahtarsız demo ucunu kullanır. Ardından Gradle senkronizasyonunu
-tamamlayıp `app` konfigürasyonunu çalıştırın. Canlı AdMob, API ve imzalama
-değerleri repoya eklenmez; yerel yapılandırma dosyaları kullanılır.
-
-Komut satırından doğrulama:
-
-```bash
-./gradlew testDebugUnitTest lintDebug assembleDebug
-```
-
-Windows:
-
-```powershell
-.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
-```
 
 ## Gizlilik
 
@@ -187,8 +155,6 @@ engeller; ancak bir mobil istemciye eklenen sır APK içinden kararlı bir
 saldırgana karşı tamamen gizlenemez. Üretimde anahtar kısıtları, kota takibi,
 düzenli rotasyon ve mümkünse sunucu tarafı aracı katman kullanılmalıdır.
 
-Güvenlik veya gizlilik bildirimleri için
-[GitHub Issues](https://github.com/Hepatay/DigitalWalletApp/issues) kullanılabilir.
 
 ## Yasal uyarı
 
