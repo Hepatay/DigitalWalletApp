@@ -11,7 +11,7 @@ class SavingsGoalProgressTest {
     fun progress_calculatesRemainingAndCompletion() {
         val goal =
             SavingsGoal(
-                id = 3,
+                uuid = "3",
                 title = "Acil durum fonu",
                 targetAmount = 10_000.0,
                 createdAtMillis = 1L

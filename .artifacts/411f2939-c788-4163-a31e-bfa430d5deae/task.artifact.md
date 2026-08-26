@@ -1,0 +1,8 @@
+- [x] Optimize `activity_main.xml` layout
+    - [x] Update `bottomNavigationContainer` padding
+    - [x] Adjust `BottomNavigationView` height to 56dp
+    - [x] Update `legalFooter` and links dimensions
+- [x] Refactor `MainActivity.kt` inset handling
+    - [x] Update `OnApplyWindowInsetsListener`
+    - [x] Remove arbitrary +1dp padding
+- [x] Verify changes on device/emulator

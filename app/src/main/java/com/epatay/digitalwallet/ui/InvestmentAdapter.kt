@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.CurrencyFlagProvider
@@ -100,8 +101,24 @@ class InvestmentAdapter(
         binding.tvNote.visibility =
             if (item.note.isNullOrBlank()) View.GONE else View.VISIBLE
 
-        binding.ivEditPrice.setOnClickListener { onEditClick(item) }
-        binding.btnDeleteInvestment.setOnClickListener { onDeleteClick(item) }
+        binding.ivMoreOptions.setOnClickListener { view: android.view.View ->
+            val popup = PopupMenu(view.context, view)
+            popup.inflate(R.menu.menu_investment_options)
+            popup.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.action_edit -> {
+                        onEditClick(item)
+                        true
+                    }
+                    R.id.action_delete -> {
+                        onDeleteClick(item)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
     }
 
     private fun bindProfitLoss(

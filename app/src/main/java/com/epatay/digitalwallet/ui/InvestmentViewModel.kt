@@ -36,6 +36,22 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
     private val currencySellingPrices = ConcurrentHashMap<String, Double>()
     private val goldSellingPrices = ConcurrentHashMap<GoldType, Double>()
 
+    private val currencyRateRepository = com.epatay.digitalwallet.data.CurrencyRateRepository(
+        context = application,
+        dao = currencyRateDao
+    )
+    private val goldRateRepository = com.epatay.digitalwallet.data.RoomGoldRateRepository(
+        context = application,
+        dao = goldRateDao
+    )
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            currencyRateRepository.loadRates()
+            goldRateRepository.loadRates()
+        }
+    }
+
     val currencyCodes: LiveData<List<String>> =
         currencyRateDao.observeAllRates()
             .map { rates ->
@@ -62,7 +78,7 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
                     add(asset.toPortfolioItem(goldRates))
                 }
             }.sortedByDescending { item ->
-                item.legacyInvestment?.id?.toLong()
+                item.legacyInvestment?.updated_at
                     ?: item.goldAsset?.createdAt
                     ?: 0L
             }
@@ -103,17 +119,22 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
                 amount = normalizedQuantity,
                 buyPrice = normalizedPurchasePrice,
                 buyDate = purchaseDateText,
-                note = note?.trim()?.takeIf(String::isNotEmpty)
+                note = note?.trim()?.takeIf(String::isNotEmpty),
+                user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid,
+                is_deleted = false,
+                is_synced = false,
+                updated_at = System.currentTimeMillis()
             )
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun insertGold(
         type: GoldType,
         quantity: Double,
         purchaseUnitPrice: Double,
-        purchaseDate: Long?,
-        note: String?
+        purchaseDate: Long? = null,
+        note: String? = null
     ) = viewModelScope.launch(Dispatchers.IO) {
         val normalizedQuantity =
             DecimalMath.normalizeQuantity(quantity)
@@ -140,15 +161,22 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
                 purchaseDate = purchaseDate,
                 note = note?.trim()?.takeIf(String::isNotEmpty),
                 createdAt = now,
-                updatedAt = now
+                updatedAt = now,
+                user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid,
+                is_deleted = false,
+                is_synced = false,
+                updated_at = System.currentTimeMillis()
             )
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun update(
         item: PortfolioAssetItem,
         quantity: Double,
-        purchaseUnitPrice: Double
+        purchaseUnitPrice: Double,
+        purchaseDate: Long? = null,
+        note: String? = null
     ) = viewModelScope.launch(Dispatchers.IO) {
         val normalizedQuantity =
             DecimalMath.normalizeQuantity(quantity)
@@ -165,10 +193,20 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             ) ?: return@launch
 
         item.legacyInvestment?.let {
+            val dateText = purchaseDate?.let { date ->
+                SimpleDateFormat(
+                    "dd.MM.yyyy",
+                    Locale.forLanguageTag("tr-TR")
+                ).format(Date(date))
+            } ?: it.buyDate
             investmentDao.updateInvestment(
                 it.copy(
                     amount = normalizedQuantity,
-                    buyPrice = normalizedPurchasePrice
+                    buyPrice = normalizedPurchasePrice,
+                    buyDate = dateText ?: "",
+                    note = if (note != null) note.trim().takeIf(String::isNotEmpty) else it.note,
+                    is_synced = false,
+                    updated_at = System.currentTimeMillis()
                 )
             )
         }
@@ -178,16 +216,22 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
                     quantity = normalizedQuantity,
                     purchaseUnitPrice = normalizedPurchasePrice,
                     totalPurchaseCost = totalPurchaseCost,
-                    updatedAt = System.currentTimeMillis()
+                    purchaseDate = purchaseDate ?: it.purchaseDate,
+                    note = if (note != null) note.trim().takeIf(String::isNotEmpty) else it.note,
+                    updatedAt = System.currentTimeMillis(),
+                    updated_at = System.currentTimeMillis(),
+                    is_synced = false
                 )
             )
         }
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun delete(item: PortfolioAssetItem) =
         viewModelScope.launch(Dispatchers.IO) {
-            item.legacyInvestment?.let { investmentDao.deleteInvestment(it) }
-            item.goldAsset?.let { goldAssetDao.delete(it) }
+            item.legacyInvestment?.let { investmentDao.deleteInvestmentById(it.uuid) }
+            item.goldAsset?.let { goldAssetDao.softDelete(it.uuid) }
+            com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
         }
 
     private fun updatePurchasePriceCaches(
@@ -236,7 +280,7 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             )
 
         return PortfolioAssetItem(
-            stableKey = "currency-$id",
+            stableKey = "currency-$uuid",
             kind = PortfolioAssetKind.CURRENCY,
             displayName = code,
             code = code,
@@ -278,7 +322,7 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
             )
 
         return PortfolioAssetItem(
-            stableKey = "gold-$id",
+            stableKey = "gold-$uuid",
             kind = PortfolioAssetKind.GOLD,
             displayName = type?.displayName ?: goldType,
             code = goldType,
@@ -312,3 +356,4 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
         ).format(Date(this))
     }
 }
+

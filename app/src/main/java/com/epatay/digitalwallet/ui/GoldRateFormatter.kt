@@ -23,7 +23,7 @@ object GoldRateFormatter {
 
     fun percentage(value: Double): String = currency.format(value)
 
-    fun fetchedAt(value: Long): String = fetchedAt.format(Date(value))
+    fun fetchedAt(value: Long): String = fetchedAt.format(Date(if (value < 1000000000000L) value * 1000 else value))
 
     fun sourceDate(value: String?): String =
         value?.takeIf(String::isNotBlank) ?: "Kaynak tarihi belirtilmemiş"

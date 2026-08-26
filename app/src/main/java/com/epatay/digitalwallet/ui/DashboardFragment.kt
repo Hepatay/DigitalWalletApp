@@ -1,5 +1,9 @@
 package com.epatay.digitalwallet.ui
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import coil.load
+import coil.transform.CircleCropTransformation
 import android.Manifest
 import android.content.ClipData
 import android.content.Intent
@@ -67,6 +71,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     private val binding get() = _binding!!
 
     private val transactionViewModel: TransactionViewModel by activityViewModels()
+    private val authViewModel: AuthViewModel by activityViewModels()
 
     private val recurringTransactionViewModel:
         RecurringTransactionViewModel by activityViewModels()
@@ -89,8 +94,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     private var pendingXlsxExportData:
         WalletExportData? = null
 
-    private var pendingPdfTransactions:
-        List<Transaction>? = null
+    private var pendingPdfExportData:
+        com.epatay.digitalwallet.export.WalletExportData? = null
 
     private val activeBottomSheetDialogs =
         mutableSetOf<BottomSheetDialog>()
@@ -139,7 +144,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     format = ExportFormat.PDF
                 )
             } else {
-                pendingPdfTransactions = null
+                pendingPdfExportData = null
             }
         }
 
@@ -200,6 +205,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         binding.btnSettings.setOnClickListener {
             showSetLimitDialog()
+        }
+
+        binding.btnProfile.setOnClickListener {
+            ProfileBottomSheetDialogFragment().show(
+                childFragmentManager,
+                "ProfileBottomSheet"
+            )
         }
 
         adapter = TransactionAdapter(
@@ -266,6 +278,26 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         viewLifecycleOwner.lifecycleScope.launch {
             transactionViewModel.filters
                 .collectLatest(::updateFilterSummary)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authViewModel.authState.collectLatest { state ->
+                    if (state is AuthState.Authenticated && state.photoUrl != null) {
+                        binding.btnProfile.clearColorFilter()
+                        binding.btnProfile.imageTintList = null
+                        binding.btnProfile.load(state.photoUrl) {
+                            crossfade(true)
+                            transformations(CircleCropTransformation())
+                        }
+                    } else {
+                        val typedValue = android.util.TypedValue()
+                        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+                        binding.btnProfile.setColorFilter(typedValue.data)
+                        binding.btnProfile.load(com.epatay.digitalwallet.R.drawable.ic_account_circle)
+                    }
+                }
+            }
         }
 
         /*
@@ -596,46 +628,81 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     return@onSuccess
                 }
 
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Kayıtları dışa aktar")
-                    .setItems(
-                        arrayOf(
-                            "Excel dosyası (.xlsx)",
-                            "Excel uyumlu CSV (.csv)",
-                            "İşlem raporu PDF (.pdf)"
-                        )
-                    ) { _, selectedIndex ->
-                        val timestamp =
-                            SimpleDateFormat(
-                                "yyyyMMdd-HHmm",
-                                Locale.ROOT
-                            ).format(Date())
+                val context = requireContext()
+                val container = android.widget.LinearLayout(context).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL
+                    setPadding(
+                        (24 * resources.displayMetrics.density).toInt(),
+                        (16 * resources.displayMetrics.density).toInt(),
+                        (24 * resources.displayMetrics.density).toInt(),
+                        0
+                    )
+                }
 
-                        if (selectedIndex == 0) {
-                            pendingXlsxExportData = exportData
-                            createXlsxDocumentLauncher.launch(
-                                "VarlıkCep-kayıtlar-$timestamp.xlsx"
-                            )
-                        } else if (selectedIndex == 1) {
-                            pendingCsvExportData = exportData
-                            createCsvDocumentLauncher.launch(
-                                "VarlıkCep-kayıtlar-$timestamp.csv"
-                            )
-                        } else if (
-                            exportData.transactions.isNotEmpty()
-                        ) {
-                            pendingPdfTransactions =
-                                exportData.transactions
-                            createPdfDocumentLauncher.launch(
-                                "VarlıkCep-işlemler-$timestamp.pdf"
-                            )
+                val radioGroup = android.widget.RadioGroup(context).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL
+                }
+
+                val rbExcel = android.widget.RadioButton(context).apply {
+                    text = "Excel dosyası (.xlsx)"
+                    id = android.view.View.generateViewId()
+                }
+                val rbCsv = android.widget.RadioButton(context).apply {
+                    text = "Excel uyumlu CSV (.csv)"
+                    id = android.view.View.generateViewId()
+                }
+                val rbPdf = android.widget.RadioButton(context).apply {
+                    text = "VarlıkCep İşlem Raporu (.pdf)"
+                    id = android.view.View.generateViewId()
+                }
+
+                radioGroup.addView(rbExcel)
+                radioGroup.addView(rbCsv)
+                radioGroup.addView(rbPdf)
+                rbPdf.isChecked = true
+
+                val cbPortfolio = android.widget.CheckBox(context).apply {
+                    text = "Portföy verilerini rapora dahil et"
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        topMargin = (16 * resources.displayMetrics.density).toInt()
+                    }
+                    isChecked = true
+                }
+
+                container.addView(radioGroup)
+                container.addView(cbPortfolio)
+
+                MaterialAlertDialogBuilder(context)
+                    .setTitle("Kayıtları dışa aktar")
+                    .setView(container)
+                    .setNegativeButton("İptal", null)
+                    .setPositiveButton("Dışa Aktar") { _, _ ->
+                        val timestamp =
+                            java.text.SimpleDateFormat(
+                                "yyyyMMdd-HHmm",
+                                java.util.Locale.ROOT
+                            ).format(java.util.Date())
+
+                        val finalExportData = if (cbPortfolio.isChecked) {
+                            exportData
                         } else {
-                            showInAppMessage(
-                                "PDF için gelir veya gider kaydı bulunamadı."
-                            )
+                            exportData.copy(currencyInvestments = emptyList(), goldInvestments = emptyList())
+                        }
+
+                        if (rbExcel.isChecked) {
+                            pendingXlsxExportData = finalExportData
+                            createXlsxDocumentLauncher.launch("VarlikCep-kayitlar-.xlsx")
+                        } else if (rbCsv.isChecked) {
+                            pendingCsvExportData = finalExportData
+                            createCsvDocumentLauncher.launch("VarlikCep-kayitlar-.csv")
+                        } else if (rbPdf.isChecked) {
+                            pendingPdfExportData = finalExportData
+                            createPdfDocumentLauncher.launch("VarlikCep-rapor-.pdf")
                         }
                     }
-                    .setNegativeButton("İptal", null)
                     .show()
             }.onFailure { error ->
                 if (isAdded) {
@@ -716,16 +783,17 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     }
 
                     ExportFormat.PDF -> {
-                        val transactions =
-                            pendingPdfTransactions
+                        val expData =
+                            pendingPdfExportData
                                 ?: error(
-                                    "Dışa aktarılacak işlem bulunamadı."
+                                    "Dışa aktarılacak veri bulunamadı."
                                 )
-                        pendingPdfTransactions = null
+                        pendingPdfExportData = null
 
                         manager.exportPdf(
                             uri,
-                            transactions
+                            expData,
+                            requireContext()
                         )
                     }
                 }
@@ -1158,7 +1226,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     compareBy<Pair<RecurringTransaction, Calendar>> {
                         it.second.timeInMillis
                     }.thenBy {
-                        it.first.id
+                        it.first.uuid
                     }
                 )
 
@@ -1793,8 +1861,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                 val recurringToSave =
                     RecurringTransaction(
-                        id =
-                        recurringToEdit?.id ?: 0,
+                        uuid =
+                        recurringToEdit?.uuid ?: java.util.UUID.randomUUID().toString(),
                         title = title,
                         amount = amount,
                         category =
@@ -2243,8 +2311,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         currentTransactions.filterNot {
                                 transaction ->
 
-                            transaction.id ==
-                                    transactionToEdit.id
+                            transaction.uuid ==
+                                    transactionToEdit.uuid
                         }
 
                     } else {

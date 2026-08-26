@@ -16,7 +16,6 @@ internal object TransactionExcelEncoder {
     private val headers =
         listOf(
             "Kayıt türü",
-            "Kayıt no",
             "Tarih / Ay",
             "Açıklama / Varlık",
             "Kategori",
@@ -62,7 +61,6 @@ internal object TransactionExcelEncoder {
                     rowIndex++,
                     listOf(
                         "İşlem",
-                        transaction.id,
                         transaction.date,
                         transaction.title,
                         transaction.category,
@@ -76,25 +74,7 @@ internal object TransactionExcelEncoder {
                 )
             }
 
-            exportData.categoryBudgets.forEach { budget ->
-                writeRow(
-                    sheet,
-                    rowIndex++,
-                    listOf(
-                        "Bütçe",
-                        "",
-                        formatMonthKey(budget.monthKey),
-                        "Aylık kategori bütçesi",
-                        budget.category,
-                        "Bütçe limiti",
-                        "",
-                        "",
-                        "",
-                        safeNumber(budget.limitAmount),
-                        ""
-                    )
-                )
-            }
+
 
             exportData.currencyInvestments.forEach { investment ->
                 val totalPurchaseCost =
@@ -108,7 +88,6 @@ internal object TransactionExcelEncoder {
                     rowIndex++,
                     listOf(
                         "Yatırım",
-                        investment.id,
                         investment.buyDate,
                         investment.assetName,
                         "",
@@ -144,7 +123,6 @@ internal object TransactionExcelEncoder {
                     rowIndex++,
                     listOf(
                         "Yatırım",
-                        investment.id,
                         formatDate(investment.purchaseDate),
                         goldType?.displayName ?: investment.goldType,
                         "",
@@ -232,7 +210,6 @@ internal object TransactionExcelEncoder {
     ): List<Any?> =
         listOf(
             "Özet",
-            "",
             "",
             label,
             "",

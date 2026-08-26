@@ -27,7 +27,7 @@ class MarketDataMappingTest {
     @Test
     fun sortRates_filtersXdr_andUsesPriorityOrder() {
         val rates = listOf("ZAR", "XDR", "EUR", "USD", "CNY").map { code ->
-            CurrencyRate(code, 1, code, code, 1.0, 1.1, "02.08.2026")
+            CurrencyRate(code, 1, code, code, 1.0, 1.1, "02.08.2026", System.currentTimeMillis())
         }
 
         val sorted = TcmbXmlParser.sortRates(rates)

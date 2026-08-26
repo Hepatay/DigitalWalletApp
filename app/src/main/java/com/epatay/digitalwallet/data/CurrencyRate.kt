@@ -7,7 +7,8 @@ data class CurrencyRate(
     val currencyName: String,
     val forexBuying: Double?,
     val forexSelling: Double?,
-    val updateDateTime: String
+    val updateDateTime: String,
+    val fetchedAtMillis: Long
 )
 
 data class CurrencyRateDocument(

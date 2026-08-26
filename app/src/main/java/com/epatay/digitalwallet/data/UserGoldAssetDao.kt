@@ -10,11 +10,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserGoldAssetDao {
 
-    @Query("SELECT * FROM user_gold_assets ORDER BY createdAt DESC")
+    @Query("UPDATE user_gold_assets SET user_id = :uid, updated_at = :timestamp, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
+    suspend fun assignUserToGuestRecords(uid: String, timestamp: Long)
+
+    @Query("SELECT * FROM user_gold_assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<UserGoldAssetEntity>>
 
     @Query("SELECT * FROM user_gold_assets ORDER BY createdAt DESC")
     suspend fun getAllSnapshot(): List<UserGoldAssetEntity>
+
+    @Query("SELECT * FROM user_gold_assets")
+    suspend fun getAllSync(): List<UserGoldAssetEntity>
 
     @Insert
     suspend fun insert(asset: UserGoldAssetEntity): Long
@@ -22,6 +28,11 @@ interface UserGoldAssetDao {
     @Update
     suspend fun update(asset: UserGoldAssetEntity)
 
-    @Delete
-    suspend fun delete(asset: UserGoldAssetEntity)
+    @Query("UPDATE user_gold_assets SET is_deleted = 1, is_synced = 0 WHERE uuid = :uuid")
+    suspend fun softDelete(uuid: String)
+
+    @Query("DELETE FROM user_gold_assets WHERE uuid = :uuid")
+    suspend fun hardDelete(uuid: String)
+    @Query("DELETE FROM user_gold_assets")
+    suspend fun clearAll()
 }

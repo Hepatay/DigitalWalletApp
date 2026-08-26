@@ -191,7 +191,7 @@ class TransactionAdapter(
                     oldItem: Transaction,
                     newItem: Transaction
                 ): Boolean {
-                    return oldItem.id == newItem.id
+                    return oldItem.uuid == newItem.uuid
                 }
 
                 override fun areContentsTheSame(

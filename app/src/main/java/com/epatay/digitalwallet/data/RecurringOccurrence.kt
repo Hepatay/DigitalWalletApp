@@ -13,7 +13,7 @@ import androidx.room.Index
     foreignKeys = [
         ForeignKey(
             entity = RecurringTransaction::class,
-            parentColumns = ["id"],
+            parentColumns = ["uuid"],
             childColumns = ["recurringId"],
             onDelete = ForeignKey.CASCADE
         )
@@ -23,8 +23,12 @@ import androidx.room.Index
     ]
 )
 data class RecurringOccurrence(
-    val recurringId: Int,
-    val periodKey: String,
-    val transactionId: Int? = null,
-    val createdAtMillis: Long
+    val recurringId: String = "",
+    val periodKey: String = "",
+    val transactionId: String? = null,
+    val createdAtMillis: Long = 0L,
+    val updated_at: Long = System.currentTimeMillis(),
+    val is_deleted: Boolean = false,
+    val is_synced: Boolean = false,
+    val user_id: String? = null
 )

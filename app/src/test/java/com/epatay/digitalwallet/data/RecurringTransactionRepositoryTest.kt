@@ -62,7 +62,7 @@ class RecurringTransactionRepositoryTest {
 
     private fun recurring(): RecurringTransaction {
         return RecurringTransaction(
-            id = 4,
+            uuid = "4",
             title = "Kira",
             amount = 12_500.0,
             category = "Konut",

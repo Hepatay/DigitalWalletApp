@@ -1,4 +1,4 @@
-package com.epatay.digitalwallet.ui
+﻿package com.epatay.digitalwallet.ui
 
 import android.os.Bundle
 import android.view.View
@@ -11,6 +11,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.databinding.FragmentGoldBinding
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class GoldFragment : Fragment(R.layout.fragment_gold) {
 
@@ -47,6 +50,20 @@ class GoldFragment : Fragment(R.layout.fragment_gold) {
                 binding.tvGoldMessage.text = state.message.orEmpty()
                 binding.tvGoldMessage.visibility =
                     if (state.message.isNullOrBlank()) View.GONE else View.VISIBLE
+                
+                val firstRate = state.rates.firstOrNull()
+                if (firstRate != null) {
+                    binding.tvSourceTime.text = "Kaynak Veri Zamanı: " + (firstRate.sourceDate ?: "")
+                    binding.tvSourceTime.visibility = View.VISIBLE
+                    
+                    val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                    val fetchTimeStr = sdf.format(Date(firstRate.fetchedAt))
+                    binding.tvAppFetchTime.text = "Uygulamanın Çektiği Zaman: " + fetchTimeStr
+                    binding.tvAppFetchTime.visibility = View.VISIBLE
+                } else {
+                    binding.tvSourceTime.visibility = View.GONE
+                    binding.tvAppFetchTime.visibility = View.GONE
+                }
             }
             is GoldUiState.Error -> showEmpty(state.message)
             GoldUiState.Empty -> showEmpty("Kullanılabilir altın verisi bulunamadı.")

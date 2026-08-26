@@ -78,7 +78,7 @@ object RecurringNotificationHelper {
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            recurringTransaction.id,
+            recurringTransaction.uuid.hashCode(),
             Intent(context, MainActivity::class.java).apply {
                 flags =
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -123,7 +123,7 @@ object RecurringNotificationHelper {
             .build()
 
         NotificationManagerCompat.from(context).notify(
-            NOTIFICATION_ID_BASE + recurringTransaction.id,
+            NOTIFICATION_ID_BASE + recurringTransaction.uuid.hashCode(),
             notification
         )
 
@@ -132,10 +132,10 @@ object RecurringNotificationHelper {
 
     fun cancelReminder(
         context: Context,
-        recurringTransactionId: Int
+        recurringTransactionId: String
     ) {
         NotificationManagerCompat.from(context).cancel(
-            NOTIFICATION_ID_BASE + recurringTransactionId
+            NOTIFICATION_ID_BASE + recurringTransactionId.hashCode()
         )
     }
 }

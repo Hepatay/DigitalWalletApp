@@ -52,23 +52,27 @@ internal fun normalizeTransactionForStorage(
     )
 
     if (
-        normalized.id == 0 &&
+        normalized.uuid.isEmpty() &&
         normalized.occurredOn ==
             TransactionDateUtils.UNKNOWN_DATE_KEY
     ) {
         return null
     }
 
-    return normalized
+    return normalized.copy(
+        user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: transaction.user_id,
+        is_deleted = false,
+        is_synced = false,
+        updated_at = System.currentTimeMillis()
+    )
 }
 
 class TransactionRepository(
     private val transactionDao: TransactionDao
 ) {
 
-    val allTransactions:
-            Flow<List<Transaction>> =
-        transactionDao.getAllTransactions()
+    val allTransactions: Flow<List<Transaction>> =
+            transactionDao.observeFilteredTransactions("", null, null, null, null)
 
     val totalIncome:
             Flow<Double?> =
@@ -93,7 +97,7 @@ class TransactionRepository(
     ) {
         val normalized =
             normalizeTransactionForStorage(transaction)
-                ?.takeIf { it.id > 0 }
+                ?.takeIf { it.uuid.isNotEmpty() }
                 ?: return
 
         transactionDao.updateTransaction(normalized)
@@ -102,9 +106,7 @@ class TransactionRepository(
     suspend fun delete(
         transaction: Transaction
     ) {
-        transactionDao.deleteTransaction(
-            transaction
-        )
+        transactionDao.deleteTransactionById(transaction.uuid)
     }
 
     fun observeFiltered(

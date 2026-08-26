@@ -23,7 +23,8 @@ data class CurrencyRateEntity(
             currencyName = currencyName,
             forexBuying = forexBuying,
             forexSelling = forexSelling,
-            updateDateTime = updateDateTime
+            updateDateTime = updateDateTime,
+            fetchedAtMillis = fetchedAtMillis
         )
     }
 }

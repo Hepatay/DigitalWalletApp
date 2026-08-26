@@ -70,7 +70,6 @@ internal object TransactionCsvEncoder {
         val csv = buildString {
             appendRow(
                 "Kayıt türü",
-                "Kayıt no",
                 "Tarih / Ay",
                 "Açıklama / Varlık",
                 "Kategori",
@@ -86,7 +85,6 @@ internal object TransactionCsvEncoder {
             exportData.transactions.forEach { transaction ->
                 appendRow(
                     "İşlem",
-                    transaction.id.toString(),
                     transaction.date,
                     transaction.title,
                     transaction.category,
@@ -126,7 +124,6 @@ internal object TransactionCsvEncoder {
 
                 appendRow(
                     "Yatırım",
-                    investment.id.toString(),
                     investment.buyDate,
                     investment.assetName,
                     "",
@@ -165,7 +162,6 @@ internal object TransactionCsvEncoder {
 
                 appendRow(
                     "Yatırım",
-                    investment.id.toString(),
                     formatDate(investment.purchaseDate),
                     goldType?.displayName ?: investment.goldType,
                     "",
@@ -219,7 +215,6 @@ internal object TransactionCsvEncoder {
     ) {
         appendRow(
             "Özet",
-            "",
             "",
             label,
             "",
@@ -344,7 +339,7 @@ internal object TransactionCsvEncoder {
         }
 
     private val NUMERIC_COLUMNS =
-        setOf(1, 6, 8, 9)
+        setOf(5, 7, 8)
 
     private val FORMULA_PREFIXES =
         setOf('=', '+', '-', '@')

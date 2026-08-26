@@ -24,21 +24,13 @@ class GoldAdapter : RecyclerView.Adapter<GoldAdapter.GoldViewHolder>() {
 
     override fun onBindViewHolder(holder: GoldViewHolder, position: Int) {
         val rate = rates[position]
-        holder.binding.tvGoldName.text = rate.type.displayName
-        holder.binding.tvGoldBuying.text =
-            "Alış: ${GoldRateFormatter.price(rate.buyingPrice)}"
-        holder.binding.tvGoldSelling.text =
-            "Satış: ${GoldRateFormatter.price(rate.sellingPrice)}"
-        holder.binding.tvGoldSpread.text =
-            "Makas: ${GoldRateFormatter.price(rate.spread)} " +
-                "(%${GoldRateFormatter.percentage(rate.spreadPercentage)})"
-        holder.binding.tvGoldSource.text = "Kaynak: ${rate.source}"
-        holder.binding.tvGoldSourceDate.text =
-            "Kaynak veri zamanı: ${GoldRateFormatter.fetchedAt(rate.sourceUpdatedAt)}"
-        holder.binding.tvGoldFetchedAt.text =
-            "Uygulamanın çektiği zaman: ${GoldRateFormatter.fetchedAt(rate.fetchedAt)}"
-        holder.binding.tvGoldReference.text =
-            if (rate.isReference) "Referans bilgi amaçlıdır" else "Piyasa fiyatı"
+        val name = rate.type.displayName.replace("Ata / Cumhuriyet", "Cumhuriyet")
+        holder.binding.tvGoldName.text = name
+        holder.binding.tvGoldBuying.text = GoldRateFormatter.price(rate.buyingPrice)
+        holder.binding.tvGoldSelling.text = GoldRateFormatter.price(rate.sellingPrice)
+        holder.binding.tvGoldSpread.text = GoldRateFormatter.price(rate.spread)
+        
+        
     }
 
     override fun getItemCount(): Int = rates.size

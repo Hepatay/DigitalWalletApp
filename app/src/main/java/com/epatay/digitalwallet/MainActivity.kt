@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
          * Release derlemesinde kullanılacak gerçek VarlıkCep banner kimliği.
          */
         private const val LIVE_BANNER_AD_UNIT_ID =
-            "ca-app-pub-1209621045102488/5586741853"
+            "ca-app-pub-1209621045102488/9519007148"
 
         private const val ADS_LOG_TAG =
             "VARLIKCEP_ADS"
@@ -324,6 +324,13 @@ class MainActivity : AppCompatActivity() {
                 systemBars.left,
                 systemBars.top,
                 systemBars.right,
+                0
+            )
+
+            binding.bottomNavigationContainer.setPadding(
+                binding.bottomNavigationContainer.paddingLeft,
+                binding.bottomNavigationContainer.paddingTop,
+                binding.bottomNavigationContainer.paddingRight,
                 systemBars.bottom
             )
 

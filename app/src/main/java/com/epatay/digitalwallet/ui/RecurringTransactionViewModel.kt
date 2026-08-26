@@ -46,6 +46,7 @@ class RecurringTransactionViewModel(
     ) = viewModelScope.launch {
         repository.insert(recurringTransaction)
         runReconciliation()
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun update(
@@ -57,11 +58,12 @@ class RecurringTransactionViewModel(
         if (result.shouldCancelReminder) {
             RecurringNotificationHelper.cancelReminder(
                 getApplication(),
-                recurringTransaction.id
+                recurringTransaction.uuid
             )
         }
 
         runReconciliation()
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun delete(
@@ -69,10 +71,11 @@ class RecurringTransactionViewModel(
     ) = viewModelScope.launch {
         RecurringNotificationHelper.cancelReminder(
             getApplication(),
-            recurringTransaction.id
+            recurringTransaction.uuid
         )
         repository.delete(recurringTransaction)
         runReconciliation()
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     private fun runReconciliation() {

@@ -8,35 +8,34 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CategoryBudgetDao {
 
-    @Query(
-        """
-        SELECT *
+    @Query("UPDATE category_budgets SET user_id = :uid, updated_at = :timestamp, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
+    suspend fun assignUserToGuestRecords(uid: String, timestamp: Long)
+
+    @Query("""SELECT *
         FROM category_budgets
-        WHERE monthKey = :monthKey
-        ORDER BY category COLLATE NOCASE ASC
-        """
-    )
+        WHERE is_deleted = 0 AND monthKey = :monthKey
+        ORDER BY category COLLATE NOCASE ASC""")
     fun observeForMonth(
         monthKey: Int
     ): Flow<List<CategoryBudget>>
 
-    @Query(
-        """
-        SELECT *
+    @Query("""SELECT *
         FROM category_budgets
-        WHERE monthKey = :monthKey
-        ORDER BY category COLLATE NOCASE ASC
-        """
-    )
+        WHERE is_deleted = 0 AND monthKey = :monthKey
+        ORDER BY category COLLATE NOCASE ASC""")
     suspend fun getForMonth(
         monthKey: Int
     ): List<CategoryBudget>
 
-    @Query(
-        "SELECT * FROM category_budgets " +
-            "ORDER BY monthKey DESC, category COLLATE NOCASE ASC"
-    )
+    @Query("SELECT * FROM category_budgets " +
+            "WHERE is_deleted = 0 ORDER BY monthKey DESC, category COLLATE NOCASE ASC")
     suspend fun getAll(): List<CategoryBudget>
+
+    @Query("SELECT * FROM category_budgets ORDER BY monthKey DESC, category COLLATE NOCASE ASC")
+    suspend fun getAllSnapshot(): List<CategoryBudget>
+
+    @Query("SELECT * FROM category_budgets")
+    suspend fun getAllSync(): List<CategoryBudget>
 
     @Upsert
     suspend fun upsert(
@@ -45,7 +44,7 @@ interface CategoryBudgetDao {
 
     @Query(
         """
-        DELETE FROM category_budgets
+        UPDATE category_budgets SET is_deleted = 1, is_synced = 0
         WHERE monthKey = :monthKey AND category = :category
         """
     )
@@ -53,4 +52,17 @@ interface CategoryBudgetDao {
         monthKey: Int,
         category: String
     )
+
+    @Query(
+        """
+        DELETE FROM category_budgets
+        WHERE monthKey = :monthKey AND category = :category
+        """
+    )
+    suspend fun hardDelete(
+        monthKey: Int,
+        category: String
+    )
+    @Query("DELETE FROM category_budgets")
+    suspend fun clearAll()
 }

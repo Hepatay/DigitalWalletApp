@@ -26,29 +26,20 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@drawable/ic_gold_coin" />
 
-        <ImageButton
-            android:id="@+id/btnDeleteInvestment"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+        <ImageView
+            android:id="@+id/ivMoreOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Varlığı sil"
-            android:padding="10dp"
-            android:src="@android:drawable/ic_menu_delete"
+            android:contentDescription="Seçenekler"
+            android:padding="8dp"
+            android:src="@drawable/ic_more_vert"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="?attr/colorError" />
+            app:tint="?attr/colorOnSurfaceVariant" />
 
-        <ImageButton
-            android:id="@+id/ivEditPrice"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Varlığı düzenle"
-            android:padding="10dp"
-            android:src="@android:drawable/ic_menu_edit"
-            app:layout_constraintEnd_toStartOf="@id/btnDeleteInvestment"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="?attr/colorPrimary" />
+        
 
         <TextView
             android:id="@+id/tvAssetName"
@@ -58,7 +49,7 @@
             android:textColor="?attr/colorOnSurface"
             android:textSize="17sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/ivEditPrice"
+            app:layout_constraintEnd_toStartOf="@+id/ivMoreOptions"
             app:layout_constraintStart_toEndOf="@id/ivFlag"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Gram Altın" />
@@ -71,7 +62,7 @@
             android:layout_marginTop="3dp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp"
-            app:layout_constraintEnd_toStartOf="@id/ivEditPrice"
+            app:layout_constraintEnd_toStartOf="@+id/ivMoreOptions"
             app:layout_constraintStart_toEndOf="@id/ivFlag"
             app:layout_constraintTop_toBottomOf="@id/tvAssetName"
             tools:text="12,5 gram" />

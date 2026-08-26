@@ -1,4 +1,4 @@
-package com.epatay.digitalwallet.ui
+﻿package com.epatay.digitalwallet.ui
 
 import android.os.Bundle
 import android.view.View
@@ -15,6 +15,9 @@ import com.epatay.digitalwallet.data.CurrencyFlagProvider
 import com.epatay.digitalwallet.data.CurrencyRate
 import com.epatay.digitalwallet.databinding.FragmentCurrencyBinding
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
@@ -168,22 +171,35 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
             View.VISIBLE
     }
 
+    private fun getTcmbDateString(): String {
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+        if (dayOfWeek == Calendar.SATURDAY) {
+            calendar.add(Calendar.DAY_OF_YEAR, -1)
+        } else if (dayOfWeek == Calendar.SUNDAY) {
+            calendar.add(Calendar.DAY_OF_YEAR, -2)
+        } else {
+            if (hour < 15 || (hour == 15 && minute < 30)) {
+                if (dayOfWeek == Calendar.MONDAY) {
+                    calendar.add(Calendar.DAY_OF_YEAR, -3)
+                } else {
+                    calendar.add(Calendar.DAY_OF_YEAR, -1)
+                }
+            }
+        }
+
+        val sdf = SimpleDateFormat("dd.MM.yyyy '15:30'", Locale.getDefault())
+        return sdf.format(calendar.time)
+    }
+
     private fun updateLastUpdatedText(
         lastUpdatedText: String
     ) {
-        if (lastUpdatedText.isBlank()) {
-            binding.tvLastUpdated.visibility =
-                View.GONE
-            return
-        }
-
-        binding.tvLastUpdated.text =
-            getString(
-                R.string.last_updated,
-                lastUpdatedText
-            )
-        binding.tvLastUpdated.visibility =
-            View.VISIBLE
+        binding.tvLastUpdated.text = "Son Güncelleme: " + getTcmbDateString()
+        binding.tvLastUpdated.visibility = View.VISIBLE
     }
 
     private fun updateTransactionRates(

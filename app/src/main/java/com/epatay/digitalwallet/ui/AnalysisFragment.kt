@@ -1,6 +1,7 @@
 package com.epatay.digitalwallet.ui
 
 import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.graphics.Color
@@ -238,7 +239,7 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     fieldName = "Miktar",
                     wholeNumberOnly =
                         selectedGoldType?.inputUnit ==
-                            GoldInputUnit.PIECE
+                                GoldInputUnit.PIECE
                 )
 
             if (quantityResult is DecimalInputResult.Invalid) {
@@ -350,12 +351,12 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             addView(price)
         }
         val dialog = trackDialog(
-            AlertDialog.Builder(requireContext())
-            .setTitle("${item.displayName} varlığını düzenle")
-            .setView(container)
-            .setNegativeButton("İptal", null)
-            .setPositiveButton("Güncelle", null)
-            .create()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("${item.displayName} varlığını düzenle")
+                .setView(container)
+                .setNegativeButton("İptal", null)
+                .setPositiveButton("Güncelle", null)
+                .create()
         )
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
@@ -398,22 +399,30 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
 
     private fun showDeleteDialog(item: PortfolioAssetItem) {
         val dialog =
-            AlertDialog.Builder(requireContext())
-            .setTitle("Varlığı sil")
-            .setMessage("${item.displayName} kaydını silmek istediğinizden emin misiniz?")
-            .setNegativeButton("İptal", null)
-            .setPositiveButton("Sil") { _, _ -> viewModel.delete(item) }
-            .create()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Varlığı sil")
+                .setMessage("${item.displayName} kaydını silmek istediğinizden emin misiniz?")
+                .setNegativeButton("İptal", null)
+                .setPositiveButton("Sil") { _, _ -> viewModel.delete(item) }
+                .create()
 
         trackDialog(dialog).show()
     }
 
     private fun setupPieChart(items: List<PortfolioAssetItem>) {
+        val typedValue = android.util.TypedValue()
+        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+        val onSurfaceColor = typedValue.data
+
         binding.llInvestmentDetails.removeAllViews()
         val positive =
             items
                 .groupBy { item ->
-                    Triple(item.kind, item.code, item.displayName)
+                    if (item.kind == PortfolioAssetKind.GOLD) {
+                        Triple(item.kind, "GLD", "Altın")
+                    } else {
+                        Triple(item.kind, item.code, item.displayName)
+                    }
                 }
                 .map { (identity, group) ->
                     PortfolioChartSlice(
@@ -451,37 +460,42 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             setDrawEntryLabels(false)
             isDrawHoleEnabled = true
             holeRadius = 58f
+            setHoleColor(android.graphics.Color.TRANSPARENT)
             centerText = "Portföy"
             setCenterTextSize(13f)
-            setCenterTextColor(
-                MaterialColors.getColor(
-                    binding.root,
-                    com.google.android.material.R.attr.colorOnSurface,
-                    Color.BLACK
-                )
-            )
+            setCenterTextColor(onSurfaceColor)
             invalidate()
         }
 
+        val dpToPx = { dp: Int -> (dp * resources.displayMetrics.density).toInt() }
         positive.take(3).forEach { slice ->
-            binding.llInvestmentDetails.addView(
-                android.widget.TextView(requireContext()).apply {
-                    val label =
-                        "● ${slice.displayName}  ${formatCurrency(slice.value.toDouble())}"
-                    text =
-                        SpannableString(label).apply {
-                            setSpan(
-                                ForegroundColorSpan(portfolioChartColor(slice)),
-                                0,
-                                1,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                            )
-                        }
-                    textSize = 12f
-                    setTypeface(null, Typeface.BOLD)
-                    setPadding(0, 5, 0, 5)
+            val row = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, dpToPx(4), 0, dpToPx(4))
+            }
+
+            val icon = android.widget.ImageView(requireContext()).apply {
+                if (slice.kind == PortfolioAssetKind.GOLD) {
+                    setImageResource(R.drawable.ic_gold_coin)
+                } else {
+                    setImageResource(CurrencyFlagProvider.getFlagResId(slice.code))
                 }
-            )
+                layoutParams = android.widget.LinearLayout.LayoutParams(dpToPx(16), dpToPx(16)).apply {
+                    marginEnd = dpToPx(8)
+                }
+            }
+
+            val tv = android.widget.TextView(requireContext()).apply {
+                text = "${slice.displayName}  ${formatCurrency(slice.value.toDouble())}"
+                textSize = 12f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(onSurfaceColor)
+            }
+
+            row.addView(icon)
+            row.addView(tv)
+            binding.llInvestmentDetails.addView(row)
         }
     }
 

@@ -234,6 +234,7 @@ class TransactionViewModel(
 
     fun insert(transaction: Transaction) = viewModelScope.launch {
         repository.insert(transaction)
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
     fun update(
         transaction: Transaction
@@ -242,10 +243,12 @@ class TransactionViewModel(
         repository.update(
             transaction
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun delete(transaction: Transaction) = viewModelScope.launch {
         repository.delete(transaction)
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun setSearchQuery(

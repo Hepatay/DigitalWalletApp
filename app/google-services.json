@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "488008293284",
+    "project_id": "varlikcep",
+    "storage_bucket": "varlikcep.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488008293284:android:a9353db6125cfa66c0bf31",
+        "android_client_info": {
+          "package_name": "com.epatay.digitalwallet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488008293284-b857pnf4tllhitt67iiganqspoepb59j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.epatay.digitalwallet",
+            "certificate_hash": "7cd6f7bdd708975bc287bda802fc0b8b16fdde0f"
+          }
+        },
+        {
+          "client_id": "488008293284-dv4epl69lh4ni2vu8lec7jukrg0p6a4q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyQxHZzrky8HOs_i9ayuWBIQ_tefFxil8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488008293284-dv4epl69lh4ni2vu8lec7jukrg0p6a4q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

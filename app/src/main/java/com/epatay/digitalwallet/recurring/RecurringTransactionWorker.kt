@@ -74,14 +74,14 @@ class RecurringTransactionWorker(
                 database.recurringOccurrenceDao()
 
             val current =
-                recurringDao.getById(recurringTransaction.id)
+                recurringDao.getById(recurringTransaction.uuid)
                     ?: return@withTransaction
 
             val periodKey =
                 RecurringDateUtils.currentPeriod(calendar)
             val occurrenceExists =
                 occurrenceDao.exists(
-                    recurringId = current.id,
+                    recurringId = current.uuid,
                     periodKey = periodKey
                 )
 
@@ -98,10 +98,11 @@ class RecurringTransactionWorker(
             val occurrenceClaim =
                 occurrenceDao.insert(
                     RecurringOccurrence(
-                        recurringId = current.id,
+                        recurringId = current.uuid,
                         periodKey = periodKey,
                         createdAtMillis =
-                            System.currentTimeMillis()
+                            System.currentTimeMillis(),
+                        user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
                     )
                 )
 
@@ -118,12 +119,13 @@ class RecurringTransactionWorker(
                         current.dayOfMonth,
                         calendar
                     ),
-                    type = current.type
+                    type = current.type,
+                    user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
                 )
             )
 
             recurringDao.updateLastGeneratedPeriod(
-                id = current.id,
+                id = current.uuid,
                 periodKey = periodKey
             )
         }
@@ -141,7 +143,7 @@ class RecurringTransactionWorker(
         ) {
             RecurringNotificationHelper.cancelReminder(
                 applicationContext,
-                recurringTransaction.id
+                recurringTransaction.uuid
             )
             return
         }
@@ -152,7 +154,7 @@ class RecurringTransactionWorker(
                     database.recurringTransactionDao()
 
                 val current =
-                    recurringDao.getById(recurringTransaction.id)
+                    recurringDao.getById(recurringTransaction.uuid)
                         ?: return@withTransaction true
 
                 val dueDate =
@@ -178,7 +180,7 @@ class RecurringTransactionWorker(
                         )
                     ) {
                         recurringDao.updateLastNotifiedPeriod(
-                            id = current.id,
+                            id = current.uuid,
                             periodKey = null
                         )
                     }
@@ -204,7 +206,7 @@ class RecurringTransactionWorker(
 
                 if (notificationShown) {
                     recurringDao.updateLastNotifiedPeriod(
-                        id = current.id,
+                        id = current.uuid,
                         periodKey =
                             RecurringDateUtils.currentPeriod(
                                 dueDate
@@ -218,7 +220,7 @@ class RecurringTransactionWorker(
         if (shouldCancel) {
             RecurringNotificationHelper.cancelReminder(
                 applicationContext,
-                recurringTransaction.id
+                recurringTransaction.uuid
             )
         }
     }

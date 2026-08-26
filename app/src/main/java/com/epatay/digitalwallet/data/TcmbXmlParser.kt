@@ -140,6 +140,12 @@ class TcmbXmlParser {
         if (normalizedCode !in CurrencyFlagProvider.supportedCodes) {
             return null
         }
+        
+        if (unit == 1 && forexBuying != null && forexBuying < 1.0) {
+            unit = 100
+            forexBuying *= 100
+            forexSelling = forexSelling?.let { it * 100 }
+        }
 
         return CurrencyRate(
             currencyCode = normalizedCode,
@@ -149,7 +155,8 @@ class TcmbXmlParser {
             currencyName = currencyName,
             forexBuying = forexBuying,
             forexSelling = forexSelling,
-            updateDateTime = updateDateTime
+            updateDateTime = updateDateTime,
+            fetchedAtMillis = 0L
         )
     }
 

@@ -47,27 +47,30 @@ interface TransactionDao {
     // Tüm işlemleri en yeni kayıt üstte olacak şekilde getirir
     @Query(
         "SELECT * FROM transactions_table " +
-                "ORDER BY id DESC"
+                "WHERE is_deleted = 0 ORDER BY uuid DESC"
     )
     fun getAllTransactions(): Flow<List<Transaction>>
 
     @Query(
         "SELECT * FROM transactions_table " +
-                "ORDER BY occurredOn DESC, id DESC"
+                "WHERE is_deleted = 0 ORDER BY occurredOn DESC, uuid DESC"
     )
     suspend fun getAllTransactionsSnapshot(): List<Transaction>
+
+    @Query("SELECT * FROM transactions_table")
+    suspend fun getAllTransactionsSync(): List<Transaction>
 
     // Toplam geliri hesaplar
     @Query(
         "SELECT SUM(amount) FROM transactions_table " +
-                "WHERE type = 'INCOME'"
+                "WHERE is_deleted = 0 AND type = 'INCOME'"
     )
     fun getTotalIncome(): Flow<Double?>
 
     // Toplam gideri hesaplar
     @Query(
         "SELECT SUM(amount) FROM transactions_table " +
-                "WHERE type = 'EXPENSE'"
+                "WHERE is_deleted = 0 AND type = 'EXPENSE'"
     )
     fun getTotalExpense(): Flow<Double?>
 
@@ -76,7 +79,8 @@ interface TransactionDao {
         SELECT *
         FROM transactions_table
         WHERE
-            (:startDateKey IS NULL OR occurredOn >= :startDateKey)
+            is_deleted = 0
+            AND (:startDateKey IS NULL OR occurredOn >= :startDateKey)
             AND (:endDateKey IS NULL OR occurredOn <= :endDateKey)
             AND (:category IS NULL OR category = :category)
             AND (:type IS NULL OR type = :type)
@@ -87,7 +91,7 @@ interface TransactionDao {
                 OR category COLLATE NOCASE
                     LIKE '%' || :escapedQuery || '%' ESCAPE '\'
             )
-        ORDER BY occurredOn DESC, id DESC
+        ORDER BY occurredOn DESC, uuid DESC
         """
     )
     fun observeFilteredTransactions(
@@ -103,7 +107,8 @@ interface TransactionDao {
         SELECT *
         FROM transactions_table
         WHERE
-            (:startDateKey IS NULL OR occurredOn >= :startDateKey)
+            is_deleted = 0
+            AND (:startDateKey IS NULL OR occurredOn >= :startDateKey)
             AND (:endDateKey IS NULL OR occurredOn <= :endDateKey)
             AND (:category IS NULL OR category = :category)
             AND (:type IS NULL OR type = :type)
@@ -114,7 +119,7 @@ interface TransactionDao {
                 OR category COLLATE NOCASE
                     LIKE '%' || :escapedQuery || '%' ESCAPE '\'
             )
-        ORDER BY occurredOn DESC, id DESC
+        ORDER BY occurredOn DESC, uuid DESC
         """
     )
     suspend fun getFilteredTransactionsSnapshot(
@@ -138,7 +143,7 @@ interface TransactionDao {
             ) AS totalExpense,
             COUNT(*) AS transactionCount
         FROM transactions_table
-        WHERE occurredOn BETWEEN :startDateKey AND :endDateKey
+        WHERE is_deleted = 0 AND occurredOn BETWEEN :startDateKey AND :endDateKey
         """
     )
     fun observeMonthlyTotals(
@@ -170,14 +175,23 @@ interface TransactionDao {
         """
         SELECT DISTINCT category
         FROM transactions_table
-        WHERE TRIM(category) != ''
+        WHERE is_deleted = 0 AND TRIM(category) != ''
         ORDER BY category COLLATE NOCASE ASC
         """
     )
     fun observeCategories(): Flow<List<String>>
 
     @Query(
-        "SELECT COUNT(*) FROM transactions_table WHERE occurredOn = 0"
+        "SELECT COUNT(*) FROM transactions_table WHERE is_deleted = 0 AND occurredOn = 0"
     )
     fun observeUnknownDateCount(): Flow<Int>
+    @Query("DELETE FROM transactions_table")
+    suspend fun clearAll()
+    @Query("UPDATE transactions_table SET user_id = :userId, updated_at = :now, is_synced = 0 WHERE user_id IS NULL")
+    suspend fun assignUserToGuestRecords(userId: String, now: Long)
+
+    @Query("DELETE FROM transactions_table WHERE uuid = :uuid")
+    suspend fun hardDeleteTransactionById(uuid: String)
+    @Query("UPDATE transactions_table SET is_deleted = 1, is_synced = 0, updated_at = :timestamp WHERE uuid = :uuid")
+    suspend fun deleteTransactionById(uuid: String, timestamp: Long = System.currentTimeMillis())
 }

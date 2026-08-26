@@ -54,7 +54,7 @@ class RecurringTransactionRepository(
                     recurringOccurrenceDao.insert(
                         RecurringOccurrence(
                             recurringId =
-                                recurringId.toInt(),
+                                normalized.uuid,
                             periodKey = periodKey,
                             createdAtMillis =
                                 System.currentTimeMillis()
@@ -78,7 +78,7 @@ class RecurringTransactionRepository(
         return database.withTransaction {
             val previous =
                 recurringTransactionDao.getById(
-                    normalized.id
+                    normalized.uuid
                 )
 
             if (previous == null) {
@@ -88,7 +88,7 @@ class RecurringTransactionRepository(
             }
 
             recurringTransactionDao.updateEditableFields(
-                id = normalized.id,
+                id = normalized.uuid,
                 title = normalized.title,
                 amount = normalized.amount,
                 category = normalized.category,
@@ -108,7 +108,7 @@ class RecurringTransactionRepository(
                     recurringOccurrenceDao.insert(
                         RecurringOccurrence(
                             recurringId =
-                                normalized.id,
+                                normalized.uuid,
                             periodKey = periodKey,
                             createdAtMillis =
                                 System.currentTimeMillis()
@@ -129,8 +129,8 @@ class RecurringTransactionRepository(
     suspend fun delete(
         recurringTransaction: RecurringTransaction
     ) {
-        recurringTransactionDao.delete(
-            recurringTransaction
+        recurringTransactionDao.update(
+            recurringTransaction.copy(is_deleted = true, is_synced = false, updated_at = System.currentTimeMillis())
         )
     }
 
@@ -159,7 +159,8 @@ class RecurringTransactionRepository(
         return copy(
             title = normalizedTitle,
             amount = normalizedAmount,
-            category = normalizedCategory
+            category = normalizedCategory,
+            user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: user_id
         )
     }
 

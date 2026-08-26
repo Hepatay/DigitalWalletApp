@@ -1,12 +1,16 @@
 package com.epatay.digitalwallet.export
 
 import android.content.ContentResolver
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import com.epatay.digitalwallet.R
 import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionType
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +71,8 @@ class TransactionExportManager(
 
     suspend fun exportPdf(
         uri: Uri,
-        transactions: List<Transaction>
+        exportData: WalletExportData,
+        context: Context
     ): TransactionExportResult =
         withContext(Dispatchers.IO) {
             val document = PdfDocument()
@@ -75,7 +80,8 @@ class TransactionExportManager(
             try {
                 TransactionPdfRenderer.render(
                     document,
-                    transactions
+                    exportData,
+                    context
                 )
 
                 writeToUri(uri) { outputStream ->
@@ -86,7 +92,7 @@ class TransactionExportManager(
             }
 
             TransactionExportResult.from(
-                transactions
+                exportData.transactions
             )
         }
 
@@ -196,9 +202,11 @@ private object TransactionPdfRenderer {
 
     fun render(
         document: PdfDocument,
-        transactions: List<Transaction>
+        exportData: WalletExportData,
+        context: Context
     ) {
-        val state = PageState(document)
+        val state = PageState(document, context)
+        val transactions = exportData.transactions
 
         try {
             if (transactions.isEmpty()) {
@@ -259,6 +267,49 @@ private object TransactionPdfRenderer {
                 amount = totals.netTotal
             )
             state.cursorY += ROW_HEIGHT
+
+            if (exportData.currencyInvestments.isNotEmpty() || exportData.goldInvestments.isNotEmpty()) {
+                state.ensureSpace(ROW_HEIGHT * 2)
+
+                drawSectionRow(
+                    canvas = state.canvas,
+                    top = state.cursorY,
+                    label = "Portföy (Varlıklarım)"
+                )
+                state.cursorY += ROW_HEIGHT
+
+                val portfolioHeaderLabels = arrayOf("Varlık Türü", "Miktar", "", "", "")
+                drawGridRow(
+                    canvas = state.canvas,
+                    top = state.cursorY,
+                    cells = portfolioHeaderLabels,
+                    amountColumn = false,
+                    bold = true
+                )
+                state.cursorY += ROW_HEIGHT
+
+                exportData.currencyInvestments.forEach { curr ->
+                    state.ensureSpace(ROW_HEIGHT)
+                    drawGridRow(
+                        canvas = state.canvas,
+                        top = state.cursorY,
+                        cells = arrayOf(curr.assetName, curr.amount.toString(), "", "", ""),
+                        amountColumn = false
+                    )
+                    state.cursorY += ROW_HEIGHT
+                }
+
+                exportData.goldInvestments.forEach { gold ->
+                    state.ensureSpace(ROW_HEIGHT)
+                    drawGridRow(
+                        canvas = state.canvas,
+                        top = state.cursorY,
+                        cells = arrayOf(gold.goldType, gold.quantity.toString(), "", "", ""),
+                        amountColumn = false
+                    )
+                    state.cursorY += ROW_HEIGHT
+                }
+            }
         } finally {
             state.finish()
         }
@@ -417,14 +468,31 @@ private object TransactionPdfRenderer {
 
     private fun drawPageHeader(
         canvas: Canvas,
-        pageNumber: Int
+        pageNumber: Int,
+        context: Context
     ) {
         canvas.drawText(
-            "Dijital Cüzdan İşlem Raporu",
+            "VarlıkCep İşlem Raporu",
             PAGE_MARGIN,
             37f,
             titlePaint
         )
+
+        if (pageNumber == 1) {
+            val logo = BitmapFactory.decodeResource(
+                context.resources,
+                R.drawable.ic_varlikcep_logo
+            )
+            if (logo != null) {
+                val destRect = RectF(
+                    PAGE_WIDTH - PAGE_MARGIN - 80f,
+                    20f,
+                    PAGE_WIDTH - PAGE_MARGIN,
+                    100f
+                )
+                canvas.drawBitmap(logo, null, destRect, null)
+            }
+        }
 
         val createdAt =
             SimpleDateFormat(
@@ -573,7 +641,8 @@ private object TransactionPdfRenderer {
     }
 
     private class PageState(
-        private val document: PdfDocument
+        private val document: PdfDocument,
+        private val context: Context
     ) {
         private var pageNumber = 0
         private var page: PdfDocument.Page? = null
@@ -619,7 +688,8 @@ private object TransactionPdfRenderer {
 
             drawPageHeader(
                 canvas,
-                pageNumber
+                pageNumber,
+                context
             )
         }
 

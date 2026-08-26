@@ -229,9 +229,11 @@ class BudgetReportViewModel(
                 category = category,
                 limitAmount = limitAmount,
                 updatedAtMillis =
-                    System.currentTimeMillis()
+                    System.currentTimeMillis(),
+                user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
             )
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun deleteBudget(
@@ -241,5 +243,6 @@ class BudgetReportViewModel(
             monthKey = selectedMonthKey.value,
             category = category
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 }

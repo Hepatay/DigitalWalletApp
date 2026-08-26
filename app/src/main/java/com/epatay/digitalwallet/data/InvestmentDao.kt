@@ -11,15 +11,22 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface InvestmentDao {
+    @Query("UPDATE investments_table SET user_id = :uid, updated_at = :timestamp, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
+    suspend fun assignUserToGuestRecords(uid: String, timestamp: Long)
 
-    @Query("SELECT * FROM investments_table ORDER BY id DESC")
+    @Query("UPDATE investments_table SET is_deleted = 1, is_synced = 0 WHERE uuid = :investmentId")
+    suspend fun deleteInvestmentById(investmentId: String)
+
+    @Query("DELETE FROM investments_table WHERE uuid = :investmentId")
+    suspend fun hardDeleteInvestmentById(investmentId: String)
+
+
+    @Query("SELECT * FROM investments_table WHERE is_deleted = 0 ORDER BY uuid DESC")
     fun observeAllInvestments(): Flow<List<InvestmentItem>>
 
     // Tüm yatırımları en yeni kayıt üstte olacak şekilde getirir
-    @Query(
-        "SELECT * FROM investments_table " +
-                "ORDER BY id DESC"
-    )
+    @Query("SELECT * FROM investments_table " +
+                "WHERE is_deleted = 0 ORDER BY uuid DESC")
     fun getAllInvestments(): LiveData<List<InvestmentItem>>
 
     // Yeni yatırım ekler
@@ -28,8 +35,11 @@ interface InvestmentDao {
         investment: InvestmentItem
     )
 
-    @Query("SELECT * FROM investments_table ORDER BY id DESC")
+    @Query("SELECT * FROM investments_table ORDER BY uuid DESC")
     suspend fun getAllInvestmentsSnapshot(): List<InvestmentItem>
+
+    @Query("SELECT * FROM investments_table")
+    suspend fun getAllInvestmentsSync(): List<InvestmentItem>
 
     // Mevcut yatırımı aynı id üzerinden günceller
     @Update
@@ -42,4 +52,6 @@ interface InvestmentDao {
     suspend fun deleteInvestment(
         investment: InvestmentItem
     )
+    @Query("DELETE FROM investments_table")
+    suspend fun clearAll()
 }

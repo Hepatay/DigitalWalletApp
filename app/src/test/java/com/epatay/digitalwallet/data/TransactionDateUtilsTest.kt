@@ -87,7 +87,7 @@ class TransactionDateUtilsTest {
     fun repositoryNormalization_replacesStaleDateKey() {
         val staleTransaction =
             Transaction(
-                id = 4,
+                uuid = "4",
                 title = "Düzenlenmiş kayıt",
                 amount = 100.0,
                 category = "Diğer",

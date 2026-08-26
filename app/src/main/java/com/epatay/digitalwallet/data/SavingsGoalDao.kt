@@ -47,42 +47,42 @@ data class SavingsGoalProgress(
 
 @Dao
 interface SavingsGoalDao {
+    @Query("UPDATE savings_goals SET user_id = :uid, updated_at = :timestamp, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
+    suspend fun assignUserToGuestRecords(uid: String, timestamp: Long)
 
-    @Query(
-        """
-        SELECT
+    @Query("UPDATE savings_goal_entries SET user_id = :uid, updated_at = :timestamp, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
+    suspend fun assignUserToGuestEntries(uid: String, timestamp: Long)
+
+    @Update
+    suspend fun updateEntry(entry: SavingsGoalEntry)
+
+
+    @Query("""SELECT
             goals.*,
             COALESCE(SUM(entries.amountDelta), 0) AS savedAmount,
-            COUNT(entries.id) AS entryCount
+            COUNT(entries.uuid) AS entryCount
         FROM savings_goals AS goals
         LEFT JOIN savings_goal_entries AS entries
-            ON entries.goalId = goals.id
-        GROUP BY goals.id
+            ON entries.goalId = goals.uuid
+        WHERE goals.is_deleted = 0
+        GROUP BY goals.uuid
         ORDER BY
             goals.isArchived ASC,
             goals.createdAtMillis DESC,
-            goals.id DESC
-        """
-    )
+            goals.uuid DESC""")
     fun observeGoalsWithProgress():
         Flow<List<SavingsGoalProgress>>
 
-    @Query(
-        "SELECT * FROM savings_goals WHERE id = :goalId LIMIT 1"
-    )
+    @Query("SELECT * FROM savings_goals WHERE is_deleted = 0 AND uuid = :goalId LIMIT 1")
     suspend fun getGoalById(
-        goalId: Int
+        goalId: String
     ): SavingsGoal?
 
-    @Query(
-        """
-        SELECT COALESCE(SUM(amountDelta), 0)
+    @Query("""SELECT COALESCE(SUM(amountDelta), 0)
         FROM savings_goal_entries
-        WHERE goalId = :goalId
-        """
-    )
+        WHERE is_deleted = 0 AND goalId = :goalId""")
     suspend fun getSavedAmount(
-        goalId: Int
+        goalId: String
     ): Double
 
     @Insert
@@ -95,36 +95,39 @@ interface SavingsGoalDao {
         goal: SavingsGoal
     )
 
-    @Query(
-        "UPDATE savings_goals SET isArchived = :isArchived WHERE id = :goalId"
+    @Query("UPDATE savings_goals SET isArchived = :isArchived WHERE uuid = :goalId"
     )
     suspend fun setArchived(
-        goalId: Int,
+        goalId: String,
         isArchived: Boolean
     )
 
-    @Delete
-    suspend fun deleteGoal(
-        goal: SavingsGoal
-    )
+    @Query("UPDATE savings_goals SET is_deleted = 1, is_synced = 0, updated_at = :timestamp WHERE uuid = :goalId")
+    suspend fun deleteGoal(goalId: String, timestamp: Long = System.currentTimeMillis())
+
+    @Query("DELETE FROM savings_goals WHERE uuid = :goalId")
+    suspend fun hardDeleteGoal(goalId: String)
+
+    @Query("SELECT * FROM savings_goals")
+    suspend fun getAllGoalsSnapshot(): List<SavingsGoal>
+
+    @Query("SELECT * FROM savings_goals")
+    suspend fun getAllGoalsSync(): List<SavingsGoal>
 
     @Query(
         """
         SELECT *
         FROM savings_goal_entries
-        WHERE goalId = :goalId
-        ORDER BY occurredOn DESC, id DESC
-        """
-    )
+        WHERE is_deleted = 0 AND goalId = :goalId
+        ORDER BY occurredOn DESC, uuid DESC
+        """)
     fun observeEntries(
-        goalId: Int
+        goalId: String
     ): Flow<List<SavingsGoalEntry>>
 
-    @Query(
-        "SELECT * FROM savings_goal_entries WHERE id = :entryId LIMIT 1"
-    )
+    @Query("SELECT * FROM savings_goal_entries WHERE is_deleted = 0 AND uuid = :entryId LIMIT 1")
     suspend fun getEntryById(
-        entryId: Int
+        entryId: String
     ): SavingsGoalEntry?
 
     @Insert
@@ -132,8 +135,20 @@ interface SavingsGoalDao {
         entry: SavingsGoalEntry
     ): Long
 
-    @Delete
-    suspend fun deleteEntry(
-        entry: SavingsGoalEntry
-    )
+    @Query("UPDATE savings_goal_entries SET is_deleted = 1, is_synced = 0, updated_at = :timestamp WHERE uuid = :entryId")
+    suspend fun deleteEntry(entryId: String, timestamp: Long = System.currentTimeMillis())
+
+    @Query("DELETE FROM savings_goal_entries WHERE uuid = :entryId")
+    suspend fun hardDeleteEntry(entryId: String)
+
+    @Query("SELECT * FROM savings_goal_entries")
+    suspend fun getAllEntriesSnapshot(): List<SavingsGoalEntry>
+
+    @Query("SELECT * FROM savings_goal_entries")
+    suspend fun getAllEntriesSync(): List<SavingsGoalEntry>
+    @Query("DELETE FROM savings_goals")
+    suspend fun clearAllGoals()
+
+    @Query("DELETE FROM savings_goal_entries")
+    suspend fun clearAllEntries()
 }

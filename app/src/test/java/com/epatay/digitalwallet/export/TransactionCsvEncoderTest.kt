@@ -45,7 +45,7 @@ class TransactionCsvEncoderTest {
                 currencyInvestments =
                     listOf(
                         InvestmentItem(
-                            id = 7,
+                            uuid = "7",
                             assetName = "USD",
                             amount = 10.5,
                             buyPrice = 40.25,
@@ -56,7 +56,7 @@ class TransactionCsvEncoderTest {
                 goldInvestments =
                     listOf(
                         UserGoldAssetEntity(
-                            id = 9,
+                            uuid = "9",
                             goldType = "GRAM_GOLD",
                             quantity = 2.25,
                             unit = "GRAM",
@@ -200,11 +200,13 @@ class TransactionCsvEncoderTest {
         type: TransactionType
     ): Transaction =
         Transaction(
+            uuid = "0",
             title = title,
             amount = amount,
             category = category,
             date = date,
-            type = type
+            type = type,
+            occurredOn = 20260701
         )
 
     private fun csvText(bytes: ByteArray): String {

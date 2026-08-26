@@ -12,11 +12,11 @@ class SavingsGoalRepository(
         database.savingsGoalDao()
 
     val goalsWithProgress:
-        Flow<List<SavingsGoalProgress>> =
+            Flow<List<SavingsGoalProgress>> =
         savingsGoalDao.observeGoalsWithProgress()
 
     fun observeEntries(
-        goalId: Int
+        goalId: String
     ): Flow<List<SavingsGoalEntry>> {
         return savingsGoalDao.observeEntries(goalId)
     }
@@ -32,7 +32,7 @@ class SavingsGoalRepository(
     suspend fun updateGoal(
         goal: SavingsGoal
     ) {
-        require(goal.id > 0) {
+        require(goal.uuid.isNotEmpty()) {
             "Güncellenecek hedef bulunamadı."
         }
 
@@ -42,10 +42,11 @@ class SavingsGoalRepository(
     }
 
     suspend fun setArchived(
-        goalId: Int,
+        goalId: String,
         isArchived: Boolean
     ) {
-        require(goalId > 0) {
+        // HATA DÜZELTİLDİ: goalId > 0 yerine isNotEmpty() kullanıldı
+        require(goalId.isNotEmpty()) {
             "Arşivlenecek hedef bulunamadı."
         }
 
@@ -58,7 +59,9 @@ class SavingsGoalRepository(
     suspend fun deleteGoal(
         goal: SavingsGoal
     ) {
-        savingsGoalDao.deleteGoal(goal)
+        savingsGoalDao.updateGoal(
+            goal.copy(is_deleted = true, is_synced = false, updated_at = System.currentTimeMillis())
+        )
     }
 
     suspend fun addEntry(
@@ -101,7 +104,7 @@ class SavingsGoalRepository(
     ) {
         database.withTransaction {
             val current =
-                savingsGoalDao.getEntryById(entry.id)
+                savingsGoalDao.getEntryById(entry.uuid)
                     ?: return@withTransaction
 
             val balanceAfterDelete =
@@ -123,7 +126,9 @@ class SavingsGoalRepository(
                 "Bu kayıt silinirse birikim bakiyesi sıfırın altına düşer."
             }
 
-            savingsGoalDao.deleteEntry(current)
+            savingsGoalDao.updateEntry(
+                current.copy(is_deleted = true, is_synced = false, updated_at = System.currentTimeMillis())
+            )
         }
     }
 
@@ -144,15 +149,15 @@ class SavingsGoalRepository(
         }
         require(
             normalized.targetAmount.isFinite() &&
-                normalized.targetAmount > 0.0
+                    normalized.targetAmount > 0.0
         ) {
             "Hedef tutarı sıfırdan büyük olmalıdır."
         }
         require(
             normalized.targetDateKey == null ||
-                TransactionDateUtils.isValidDateKey(
-                    normalized.targetDateKey
-                )
+                    TransactionDateUtils.isValidDateKey(
+                        normalized.targetDateKey
+                    )
         ) {
             "Geçersiz hedef tarihi."
         }
@@ -163,12 +168,13 @@ class SavingsGoalRepository(
     private fun normalizeEntry(
         entry: SavingsGoalEntry
     ): SavingsGoalEntry {
-        require(entry.goalId > 0) {
+        // HATA DÜZELTİLDİ: entry.goalId > 0 yerine isNotEmpty() kullanıldı
+        require(entry.goalId.isNotEmpty()) {
             "Birikim hedefi bulunamadı."
         }
         require(
             entry.amountDelta.isFinite() &&
-                entry.amountDelta != 0.0
+                    entry.amountDelta != 0.0
         ) {
             "Birikim hareketi sıfır olamaz."
         }

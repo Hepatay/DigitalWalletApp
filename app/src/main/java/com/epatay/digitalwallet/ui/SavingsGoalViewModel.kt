@@ -34,7 +34,7 @@ class SavingsGoalViewModel(
         )
 
     fun observeEntries(
-        goalId: Int
+        goalId: String
     ): Flow<List<SavingsGoalEntry>> {
         return repository.observeEntries(goalId)
     }
@@ -50,35 +50,40 @@ class SavingsGoalViewModel(
                 targetAmount = targetAmount,
                 targetDateKey = targetDateKey,
                 createdAtMillis =
-                    System.currentTimeMillis()
+                    System.currentTimeMillis(),
+                user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
             )
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun updateGoal(
         goal: SavingsGoal
     ) = viewModelScope.launch {
         repository.updateGoal(goal)
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun setArchived(
-        goalId: Int,
+        goalId: String,
         isArchived: Boolean
     ) = viewModelScope.launch {
         repository.setArchived(
             goalId = goalId,
             isArchived = isArchived
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun deleteGoal(
         goal: SavingsGoal
     ) = viewModelScope.launch {
         repository.deleteGoal(goal)
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun addEntry(
-        goalId: Int,
+        goalId: String,
         amountDelta: Double,
         occurredOn: Int =
             TransactionDateUtils.currentDateKey(),
@@ -91,14 +96,17 @@ class SavingsGoalViewModel(
                 occurredOn = occurredOn,
                 note = note,
                 createdAtMillis =
-                    System.currentTimeMillis()
+                    System.currentTimeMillis(),
+                user_id = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
             )
         )
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 
     fun deleteEntry(
         entry: SavingsGoalEntry
     ) = viewModelScope.launch {
         repository.deleteEntry(entry)
+        com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
 }

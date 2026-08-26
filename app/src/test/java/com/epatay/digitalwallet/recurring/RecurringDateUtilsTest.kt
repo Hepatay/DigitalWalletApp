@@ -301,7 +301,7 @@ class RecurringDateUtilsTest {
         notificationEnabled: Boolean = false
     ): RecurringTransaction {
         return RecurringTransaction(
-            id = 7,
+            uuid = "7",
             title = "Kira",
             amount = 12_500.0,
             category = "Konut",

@@ -19,7 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GoldRateEntity::class,
         UserGoldAssetEntity::class
     ],
-    version = 11,
+    version = 14,
     exportSchema = true
 )
 abstract class TransactionDatabase : RoomDatabase() {
@@ -477,6 +477,7 @@ abstract class TransactionDatabase : RoomDatabase() {
                         MIGRATION_9_10,
                         MIGRATION_10_11
                     )
+                    .fallbackToDestructiveMigration()
                     .build()
 
                 INSTANCE = instance

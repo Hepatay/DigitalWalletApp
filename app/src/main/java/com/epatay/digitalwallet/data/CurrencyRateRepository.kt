@@ -68,14 +68,18 @@ class CurrencyRateRepository(
                 val fetchedAtMillis =
                     System.currentTimeMillis()
 
+                val ratesWithTimestamp = document.rates.map { rate ->
+                    rate.copy(fetchedAtMillis = fetchedAtMillis)
+                }
+
                 dao.replaceAll(
-                    document.rates.map { rate ->
+                    ratesWithTimestamp.map { rate ->
                         rate.toEntity(fetchedAtMillis)
                     }
                 )
 
                 CurrencyLoadResult.Success(
-                    rates = document.rates
+                    rates = ratesWithTimestamp
                 )
             } catch (exception: XmlPullParserException) {
                 cachedOrError(
@@ -140,10 +144,7 @@ class CurrencyRateRepository(
 
         return capabilities.hasCapability(
             NetworkCapabilities.NET_CAPABILITY_INTERNET
-        ) &&
-            capabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_VALIDATED
-            )
+        )
     }
 
     private companion object {

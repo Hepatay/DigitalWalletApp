@@ -712,8 +712,8 @@ class SavingsGoalsBottomSheetDialogFragment :
                         .goalsWithProgress
                         .value
                         .firstOrNull { current ->
-                            current.goal.id ==
-                                progress.goal.id
+                            current.goal.uuid ==
+                                progress.goal.uuid
                         }
                         ?: progress
 
@@ -742,7 +742,7 @@ class SavingsGoalsBottomSheetDialogFragment :
                         ?.takeIf(String::isNotEmpty)
 
                 viewModel.addEntry(
-                    goalId = progress.goal.id,
+                    goalId = progress.goal.uuid,
                     amountDelta =
                         if (isWithdrawal) {
                             -amount
