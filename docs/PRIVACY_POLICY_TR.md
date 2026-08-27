@@ -1,219 +1,176 @@
-# VarlıkCep Gizlilik Politikası
+VarlıkCep Gizlilik Politikası
+Son güncelleme: 27 Ağustos 2026
 
-**Son güncelleme:** 29 Temmuz 2026
+VarlıkCep, kullanıcıların kişisel bütçe, gelir, gider ve yatırım kayıtlarını takip edebilmesi amacıyla Hüseyin Epatay tarafından geliştirilmiştir.
 
-VarlıkCep, kullanıcıların kişisel bütçe, gelir, gider ve yatırım kayıtlarını
-takip edebilmesi amacıyla Hüseyin Epatay tarafından geliştirilmiştir.
+Bu gizlilik politikası; VarlıkCep uygulamasının hangi verileri işlediğini, verilerin nasıl kullanıldığını, saklandığını, bulut senkronizasyonunu ve üçüncü taraf hizmetlerle hangi durumlarda paylaşıldığını açıklar.
 
-Bu gizlilik politikası; VarlıkCep uygulamasının hangi verileri işlediğini,
-verilerin nasıl kullanıldığını, saklandığını ve üçüncü taraf hizmetlerle
-hangi durumlarda paylaşıldığını açıklar.
+KVKK aydınlatma özeti
+Veri sorumlusu: Hüseyin Epatay
 
-## KVKK aydınlatma özeti
+İşlenen veriler: Kullanıcının oluşturduğu finans kayıtları (gelir, gider, bütçe, altın, döviz ve birikim hedefleri), Google ile giriş yapıldığında temel hesap bilgileri (Google UID, ad-soyad, e-posta adresi) ile reklam, analitik ve ağ sağlayıcılarının otomatik işleyebileceği teknik bağlantı, tanımlayıcı, reklam etkileşimi ve tanılama verileri.
 
-- **Veri sorumlusu:** Hüseyin Epatay
-- **İşlenen veriler:** Kullanıcının cihazında oluşturduğu finans kayıtları ile
-  reklam ve ağ sağlayıcılarının otomatik işleyebileceği teknik bağlantı,
-  tanımlayıcı, reklam etkileşimi ve tanılama verileri
-- **İşleme amaçları:** Bütçe/portföy işlevlerini cihazda sunmak, piyasa
-  verilerini göstermek, reklam sunmak ve ölçmek, izin tercihlerini yönetmek,
-  güvenliği sağlamak ve teknik sorunları gidermek
-- **Toplama yöntemi:** Kullanıcının uygulamaya girişi, cihazdaki yerel işlemler
-  ve üçüncü taraf SDK/HTTPS bağlantıları üzerinden otomatik yollar
-- **Hukuki sebep:** Uygulama işlevinin kullanıcının talebiyle sunulması, veri
-  sorumlusunun meşru menfaatleri, hukuki yükümlülüklerin yerine getirilmesi ve
-  açık rıza gereken işlemlerde kullanıcının izni
-- **Aktarım:** Finans kayıtları cihazdan çıkarılmaz. Teknik reklam ve bağlantı
-  verileri aşağıda açıklanan hizmet sağlayıcılar tarafından kendi amaç ve
-  politikaları kapsamında işlenebilir.
-- **Başvuru ve haklar:** Kullanıcılar 6698 sayılı Kanun'un 11. maddesindeki
-  hakları için bu politikanın sonundaki iletişim kanalını kullanabilir.
+İşleme amaçları: Bütçe ve portföy işlevlerini sunmak, verileri güvenli şekilde bulutta (Firebase) yedeklemek ve cihazlar arası senkronize etmek, piyasa verilerini göstermek, reklam sunmak ve ölçmek, izin tercihlerini yönetmek, güvenliği sağlamak ve teknik sorunları gidermek.
 
-## 1. Kullanıcının girdiği finansal veriler
+Toplama yöntemi: Kullanıcının uygulamaya girişi, cihazdaki yerel işlemler, isteğe bağlı Google ile oturum açma işlemi ve üçüncü taraf SDK/HTTPS bağlantıları üzerinden otomatik yollar.
 
-VarlıkCep içerisinde kullanıcı tarafından girilen aşağıdaki bilgiler
-cihazdaki yerel veritabanında saklanır:
+Hukuki sebep: Uygulama işlevinin kullanıcının talebiyle sunulması, veri sorumlusunun meşru menfaatleri, hukuki yükümlülüklerin yerine getirilmesi ve açık rıza gereken işlemlerde kullanıcının izni.
 
-- Gelir ve gider kayıtları
-- İşlem kategorileri
-- İşlem tarihleri
-- Aylık bütçe ve harcama limitleri
-- Yatırım türleri
-- Yatırım miktarları
-- Alış fiyatları
-- Portföy bilgileri
-- Düzenli gelir ve gider tanımları
-- Kategori bütçeleri
-- Birikim hedefleri ve hareketleri
-- Kullanıcının eklediği açıklama ve notlar
+Aktarım: Finansal kayıtlar kullanıcının kimliğine özel olarak izole edilmiş Google Firebase (Firestore) bulut altyapısında saklanır; reklam hizmetlerine, veri simsarlarına veya piyasa sağlayıcılarına aktarılmaz.
 
-Bu kişisel finans kayıtları geliştiriciye, Google AdMob'a veya piyasa verisi
-sağlayıcılarına gönderilmez.
+Başvuru ve haklar: Kullanıcılar 6698 sayılı Kanun'un 11. maddesindeki hakları için bu politikanın sonundaki iletişim kanalını kullanabilir.
 
-Uygulama kullanıcı hesabı oluşturmaz ve kullanıcıdan ad, soyad, telefon
-numarası veya banka hesabı bilgisi talep etmez.
+1. Kullanıcının girdiği finansal veriler
+VarlıkCep içerisinde kullanıcı tarafından girilen aşağıdaki bilgiler cihazdaki yerel veritabanında ve oturum açıldığında Google Firebase (Firestore) bulut altyapısında saklanır:
 
-## 2. Yerel saklama ve yedekleme
+Gelir ve gider kayıtları
 
-Kullanıcının oluşturduğu finansal kayıtlar yalnızca kullanıcının cihazında
-saklanır.
+İşlem kategorileri
 
-Bulut tabanlı senkronizasyon ve cihazlar arası otomatik veri aktarımı
-kullanılmaz. Uygulama manifestinde Android sistem yedeklemesi ve cihazlar
-arası veri aktarımı kapatılmıştır.
+İşlem tarihleri
 
-Yerel veriler aşağıdaki durumlardan birine kadar cihazda kalır:
+Aylık bütçe ve harcama limitleri
 
-- Kullanıcının ilgili kaydı silmesi
-- Uygulama verilerinin cihaz ayarlarından temizlenmesi
-- Uygulamanın cihazdan kaldırılması
+Yatırım türleri (Döviz ve Altın)
 
-Yerel veriler silindikten sonra geliştiricinin bu verileri geri getirmesi
-mümkün değildir.
+Yatırım miktarları
 
-### Dışa aktarma ve paylaşma
+Alış fiyatları
 
-Kullanıcı; gelir ve gider kayıtlarını `.xlsx`, `.csv` veya `.pdf` dosyası
-olarak, kategori bütçeleri ile yatırım kayıtlarını ise `.xlsx` veya `.csv`
-dosyası olarak dışa aktarabilir. Bu dosyalar yalnızca kullanıcının Android
-dosya seçicisi üzerinden belirlediği konuma yazılır. Uygulama dışa aktarılan
-dosyaları geliştiriciye otomatik olarak göndermez.
+Portföy bilgileri
 
-Kullanıcı bir dosyayı başka bir uygulamayla paylaşmayı seçerse dosya, seçilen
-uygulamanın ve hizmet sağlayıcının gizlilik koşullarına tabi olabilir. Dışa
-aktarılan dosyaların saklanması, paylaşılması ve silinmesi kullanıcının
-sorumluluğundadır.
+Düzenli gelir ve gider tanımları
 
-## 3. Reklamlar ve Google AdMob
+Kategori bütçeleri
 
-VarlıkCep, uygulama içerisinde banner reklam göstermek amacıyla Google
-AdMob ve Google Mobile Ads SDK kullanır.
+Birikim hedefleri ve birikim hareketleri
 
-Google Mobile Ads SDK aşağıdaki teknik verileri otomatik olarak
-işleyebilir veya Google ile paylaşabilir:
+Kullanıcının eklediği açıklama ve notlar
 
-- IP adresi ve IP adresinden tahmin edilen genel konum
-- Cihaz ve uygulama tanımlayıcıları
-- Android reklam kimliği
-- App Set ID ve benzeri tanımlayıcılar
-- Uygulama açılışları ve reklam etkileşimleri
-- Dokunma ve görüntüleme bilgileri
-- Uygulama ve reklam SDK'sı performans bilgileri
-- Çökme, donma ve diğer tanılama bilgileri
+Bu kişisel finans kayıtları kullanıcının kimliğine (user_id) özel olarak şifreli ve izole şekilde işlenir; reklamverenlere, TCMB'ye veya altın veri sağlayıcılarına gönderilmez.
 
-Bu bilgiler reklam sunma, reklam performansını ölçme, analiz yapma,
-hataları giderme ve sahtekârlığı önleme amaçlarıyla kullanılabilir.
+2. Veri saklama, bulut senkronizasyonu ve hesap yönetimi
+Kullanıcılar uygulamayı misafir olarak (yalnızca yerel cihazda) kullanabileceği gibi, dilerlerse Google ile Giriş Yap özelliğini kullanarak verilerini buluta yedekleyebilirler.
 
-Google tarafından işlenen veriler, Google'ın gizlilik politikası ve reklam
-teknolojileri politikalarına tabidir:
+Google ile oturum açma (İsteğe bağlı)
+Kullanıcı Google ile oturum açtığında; kullanıcı kimliği (Google UID), ad-soyad ve e-posta adresi kimlik doğrulama amacıyla Firebase Authentication altyapısında işlenir. Kullanıcının Google şifresi veya hassas hesap parolası kesinlikle VarlıkCep tarafından talep edilmez ve saklanmaz.
 
-- Google Gizlilik Politikası:
-  https://policies.google.com/privacy
+Bulut senkronizasyonu (Firebase Firestore)
+Oturum açıldığında finansal kayıtlar Google Firebase bulut sunucularına HTTPS/TLS şifrelemesiyle aktarılır. Firestore güvenlik kuralları uyarınca her kullanıcı yalnızca kendi hesabına (user_id) ait verileri okuyabilir ve değiştirebilir; başka kullanıcıların bu verilere erişmesi imkansızdır.
 
-- Google'ın reklam teknolojilerini kullanma biçimi:
-  https://policies.google.com/technologies/ads
+Dışa aktarma ve paylaşma
+Kullanıcı; gelir ve gider kayıtlarını .xlsx, .csv veya .pdf dosyası olarak, kategori bütçeleri ile yatırım kayıtlarını ise .xlsx veya .csv dosyası olarak dışa aktarabilir. Bu dosyalar yalnızca kullanıcının Android dosya seçicisi üzerinden belirlediği konuma yazılır. Uygulama dışa aktarılan dosyaları sunuculara otomatik olarak göndermez.
 
-## 4. Kişiselleştirilmiş ve kişiselleştirilmemiş reklamlar
+Kullanıcı bir dosyayı başka bir uygulamayla paylaşmayı seçerse dosya, seçilen uygulamanın ve hizmet sağlayıcının gizlilik koşullarına tabi olabilir. Dışa aktarılan dosyaların saklanması, paylaşılması ve silinmesi kullanıcının sorumluluğundadır.
 
-Kullanıcının bulunduğu ülkeye, yasal gerekliliklere ve verdiği izinlere
-bağlı olarak kişiselleştirilmiş, kişiselleştirilmemiş veya sınırlı reklamlar
-gösterilebilir.
+3. Hesap ve verilerin kalıcı olarak silinmesi
+Kullanıcılar verileri üzerindeki tam kontrol ve silme hakkına sahiptir:
 
-Avrupa Ekonomik Alanı, Birleşik Krallık ve İsviçre gibi izin alınması
-gereken bölgelerde VarlıkCep, Google User Messaging Platform üzerinden
-kullanıcıya gizlilik ve reklam tercihleri formu gösterebilir.
+Kayıt Silme: Uygulama içinden silinen herhangi bir işlem veya yatırım kaydı, anında hem cihazdan hem de bulut veritabanından kalıcı olarak silinir.
 
-Kullanıcının reklam kişiselleştirmesine izin vermemesi, uygulamanın temel
-bütçe ve portföy özelliklerini kullanmasını engellemez.
+Hesap ve Tüm Verileri Silme: Kullanıcı, Profil ekranında yer alan "Hesabımı ve Tüm Verilerimi Sil" butonunu kullanarak dilediği zaman:
 
-## 5. Gizlilik tercihlerinin değiştirilmesi
+Firestore bulut veritabanındaki tüm gelir, gider, bütçe ve portföy verilerini,
 
-Kullanıcılar daha önce verdikleri reklam ve veri işleme tercihlerini, ilgili
-bölgelerde uygulamanın alt bölümündeki **Gizlilik** bağlantısı üzerinden açılan
-Google User Messaging Platform formuyla yeniden inceleyebilir ve
-değiştirebilir.
+Firebase Authentication üzerindeki kullanıcı hesabını ve kimlik kaydını,
 
-Android reklam kimliği ayrıca cihazın Android gizlilik veya reklam
-ayarlarından sıfırlanabilir ya da silinebilir.
+Cihazdaki yerel veritabanını ve önbelleği, geri döndürülemez şekilde tamamen ve kalıcı olarak silebilir.
 
-## 6. Üçüncü taraf piyasa verileri
+4. Reklamlar ve Google AdMob
+VarlıkCep, uygulama içerisinde banner reklam göstermek amacıyla Google AdMob ve Google Mobile Ads SDK kullanır.
 
-VarlıkCep, piyasa bilgilerini göstermek için aşağıdaki servislere HTTPS
-üzerinden istek gönderebilir:
+Google Mobile Ads SDK aşağıdaki teknik verileri otomatik olarak işleyebilir veya Google ile paylaşabilir:
 
-- Türkiye Cumhuriyet Merkez Bankası günlük döviz kurları:
-  https://www.tcmb.gov.tr/kurlar/today.xml
+IP adresi ve IP adresinden tahmin edilen genel konum
 
-- apinoktam altın fiyatları (truncgil.com verisi):
-  https://apinoktam.erenozdemir.com.tr/
+Cihaz ve uygulama tanımlayıcıları
 
-Bu servisler IP adresi, istek zamanı, cihazın genel bağlantı bilgileri ve
-IP adresinden çıkarılabilen yaklaşık konum gibi teknik bilgileri kendi
-gizlilik politikalarına göre işleyebilir.
+Android reklam kimliği
 
-VarlıkCep, kullanıcının gelir, gider, bütçe veya yatırım kayıtlarını bu
-servislere göndermez.
+App Set ID ve benzeri tanımlayıcılar
 
-Bayrak görselleri uygulama paketinde yerel olarak bulunur; bayrakları
-göstermek için herhangi bir bayrak servisine ağ isteği gönderilmez. Görseller
-yalnızca görsel sunum içindir ve fiyat verisinin kaynağı değildir. Görsellerin
-dayandığı `flag-icons` projesi MIT lisansıyla sunulur. Ayrıntılı üçüncü taraf
-bildirimleri `docs/THIRD_PARTY_NOTICES.md` dosyasındadır.
+Uygulama açılışları ve reklam etkileşimleri
 
-## 7. Verilerin güvenliği
+Dokunma ve görüntüleme bilgileri
 
-Uygulamanın piyasa verisi ve reklam hizmetleriyle yaptığı ağ bağlantıları
-HTTPS/TLS üzerinden gerçekleştirilir.
+Uygulama ve reklam SDK'sı performans bilgileri
 
-Bununla birlikte internet üzerinden gerçekleştirilen hiçbir veri aktarım
-veya saklama yönteminin tamamen risksiz olduğu garanti edilemez.
+Çökme, donma ve diğer tanılama bilgileri
 
-Kullanıcı, cihazının ekran kilidini ve diğer cihaz güvenliği özelliklerini
-etkin tutmaktan sorumludur.
+Bu bilgiler reklam sunma, reklam performansını ölçme, analiz yapma, hataları giderme ve sahtekârlığı önleme amaçlarıyla kullanılabilir.
 
-## 8. Çocukların gizliliği
+Google tarafından işlenen veriler, Google'ın gizlilik politikası ve reklam teknolojileri politikalarına tabidir:
 
+Google Gizlilik Politikası:
+https://policies.google.com/privacy
+
+Google'ın reklam teknolojilerini kullanma biçimi:
+https://policies.google.com/technologies/ads
+
+5. Kişiselleştirilmiş ve kişiselleştirilmemiş reklamlar
+Kullanıcının bulunduğu ülkeye, yasal gerekliliklere ve verdiği izinlere bağlı olarak kişiselleştirilmiş, kişiselleştirilmemiş veya sınırlı reklamlar gösterilebilir.
+
+Avrupa Ekonomik Alanı, Birleşik Krallık ve İsviçre gibi izin alınması gereken bölgelerde VarlıkCep, Google User Messaging Platform üzerinden kullanıcıya gizlilik ve reklam tercihleri formu gösterebilir.
+
+Kullanıcının reklam kişiselleştirmesine izin vermemesi, uygulamanın temel bütçe ve portföy özelliklerini kullanmasını engellemez.
+
+6. Gizlilik tercihlerinin değiştirilmesi
+Kullanıcılar daha önce verdikleri reklam ve veri işleme tercihlerini, ilgili bölgelerde uygulamanın alt bölümündeki Gizlilik bağlantısı üzerinden açılan Google User Messaging Platform formuyla yeniden inceleyebilir ve değiştirebilir.
+
+Android reklam kimliği ayrıca cihazın Android gizlilik veya reklam ayarlarından sıfırlanabilir ya da silinebilir.
+
+7. Üçüncü taraf piyasa verileri
+VarlıkCep, piyasa bilgilerini göstermek için aşağıdaki servislere HTTPS üzerinden istek gönderebilir:
+
+Türkiye Cumhuriyet Merkez Bankası günlük döviz kurları:
+https://www.tcmb.gov.tr/kurlar/today.xml
+
+apinoktam altın fiyatları (truncgil.com verisi):
+https://apinoktam.erenozdemir.com.tr/
+
+Bu servisler IP adresi, istek zamanı, cihazın genel bağlantı bilgileri ve IP adresinden çıkarılabilen yaklaşık konum gibi teknik bilgileri kendi gizlilik politikalarına göre işleyebilir.
+
+VarlıkCep, kullanıcının gelir, gider, bütçe veya yatırım kayıtlarını bu servislere göndermez.
+
+Bayrak görselleri uygulama paketinde yerel olarak bulunur; bayrakları göstermek için herhangi bir bayrak servisine ağ isteği gönderilmez. Görseller yalnızca görsel sunum içindir ve fiyat verisinin kaynağı değildir. Görsellerin dayandığı flag-icons projesi MIT lisansıyla sunulur. Ayrıntılı üçüncü taraf bildirimleri docs/THIRD_PARTY_NOTICES.md dosyasındadır.
+
+8. Verilerin güvenliği
+Uygulamanın bulut sunucuları (Firebase), piyasa verisi ve reklam hizmetleriyle yaptığı tüm ağ bağlantıları HTTPS/TLS üzerinden şifreli olarak gerçekleştirilir. Uygulama düzeyinde düz metin (cleartext/HTTP) trafiği işletim sistemi düzeyinde engellenmiştir.
+
+Bununla birlikte internet üzerinden gerçekleştirilen hiçbir veri aktarım veya saklama yönteminin tamamen risksiz olduğu garanti edilemez. Kullanıcı, cihazının ekran kilidini ve Google hesap güvenliğini korumaktan sorumludur.
+
+9. Çocukların gizliliği
 VarlıkCep özellikle çocuklara yönelik olarak tasarlanmamıştır.
 
-Uygulama bilerek çocuklardan ad, iletişim bilgisi veya kişisel finans
-bilgisi toplamaz. Uygulamanın çocuklar tarafından kullanılması durumunda
-ebeveyn veya yasal vasinin gözetimi önerilir.
+Uygulama bilerek 13 yaş altındaki çocuklardan ad, iletişim bilgisi veya kişisel finans bilgisi toplamaz. Uygulamanın çocuklar tarafından kullanılması durumunda ebeveyn veya yasal vasinin gözetimi önerilir.
 
-## 9. Kullanıcının hakları
+10. Kullanıcının hakları
+Geçerli veri koruma mevzuatına (KVKK / GDPR) bağlı olarak kullanıcılar aşağıdaki haklara sahip olabilir:
 
-Geçerli veri koruma mevzuatına bağlı olarak kullanıcılar aşağıdaki haklara
-sahip olabilir:
+Verilerinin nasıl işlendiği hakkında bilgi alma
 
-- Verilerinin nasıl işlendiği hakkında bilgi alma
-- Verilerin düzeltilmesini veya silinmesini talep etme
-- Belirli veri işleme faaliyetlerine itiraz etme
-- Daha önce verilen izni geri çekme
+Verilerin düzeltilmesini veya silinmesini talep etme
 
-Kullanıcının kişisel finans kayıtları yalnızca kendi cihazında
-saklandığından, bu kayıtların silinmesi uygulama içinden veya cihaz
-ayarlarından gerçekleştirilmelidir.
+Hesabını ve tüm verilerini kalıcı olarak silme
 
-## 10. Finansal bilgi ve sorumluluk sınırı
+Belirli veri işleme faaliyetlerine itiraz etme
 
-VarlıkCep ödeme, para transferi, aracılık veya yatırım danışmanlığı hizmeti
-sunmaz. Gösterilen döviz, altın, portföy değeri, kâr ve zarar hesapları genel
-bilgilendirme ve referans amaçlıdır; yatırım tavsiyesi, kesin fiyat veya
-alım-satım teklifi değildir. Veriler gecikebilir, eksik olabilir ve çevrimdışı
-durumda son kaydedilen değerler gösterilebilir. Kuyumcu, banka, şehir, işçilik
-ve piyasa koşullarına göre gerçekleşen fiyatlar farklı olabilir.
+Daha önce verilen izni geri çekme
 
-## 11. Gizlilik politikasındaki değişiklikler
+Kullanıcılar verilerini uygulama içerisindeki "Hesabımı ve Tüm Verilerimi Sil" seçeneği ile anında ve kalıcı olarak silebilir veya geliştiriciye başvurarak destek alabilirler.
 
-Bu politika; uygulamanın özellikleri, kullanılan üçüncü taraf hizmetler
-veya yasal gereklilikler değiştiğinde güncellenebilir.
+11. Finansal bilgi ve sorumluluk sınırı
+VarlıkCep ödeme, para transferi, aracılık veya yatırım danışmanlığı hizmeti sunmaz. Gösterilen döviz, altın, portföy değeri, kâr ve zarar hesapları genel bilgilendirme ve referans amaçlıdır; yatırım tavsiyesi, kesin fiyat veya alım-satım teklifi değildir. Veriler gecikebilir, eksik olabilir ve çevrimdışı durumda son kaydedilen değerler gösterilebilir. Kuyumcu, banka, şehir, işçilik ve piyasa koşullarına göre gerçekleşen fiyatlar farklı olabilir.
 
-Politikanın güncel sürümü bu sayfada yayımlanır ve son güncelleme tarihi
-sayfanın üst kısmında belirtilir.
+12. Gizlilik politikasındaki değişiklikler
+Bu politika; uygulamanın özellikleri, kullanılan üçüncü taraf hizmetler veya yasal gereklilikler değiştiğinde güncellenebilir.
 
-## 12. Geliştirici ve iletişim
+Politikanın güncel sürümü bu sayfada yayımlanır ve son güncelleme tarihi sayfanın üst kısmında belirtilir.
 
-**Uygulama:** VarlıkCep  
-**Geliştirici:** Hüseyin Epatay
+13. Geliştirici ve iletişim
+Uygulama: VarlıkCep
+
+Geliştirici: Hüseyin Epatay
 
 Gizlilik politikasıyla ilgili soru, talep veya bildirimler için:
 
