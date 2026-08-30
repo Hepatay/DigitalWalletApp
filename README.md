@@ -17,7 +17,7 @@ Uygulama; bankacılık, para transferi veya yatırım danışmanlığı hizmeti 
 | **Veritabanı** | Room Database (v14) & Firebase Firestore |
 | **Kimlik Doğrulama** | Firebase Authentication (Google ile Giriş Yap & Misafir Modu) |
 | **Paket Adı** | `com.epatay.digitalwallet` |
-| **Sürüm** | `1.1.0` (`versionCode 2`) |
+| **Sürüm** | `1.2.0` (`versionCode 3`) |
 
 ---
 
