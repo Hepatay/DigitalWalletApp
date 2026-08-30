@@ -91,6 +91,15 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
         goldType?.let(goldSellingPrices::get)
             ?: currencySellingPrices[code]
 
+    val portfolioAssetCount: LiveData<Int> =
+        combine(
+            investmentDao.observeCount(),
+            goldAssetDao.observeCount()
+        ) { c1, c2 -> c1 + c2 }.asLiveData()
+
+    private val _errorEvent = androidx.lifecycle.MutableLiveData<String>()
+    val errorEvent: androidx.lifecycle.LiveData<String> = _errorEvent
+
     fun insertCurrency(
         code: String,
         quantity: Double,
@@ -98,6 +107,12 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
         purchaseDateText: String,
         note: String?
     ) = viewModelScope.launch(Dispatchers.IO) {
+        val count = investmentDao.getCount() + goldAssetDao.getCount()
+        if (count >= 20) {
+            _errorEvent.postValue("Portföyünüze en fazla 20 farklı varlık ekleyebilirsiniz.")
+            return@launch
+        }
+        
         val normalizedCode =
             code.trim().uppercase(Locale.ROOT)
         val normalizedQuantity =
@@ -136,6 +151,12 @@ class InvestmentViewModel(application: Application) : AndroidViewModel(applicati
         purchaseDate: Long? = null,
         note: String? = null
     ) = viewModelScope.launch(Dispatchers.IO) {
+        val count = investmentDao.getCount() + goldAssetDao.getCount()
+        if (count >= 20) {
+            _errorEvent.postValue("Portföyünüze en fazla 20 farklı varlık ekleyebilirsiniz.")
+            return@launch
+        }
+        
         val normalizedQuantity =
             DecimalMath.normalizeQuantity(quantity)
                 ?.takeIf { it > 0.0 }

@@ -108,6 +108,9 @@ interface SavingsGoalDao {
     @Query("DELETE FROM savings_goals WHERE uuid = :goalId")
     suspend fun hardDeleteGoal(goalId: String)
 
+    @Query("DELETE FROM savings_goals WHERE uuid LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoGoals()
+
     @Query("SELECT * FROM savings_goals")
     suspend fun getAllGoalsSnapshot(): List<SavingsGoal>
 
@@ -125,6 +128,17 @@ interface SavingsGoalDao {
         goalId: String
     ): Flow<List<SavingsGoalEntry>>
 
+    @Query(
+        """
+        SELECT *
+        FROM savings_goal_entries
+        WHERE is_deleted = 0 AND goalId = :goalId
+        ORDER BY occurredOn DESC, uuid DESC
+        """)
+    suspend fun getEntries(
+        goalId: String
+    ): List<SavingsGoalEntry>
+
     @Query("SELECT * FROM savings_goal_entries WHERE is_deleted = 0 AND uuid = :entryId LIMIT 1")
     suspend fun getEntryById(
         entryId: String
@@ -140,6 +154,9 @@ interface SavingsGoalDao {
 
     @Query("DELETE FROM savings_goal_entries WHERE uuid = :entryId")
     suspend fun hardDeleteEntry(entryId: String)
+
+    @Query("DELETE FROM savings_goal_entries WHERE uuid LIKE 'DEMO_TUTORIAL_%' OR goalId LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoEntries()
 
     @Query("SELECT * FROM savings_goal_entries")
     suspend fun getAllEntriesSnapshot(): List<SavingsGoalEntry>

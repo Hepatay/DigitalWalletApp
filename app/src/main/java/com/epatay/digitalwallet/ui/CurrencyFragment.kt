@@ -1,4 +1,4 @@
-﻿package com.epatay.digitalwallet.ui
+package com.epatay.digitalwallet.ui
 
 import android.os.Bundle
 import android.view.View
@@ -140,7 +140,30 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
         )
 
         updateTransactionRates(rates)
-        updateLastUpdatedText(lastUpdatedText)
+
+        val firstRate = rates.firstOrNull()
+        if (firstRate != null) {
+            val formattedDate = formatCurrencySourceDate(firstRate.updateDateTime)
+            binding.tvCurrencyDate.text = formattedDate
+            binding.tvCurrencyDate.visibility = View.VISIBLE
+
+            val sourceTimeFormatted = if (firstRate.updateDateTime.contains("15:30")) {
+                firstRate.updateDateTime
+            } else {
+                "${firstRate.updateDateTime} 15:30"
+            }
+            binding.tvSourceTime.text = "Kaynak Veri Zamanı: $sourceTimeFormatted"
+            binding.tvSourceTime.visibility = View.VISIBLE
+
+            val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault())
+            val fetchTimeStr = sdf.format(java.util.Date(firstRate.fetchedAtMillis))
+            binding.tvAppFetchTime.text = "Uygulamanın Çektiği Zaman: $fetchTimeStr"
+            binding.tvAppFetchTime.visibility = View.VISIBLE
+        } else {
+            binding.tvCurrencyDate.visibility = View.GONE
+            binding.tvSourceTime.visibility = View.GONE
+            binding.tvAppFetchTime.visibility = View.GONE
+        }
 
         binding.rvCurrencies.visibility =
             View.VISIBLE
@@ -163,7 +186,11 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
             View.GONE
         binding.rvCurrencies.visibility =
             View.GONE
-        binding.tvLastUpdated.visibility =
+        binding.tvCurrencyDate.visibility =
+            View.GONE
+        binding.tvSourceTime.visibility =
+            View.GONE
+        binding.tvAppFetchTime.visibility =
             View.GONE
         binding.tvError.text =
             message
@@ -193,13 +220,6 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
 
         val sdf = SimpleDateFormat("dd.MM.yyyy '15:30'", Locale.getDefault())
         return sdf.format(calendar.time)
-    }
-
-    private fun updateLastUpdatedText(
-        lastUpdatedText: String
-    ) {
-        binding.tvLastUpdated.text = "Son Güncelleme: " + getTcmbDateString()
-        binding.tvLastUpdated.visibility = View.VISIBLE
     }
 
     private fun updateTransactionRates(
@@ -241,8 +261,26 @@ class CurrencyFragment : Fragment(R.layout.fragment_currency) {
             }
     }
 
+    private fun formatCurrencySourceDate(sourceDateStr: String?): String {
+        if (sourceDateStr.isNullOrBlank()) return ""
+        val date = runCatching {
+            if (sourceDateStr.contains(" ")) {
+                SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.ROOT).parse(sourceDateStr)
+            } else {
+                SimpleDateFormat("dd.MM.yyyy", Locale.ROOT).parse(sourceDateStr)
+            }
+        }.getOrNull()
+
+        return if (date != null) {
+            SimpleDateFormat("dd MMMM yyyy, EEEE", Locale.forLanguageTag("tr-TR")).format(date)
+        } else {
+            sourceDateStr
+        }
+    }
+
     override fun onDestroyView() {
-        super.onDestroyView()
+        binding.rvCurrencies.adapter = null
         _binding = null
+        super.onDestroyView()
     }
 }

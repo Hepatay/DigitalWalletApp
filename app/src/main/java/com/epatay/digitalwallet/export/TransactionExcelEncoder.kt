@@ -74,7 +74,24 @@ internal object TransactionExcelEncoder {
                 )
             }
 
-
+            exportData.categoryBudgets.forEach { budget ->
+                writeRow(
+                    sheet,
+                    rowIndex++,
+                    listOf(
+                        "Bütçe",
+                        formatMonthKey(budget.monthKey),
+                        "Aylık kategori bütçesi",
+                        budget.category,
+                        "Bütçe limiti",
+                        "",
+                        "",
+                        "",
+                        safeNumber(budget.limitAmount),
+                        ""
+                    )
+                )
+            }
 
             exportData.currencyInvestments.forEach { investment ->
                 val totalPurchaseCost =

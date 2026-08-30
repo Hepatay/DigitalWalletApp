@@ -91,6 +91,7 @@
                 android:layout_height="wrap_content"
                 android:imeOptions="actionNext"
                 android:inputType="textCapSentences"
+                android:maxLength="50"
                 android:maxLines="1"
                 android:textColor="?attr/colorOnSurface"
                 android:textColorHint="?attr/colorOnSurfaceVariant"
@@ -118,7 +119,7 @@
                 android:digits="0123456789.,"
                 android:imeOptions="actionDone"
                 android:inputType="numberDecimal"
-                android:maxLength="24"
+                android:maxLength="14"
                 android:maxLines="1"
                 android:textColor="?attr/colorOnSurface"
                 android:textColorHint="?attr/colorOnSurfaceVariant"
@@ -133,7 +134,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:hint="Kategori seç"
+            android:hint="Kategori"
             app:boxBackgroundColor="?attr/colorSurface"
             app:boxStrokeColor="?attr/colorPrimary"
             app:endIconMode="dropdown_menu">
@@ -142,29 +143,25 @@
                 android:id="@+id/etCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:clickable="true"
                 android:cursorVisible="false"
                 android:dropDownHeight="220dp"
-                android:focusable="false"
-                android:focusableInTouchMode="false"
                 android:importantForAutofill="no"
                 android:inputType="none"
                 android:maxLines="1"
                 android:textColor="?attr/colorOnSurface"
-                android:textColorHint="?attr/colorOnSurfaceVariant"
                 android:textSize="16sp"
-                tools:text="Gıda" />
+                tools:text="Market" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Kaydet butonu -->
+        <!-- Kaydet Butonu -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveExpense"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="54dp"
             android:layout_marginTop="24dp"
             android:minHeight="54dp"
-            android:text="Kaydet"
+            android:text="İşlemi Kaydet"
             android:textAllCaps="false"
             android:textColor="?attr/colorOnPrimary"
             android:textSize="16sp"
@@ -173,7 +170,6 @@
             app:cornerRadius="14dp"
             app:icon="@drawable/ic_save"
             app:iconGravity="textStart"
-            app:iconPadding="8dp"
             app:iconTint="?attr/colorOnPrimary" />
 
     </LinearLayout>

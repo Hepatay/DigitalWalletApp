@@ -17,13 +17,13 @@
         android:paddingStart="20dp"
         android:paddingTop="24dp"
         android:paddingEnd="20dp"
-        android:paddingBottom="32dp">
+        android:paddingBottom="36dp">
 
         <TextView
             android:id="@+id/tvMonthlyReportTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Aylık Rapor"
+            android:text="Aylık Finans Raporu"
             android:textColor="?attr/colorOnSurface"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -32,14 +32,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Gelir, gider ve kategori dağılımınızı inceleyin."
+            android:text="Aylık nakit akışı, tasarruf oranı ve detaylı harcama analizi."
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
+        <!-- Ay Seçici -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="14dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -65,11 +66,11 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:gravity="center"
                 android:minHeight="48dp"
-                android:text="Temmuz 2026"
+                android:text="Ağustos 2026"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                tools:text="Temmuz 2026" />
+                tools:text="Ağustos 2026" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNextReportMonth"
@@ -85,6 +86,7 @@
 
         </LinearLayout>
 
+        <!-- 3'lü Özet Kartları: Gelir / Gider / Net Bakiye -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -189,7 +191,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Bakiye"
+                        android:text="Net Bakiye"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="12sp" />
 
@@ -211,6 +213,172 @@
 
         </LinearLayout>
 
+        <!-- Detaylı Finansal Analiz & İstatistik Kartı -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📊 Aylık Finansal Özet"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Tasarruf Oranı ve Günlük Ortalama Harcama -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tasarruf Oranı"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportSavingsRate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="-%"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold"
+                            tools:text="%35 Tasarruf" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Günlük Ort. Gider"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportDailyAvg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0,00 ₺ / gün"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold"
+                            tools:text="145,00 ₺ / gün" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- En Yüksek Gider Kategorisi & Toplam İşlem -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="En Yüksek Gider"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportTopCategory"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Yok"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold"
+                            tools:text="Market (%42)" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Toplam İşlem"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportTransactionCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 Kayıt"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold"
+                            tools:text="12 Kayıt" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Finansal Tavsiye / Analiz Notu -->
+                <TextView
+                    android:id="@+id/tvReportAdvice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_bottom_sheet_surface"
+                    android:padding="10dp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp"
+                    tools:text="💡 Harika! Bu ay gelirinizin %35'ini biriktirdiniz. Birikim hedeflerinize katkı yapabilirsiniz." />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Grafik -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="200dp"
@@ -237,13 +405,14 @@
 
         </FrameLayout>
 
+        <!-- Kategori Dağılımı -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Kategori dağılımı"
+            android:layout_marginTop="12dp"
+            android:text="Kategori Bazlı Harcama Dağılımı"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -252,18 +421,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:orientation="vertical" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnManageCategoryBudgets"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="18dp"
-            android:minHeight="54dp"
-            android:text="Kategori bütçelerini yönet"
-            android:textAllCaps="false"
-            android:textSize="15sp"
-            android:textStyle="bold" />
 
     </LinearLayout>
 

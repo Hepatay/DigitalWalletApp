@@ -24,6 +24,12 @@ interface InvestmentDao {
     @Query("SELECT * FROM investments_table WHERE is_deleted = 0 ORDER BY uuid DESC")
     fun observeAllInvestments(): Flow<List<InvestmentItem>>
 
+    @Query("SELECT COUNT(*) FROM investments_table WHERE is_deleted = 0")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM investments_table WHERE is_deleted = 0")
+    suspend fun getCount(): Int
+
     // Tüm yatırımları en yeni kayıt üstte olacak şekilde getirir
     @Query("SELECT * FROM investments_table " +
                 "WHERE is_deleted = 0 ORDER BY uuid DESC")
@@ -52,6 +58,9 @@ interface InvestmentDao {
     suspend fun deleteInvestment(
         investment: InvestmentItem
     )
+    @Query("DELETE FROM investments_table WHERE uuid LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoInvestments()
+
     @Query("DELETE FROM investments_table")
     suspend fun clearAll()
 }

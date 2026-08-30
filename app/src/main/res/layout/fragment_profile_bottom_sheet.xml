@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Verileriniz güvenle bulutta saklanır ve her cihazdan anında erişebilirsiniz."
+            android:text="Verileriniz Firebase altyapısı ile güvenle buluta yedeklenir. Farklı cihazlardan anlık erişim sağlayabilirsiniz."
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -74,7 +74,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            tools:text="Hasan Epatay"
+            tools:text="Hüseyin Epatay"
             android:textAppearance="?attr/textAppearanceTitleLarge" />
 
         <TextView
@@ -83,7 +83,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
-            tools:text="hasan@example.com"
+            tools:text="huseyin@example.com"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -92,7 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Verileriniz şifreli olarak bulutta (Firebase) güvende."
+            android:text="Verileriniz Firebase altyapısı ile güvenle buluta yedeklenir."
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorPrimary" />
 
@@ -103,9 +103,49 @@
             android:layout_marginTop="24dp"
             android:text="Çıkış Yap"
             style="@style/Widget.Material3.Button.OutlinedButton"
-            app:strokeColor="?attr/colorError"
+            app:strokeColor="?attr/colorOutline" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteAccount"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/delete_account_button"
+            style="@style/Widget.Material3.Button.TextButton"
             android:textColor="?attr/colorError" />
-            
+
+    </LinearLayout>
+
+    <!-- LOADING STATE -->
+    <LinearLayout
+        android:id="@+id/layoutLoading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingVertical="32dp"
+        android:paddingHorizontal="16dp"
+        android:visibility="gone">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progressIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:indicatorSize="48dp"
+            app:trackThickness="4dp"
+            app:indicatorColor="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tvLoadingMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:text="Lütfen bekleyin..."
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurface" />
+
     </LinearLayout>
 
 </LinearLayout>

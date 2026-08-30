@@ -107,6 +107,9 @@ interface RecurringTransactionDao {
     @Query("DELETE FROM recurring_transactions_table WHERE uuid = :id")
     suspend fun hardDelete(id: String)
 
+    @Query("DELETE FROM recurring_transactions_table WHERE uuid LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoRecurring()
+
     @Query("SELECT * FROM recurring_transactions_table")
     suspend fun getAllSnapshot(): List<RecurringTransaction>
 

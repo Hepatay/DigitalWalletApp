@@ -26,12 +26,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class MonthlyReportBottomSheetDialogFragment :
     BottomSheetDialogFragment() {
@@ -45,6 +48,9 @@ class MonthlyReportBottomSheetDialogFragment :
 
     private val budgetReportViewModel:
         BudgetReportViewModel by activityViewModels()
+
+    private var lastTotals: MonthlyTransactionTotals? = null
+    private var lastCategories: List<CategoryBudgetProgress> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,7 +77,6 @@ class MonthlyReportBottomSheetDialogFragment :
         )
 
         configureMonthNavigation()
-        configureActions()
         configureChart()
         observeReportData()
     }
@@ -102,26 +107,6 @@ class MonthlyReportBottomSheetDialogFragment :
         binding.tvReportMonth
             .setOnClickListener {
                 showMonthYearPicker()
-            }
-    }
-
-    private fun configureActions() {
-        binding.btnManageCategoryBudgets
-            .setOnClickListener {
-                val fragmentManager =
-                    parentFragmentManager
-
-                if (fragmentManager.isStateSaved) {
-                    return@setOnClickListener
-                }
-
-                dismiss()
-
-                CategoryBudgetsBottomSheetDialogFragment()
-                    .show(
-                        fragmentManager,
-                        CategoryBudgetsBottomSheetDialogFragment.TAG
-                    )
             }
     }
 
@@ -178,6 +163,7 @@ class MonthlyReportBottomSheetDialogFragment :
     private fun renderMonthlyTotals(
         totals: MonthlyTransactionTotals
     ) {
+        lastTotals = totals
         binding.tvReportIncome.text =
             formatCurrency(totals.totalIncome)
 
@@ -213,11 +199,14 @@ class MonthlyReportBottomSheetDialogFragment :
 
         binding.tvReportBalance.contentDescription =
             "Aylık bakiye ${formatCurrency(totals.balance)}"
+
+        updateFinancialInsights()
     }
 
     private fun renderCategoryReport(
         allCategories: List<CategoryBudgetProgress>
     ) {
+        lastCategories = allCategories
         val categories =
             allCategories.filter { category ->
                 category.spentAmount > 0.0
@@ -236,6 +225,7 @@ class MonthlyReportBottomSheetDialogFragment :
         if (isEmpty) {
             binding.reportPieChart.clear()
             binding.reportPieChart.invalidate()
+            updateFinancialInsights()
             return
         }
 
@@ -307,15 +297,81 @@ class MonthlyReportBottomSheetDialogFragment :
             binding.llReportCategories.addView(
                 createCategoryRow(
                     category = category,
-                    color =
-                    colors[index]
+                    totalExpense = totalExpense,
+                    color = colors[index]
                 )
             )
         }
+
+        updateFinancialInsights()
+    }
+
+    private fun updateFinancialInsights() {
+        val totals = lastTotals ?: return
+        val categories = lastCategories.filter { it.spentAmount > 0.0 }
+
+        // 1. Tasarruf Oranı
+        if (totals.totalIncome > 0.0) {
+            val savingsRate = ((totals.totalIncome - totals.totalExpense) / totals.totalIncome * 100.0).roundToInt()
+            if (savingsRate >= 0) {
+                binding.tvReportSavingsRate.text = "%$savingsRate Tasarruf"
+                binding.tvReportSavingsRate.setTextColor(Color.parseColor("#4CAF50"))
+            } else {
+                binding.tvReportSavingsRate.text = "%${-savingsRate} Açık"
+                binding.tvReportSavingsRate.setTextColor(Color.parseColor("#E53935"))
+            }
+        } else if (totals.totalExpense > 0.0) {
+            binding.tvReportSavingsRate.text = "Gelir Yok"
+            binding.tvReportSavingsRate.setTextColor(Color.parseColor("#E65100"))
+        } else {
+            binding.tvReportSavingsRate.text = "-%"
+            binding.tvReportSavingsRate.setTextColor(
+                MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorOnSurface, Color.BLACK)
+            )
+        }
+
+        // 2. Günlük Ortalama Gider
+        val monthKey = budgetReportViewModel.selectedMonthKey.value
+        val year = monthKey / 100
+        val month = (monthKey % 100) - 1
+        val cal = GregorianCalendar(year, month, 1)
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val dailyAvg = totals.totalExpense / daysInMonth.coerceAtLeast(1)
+        binding.tvReportDailyAvg.text = "${formatCurrency(dailyAvg)} / gün"
+
+        // 3. En Yüksek Gider Kategorisi
+        if (categories.isNotEmpty()) {
+            val topCategory = categories.maxByOrNull { it.spentAmount }
+            if (topCategory != null && totals.totalExpense > 0.0) {
+                val percent = ((topCategory.spentAmount / totals.totalExpense) * 100.0).roundToInt()
+                binding.tvReportTopCategory.text = "${topCategory.category} (%$percent)"
+            } else {
+                binding.tvReportTopCategory.text = "Gider Yok"
+            }
+        } else {
+            binding.tvReportTopCategory.text = "Gider Yok"
+        }
+
+        // 4. Toplam İşlem
+        binding.tvReportTransactionCount.text = "${totals.transactionCount} Kayıt"
+
+        // 5. Finansal Tavsiye / Analiz Notu
+        val advice = when {
+            totals.totalIncome == 0.0 && totals.totalExpense == 0.0 ->
+                "ℹ️ Bu ay için henüz bir gelir veya gider kaydı bulunmuyor."
+            totals.balance > 0.0 ->
+                "💡 Harika! Bu ay geliriniz giderlerinizden ${formatCurrency(totals.balance)} daha fazla. Birikim hedeflerinize katkı yapabilirsiniz."
+            totals.balance < 0.0 ->
+                "⚠️ Dikkat: Bu ay giderleriniz gelirinizi ${formatCurrency(-totals.balance)} aştı. Harcamalarınızı gözden geçirmenizi öneririz."
+            else ->
+                "⚖️ Bu ay gelir ve giderleriniz tam olarak dengelendi."
+        }
+        binding.tvReportAdvice.text = advice
     }
 
     private fun createCategoryRow(
         category: CategoryBudgetProgress,
+        totalExpense: Double,
         color: Int
     ): View {
         val context = requireContext()
@@ -343,16 +399,24 @@ class MonthlyReportBottomSheetDialogFragment :
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
-                minimumHeight = dp(48)
-                orientation = LinearLayout.HORIZONTAL
-                gravity =
-                    android.view.Gravity.CENTER_VERTICAL
+                orientation = LinearLayout.VERTICAL
                 setPadding(
                     0,
                     dp(6),
                     0,
                     dp(6)
                 )
+            }
+
+        val topRow =
+            LinearLayout(context).apply {
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
             }
 
         val colorMarker =
@@ -393,12 +457,16 @@ class MonthlyReportBottomSheetDialogFragment :
                     android.text.TextUtils.TruncateAt.END
             }
 
+        val categoryPercent =
+            if (totalExpense > 0.0) {
+                ((category.spentAmount / totalExpense) * 100.0).roundToInt()
+            } else 0
+
         val countAndBudget =
             TextView(context).apply {
                 text =
                     buildString {
-                        append(category.transactionCount)
-                        append(" işlem")
+                        append("%$categoryPercent • ${category.transactionCount} işlem")
 
                         category.limitAmount?.let { limit ->
                             append(" • Bütçe ")
@@ -432,11 +500,31 @@ class MonthlyReportBottomSheetDialogFragment :
                 )
             }
 
+        val progressBar =
+            LinearProgressIndicator(context).apply {
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(4)
+                    ).apply {
+                        topMargin = dp(4)
+                        marginStart = dp(22)
+                    }
+                max = 100
+                progress = categoryPercent.coerceIn(0, 100)
+                trackCornerRadius = dp(2)
+                setIndicatorColor(color)
+                trackColor = Color.parseColor("#18000000")
+            }
+
         textColumn.addView(categoryName)
         textColumn.addView(countAndBudget)
-        row.addView(colorMarker)
-        row.addView(textColumn)
-        row.addView(amount)
+        topRow.addView(colorMarker)
+        topRow.addView(textColumn)
+        topRow.addView(amount)
+
+        row.addView(topRow)
+        row.addView(progressBar)
 
         row.contentDescription =
             buildString {
@@ -471,13 +559,11 @@ class MonthlyReportBottomSheetDialogFragment :
             current.shiftMonth(amount)
 
         if (adjacent > TransactionDateUtils.currentMonthKey()) {
-            Snackbar
-                .make(
-                    binding.root,
-                    "Gelecek aylar için rapor seçilemez.",
-                    Snackbar.LENGTH_SHORT
-                )
-                .show()
+            com.epatay.digitalwallet.util.InAppNotification.show(
+                activity,
+                "Gelecek aylar için rapor seçilemez.",
+                com.epatay.digitalwallet.util.NotificationType.WARNING
+            )
             return
         }
 
@@ -572,13 +658,11 @@ class MonthlyReportBottomSheetDialogFragment :
                         monthPicker.value
 
                 if (selectedKey > nowKey) {
-                    Snackbar
-                        .make(
-                            binding.root,
-                            "Gelecek aylar için rapor seçilemez.",
-                            Snackbar.LENGTH_SHORT
-                        )
-                        .show()
+                    com.epatay.digitalwallet.util.InAppNotification.show(
+                        activity,
+                        "Gelecek aylar için rapor seçilemez.",
+                        com.epatay.digitalwallet.util.NotificationType.WARNING
+                    )
                     return@setPositiveButton
                 }
 
@@ -678,14 +762,22 @@ class MonthlyReportBottomSheetDialogFragment :
 
         private val CHART_COLORS =
             listOf(
-                Color.parseColor("#FF7043"),
-                Color.parseColor("#42A5F5"),
-                Color.parseColor("#AB47BC"),
-                Color.parseColor("#FFCA28"),
-                Color.parseColor("#EC407A"),
-                Color.parseColor("#8D6E63"),
-                Color.parseColor("#26A69A"),
-                Color.parseColor("#78909C")
+                Color.parseColor("#4CAF50"), // Market (Green)
+                Color.parseColor("#FF5722"), // Yiyecek/İçecek (Deep Orange)
+                Color.parseColor("#9C27B0"), // Fatura (Purple)
+                Color.parseColor("#2196F3"), // Ulaşım (Blue)
+                Color.parseColor("#E91E63"), // Alışveriş (Pink)
+                Color.parseColor("#795548"), // Ev (Brown)
+                Color.parseColor("#607D8B"), // Araç (Blue Grey)
+                Color.parseColor("#00BCD4"), // Kişisel (Cyan)
+                Color.parseColor("#F44336"), // Sağlık (Red)
+                Color.parseColor("#673AB7"), // Eğlence (Deep Purple)
+                Color.parseColor("#FF9800"), // Eğitim (Orange)
+                Color.parseColor("#009688"), // Spor/Hobi (Teal)
+                Color.parseColor("#3F51B5"), // Seyahat (Indigo)
+                Color.parseColor("#455A64"), // İş (Slate)
+                Color.parseColor("#2E7D32"), // Birikim (Dark Green)
+                Color.parseColor("#9E9E9E")  // Diğer (Grey)
             )
 
         private val MONTH_NAMES =

@@ -16,6 +16,12 @@ interface UserGoldAssetDao {
     @Query("SELECT * FROM user_gold_assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<UserGoldAssetEntity>>
 
+    @Query("SELECT COUNT(*) FROM user_gold_assets WHERE is_deleted = 0")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM user_gold_assets WHERE is_deleted = 0")
+    suspend fun getCount(): Int
+
     @Query("SELECT * FROM user_gold_assets ORDER BY createdAt DESC")
     suspend fun getAllSnapshot(): List<UserGoldAssetEntity>
 
@@ -33,6 +39,10 @@ interface UserGoldAssetDao {
 
     @Query("DELETE FROM user_gold_assets WHERE uuid = :uuid")
     suspend fun hardDelete(uuid: String)
+
+    @Query("DELETE FROM user_gold_assets WHERE uuid LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoGold()
+
     @Query("DELETE FROM user_gold_assets")
     suspend fun clearAll()
 }

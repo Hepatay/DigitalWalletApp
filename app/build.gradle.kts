@@ -16,19 +16,6 @@ val keystorePropertiesFile =
 val keystoreProperties =
     Properties()
 
-val localProperties =
-    Properties().apply {
-        val file = rootProject.file("local.properties")
-        if (file.exists()) {
-            file.inputStream().use(::load)
-        }
-    }
-
-val apiNoktamApiKey =
-    localProperties.getProperty("APINOKTAM_API_KEY", "")
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-
 if (keystorePropertiesFile.exists()) {
 
     keystorePropertiesFile
@@ -62,12 +49,6 @@ android {
 
         versionName =
             "1.1.0"
-
-        buildConfigField(
-            "String",
-            "APINOKTAM_API_KEY",
-            "\"$apiNoktamApiKey\""
-        )
 
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
@@ -172,6 +153,7 @@ room {
 }
 
 dependencies {
+    implementation("com.getkeepsafe.taptargetview:taptargetview:1.13.3")
 
     // Retrofit ve Gson
     implementation(

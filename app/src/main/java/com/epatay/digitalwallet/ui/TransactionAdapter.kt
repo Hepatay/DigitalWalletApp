@@ -58,6 +58,7 @@ class TransactionAdapter(
     ) {
         val currentItem = getItem(position)
 
+
         holder.binding.tvItemTitle.text =
             currentItem.title
 
@@ -92,21 +93,50 @@ class TransactionAdapter(
 
             val iconRes =
                 when (currentItem.category) {
+                    "Market" ->
+                        R.drawable.ic_cart
 
-                    "Eğitim" ->
-                        R.drawable.ic_school
-
-                    "Gıda" ->
+                    "Yiyecek ve İçecek", "Gıda" ->
                         R.drawable.ic_food
+
+                    "Fatura ve Abonelikler", "Fatura" ->
+                        R.drawable.ic_bill
 
                     "Ulaşım" ->
                         R.drawable.ic_bus
 
-                    "Fatura" ->
-                        R.drawable.ic_bill
+                    "Alışveriş" ->
+                        R.drawable.ic_shopping_bag
+
+                    "Ev" ->
+                        R.drawable.ic_home
+
+                    "Araç" ->
+                        R.drawable.ic_car
+
+                    "Kişisel" ->
+                        R.drawable.ic_person
+
+                    "Sağlık" ->
+                        R.drawable.ic_health
 
                     "Eğlence" ->
                         R.drawable.ic_fun
+
+                    "Eğitim" ->
+                        R.drawable.ic_school
+
+                    "Spor ve Hobi" ->
+                        R.drawable.ic_fitness
+
+                    "Seyahat" ->
+                        R.drawable.ic_flight
+
+                    "İş" ->
+                        R.drawable.ic_work
+
+                    "Birikim" ->
+                        R.drawable.ic_savings
 
                     else ->
                         R.drawable.ic_other

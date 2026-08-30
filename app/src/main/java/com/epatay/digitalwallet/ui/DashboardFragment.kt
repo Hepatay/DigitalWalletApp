@@ -54,6 +54,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.epatay.digitalwallet.util.setupMoneyInput
+import com.epatay.digitalwallet.util.setupTextInput
+import com.epatay.digitalwallet.util.setupIntegerInput
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -202,9 +205,26 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
 
         renderExpandableSections()
+        binding.etTransactionSearch.setupTextInput(maxLength = 50)
+
+        val prefs = requireContext().getSharedPreferences("wallet_prefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("tutorial_v2_shown", false)) {
+            prefs.edit().putInt("premium_tutorial_step", 0).putBoolean("tutorial_v2_shown", true).apply()
+        }
+        val currentTutorialStep = prefs.getInt("premium_tutorial_step", 0)
+        if (currentTutorialStep == 0) {
+            view.postDelayed({
+                com.epatay.digitalwallet.ui.tutorial.TutorialManager.startStepIfReady(requireActivity(), 0, null)
+            }, 600)
+        } else if (currentTutorialStep >= com.epatay.digitalwallet.ui.tutorial.TutorialManager.MAX_STEP) {
+            com.epatay.digitalwallet.ui.tutorial.TutorialManager.cleanDemoData(requireContext())
+        }
 
         binding.btnSettings.setOnClickListener {
-            showSetLimitDialog()
+            SettingsBottomSheetDialogFragment().show(
+                childFragmentManager,
+                "SettingsBottomSheet"
+            )
         }
 
         binding.btnProfile.setOnClickListener {
@@ -230,6 +250,20 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         binding.rvTransactions.layoutManager =
             LinearLayoutManager(requireContext())
+
+        transactionViewModel.errorEvent.observe(viewLifecycleOwner) { errorMsg ->
+            if (!errorMsg.isNullOrBlank()) {
+                showInAppMessage(errorMsg, Snackbar.LENGTH_LONG)
+            }
+        }
+
+        transactionViewModel.currentMonthTransactionCount.observe(viewLifecycleOwner) { /* keep LiveData active */ }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            transactionViewModel.monthlyLimit.collectLatest {
+                updateDailyBudgetUI()
+            }
+        }
 
         /*
          * Bütçe özeti ve raporlar için tüm işlemleri gözlemler.
@@ -260,24 +294,39 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
          * üstteki genel bakiye değerleri değişmez.
          */
         viewLifecycleOwner.lifecycleScope.launch {
-            transactionViewModel.filteredTransactions
-                .collectLatest { transactions ->
-                    adapter.updateData(transactions)
+            combine(
+                transactionViewModel.allTransactions,
+                transactionViewModel.filteredTransactions,
+                transactionViewModel.filters
+            ) { allTransactions, filteredTransactions, filters ->
+                Triple(allTransactions, filteredTransactions, filters)
+            }.collectLatest { (allTransactions, filteredTransactions, filters) ->
+                adapter.updateData(filteredTransactions)
 
-                    val isEmpty =
-                        transactions.isEmpty()
+                val totalCount = allTransactions.size
+                val filteredCount = filteredTransactions.size
+                val isFiltering = filters.hasActiveFilters
 
-                    currentFilteredTransactionCount = transactions.size
-                    renderTransactionContent(isEmpty)
+                currentFilteredTransactionCount = filteredCount
 
-                    binding.tvTransactionsTitle.text =
-                        "İşlemler (${transactions.size})"
+                binding.tvTransactionsTitle.text = when {
+                    !isFiltering -> "İşlemler ($totalCount)"
+                    filteredCount > 0 -> "İşlemler ($totalCount) • $filteredCount filtrelendi"
+                    else -> "İşlemler ($totalCount) • Sonuç bulunamadı"
                 }
-        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            transactionViewModel.filters
-                .collectLatest(::updateFilterSummary)
+                if (totalCount == 0) {
+                    binding.tvEmptyTransactionsTitle.text = "İşlem listen henüz boş"
+                    binding.tvEmptyTransactionsSubtitle.text = "Gelir veya gider ekleyerek bütçeni takip etmeye başla."
+                    binding.btnAddFirstTransaction.visibility = View.VISIBLE
+                } else {
+                    binding.tvEmptyTransactionsTitle.text = "Sonuç bulunamadı"
+                    binding.tvEmptyTransactionsSubtitle.text = "Arama kriterlerinize veya seçili filtreye uygun işlem bulunamadı."
+                    binding.btnAddFirstTransaction.visibility = View.GONE
+                }
+
+                updateFilterSummary(filters)
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -339,12 +388,25 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             }
         }
 
+        val onAddTransactionClick = {
+            val currentMonthCount = transactionViewModel.currentMonthTransactionCount.value ?: 0
+            if (currentMonthCount >= 200) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Aylık İşlem Limiti")
+                    .setMessage("Aylık 200 işlem limitinize ulaştınız. Limitiniz ayın 1'inde yenilenecektir.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+            } else {
+                showTransactionBottomSheet()
+            }
+        }
+
         binding.fabAddExpense.setOnClickListener {
-            showTransactionBottomSheet()
+            onAddTransactionClick()
         }
 
         binding.btnAddFirstTransaction.setOnClickListener {
-            showTransactionBottomSheet()
+            onAddTransactionClick()
         }
 
         binding.btnAddRecurring.setOnClickListener {
@@ -580,6 +642,18 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             filters.endDateKey != null -> {
                 parts +=
                     "${formatDateKey(filters.endDateKey)} öncesi"
+            }
+        }
+
+        when {
+            filters.minAmount != null && filters.maxAmount != null -> {
+                parts += "₺${com.epatay.digitalwallet.util.formatMoneyDisplay(filters.minAmount)} – ₺${com.epatay.digitalwallet.util.formatMoneyDisplay(filters.maxAmount)}"
+            }
+            filters.minAmount != null -> {
+                parts += "≥ ₺${com.epatay.digitalwallet.util.formatMoneyDisplay(filters.minAmount)}"
+            }
+            filters.maxAmount != null -> {
+                parts += "≤ ₺${com.epatay.digitalwallet.util.formatMoneyDisplay(filters.maxAmount)}"
             }
         }
 
@@ -932,6 +1006,22 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 "${formatCurrency(summary.monthlyLimit)} • " +
                 "${summary.daysUntilMonthEnd} gün kaldı"
 
+        if (summary.monthlyLimit > 0.0) {
+            if (isExceeded) {
+                binding.tvBudgetWarningNote.visibility = View.VISIBLE
+                binding.tvBudgetWarningNote.text = "🚨 Aylık bütçe limitinizi aştınız! Lütfen harcamalarınızı kısın."
+                binding.tvBudgetWarningNote.setTextColor(indicatorColor)
+            } else if (summary.usagePercent >= 85) {
+                binding.tvBudgetWarningNote.visibility = View.VISIBLE
+                binding.tvBudgetWarningNote.text = "⚠️ Bütçenizin %${summary.usagePercent}'ini harcadınız. Kalan günlerde tasarruf etmeye özen gösterin."
+                binding.tvBudgetWarningNote.setTextColor(Color.parseColor("#E65100"))
+            } else {
+                binding.tvBudgetWarningNote.visibility = View.GONE
+            }
+        } else {
+            binding.tvBudgetWarningNote.visibility = View.GONE
+        }
+
         binding.progressMonthlyBudget.contentDescription =
             binding.tvBudgetPercent.text
     }
@@ -999,12 +1089,24 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             }
 
         val colorMap = mapOf(
+            "Market" to Color.parseColor("#4CAF50"),
+            "Yiyecek ve İçecek" to Color.parseColor("#FF5722"),
             "Gıda" to Color.parseColor("#FF5722"),
-            "Ulaşım" to Color.parseColor("#2196F3"),
+            "Fatura ve Abonelikler" to Color.parseColor("#9C27B0"),
             "Fatura" to Color.parseColor("#9C27B0"),
-            "Eğitim" to Color.parseColor("#FFC107"),
-            "Eğlence" to Color.parseColor("#E91E63"),
-            "Diğer" to Color.parseColor("#795548")
+            "Ulaşım" to Color.parseColor("#2196F3"),
+            "Alışveriş" to Color.parseColor("#E91E63"),
+            "Ev" to Color.parseColor("#795548"),
+            "Araç" to Color.parseColor("#607D8B"),
+            "Kişisel" to Color.parseColor("#00BCD4"),
+            "Sağlık" to Color.parseColor("#F44336"),
+            "Eğlence" to Color.parseColor("#673AB7"),
+            "Eğitim" to Color.parseColor("#FF9800"),
+            "Spor ve Hobi" to Color.parseColor("#009688"),
+            "Seyahat" to Color.parseColor("#3F51B5"),
+            "İş" to Color.parseColor("#455A64"),
+            "Birikim" to Color.parseColor("#2E7D32"),
+            "Diğer" to Color.parseColor("#9E9E9E")
         )
 
         val entries = ArrayList<PieEntry>()
@@ -1230,27 +1332,24 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     }
                 )
 
-        val upcoming =
-            upcomingAll.take(1)
-
         binding.tvRecurringTitle.text =
             if (upcomingAll.isEmpty()) {
-                "Yaklaşan ödemeler"
+                "Düzenli Ödemeler"
             } else {
-                "Yaklaşan ödemeler (${upcomingAll.size})"
+                "Düzenli Ödemeler (${upcomingAll.size})"
             }
 
         binding.llRecurringPreview.removeAllViews()
 
         binding.tvRecurringEmpty.visibility =
-            if (upcoming.isEmpty()) {
+            if (upcomingAll.isEmpty()) {
                 View.VISIBLE
             } else {
                 View.GONE
             }
 
         binding.llRecurringPreview.visibility =
-            if (upcoming.isEmpty()) {
+            if (upcomingAll.isEmpty()) {
                 View.GONE
             } else {
                 View.VISIBLE
@@ -1265,7 +1364,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     "Aktif düzenli kayıt yok."
             }
 
-        upcoming.forEach { (recurring, dueDate) ->
+        upcomingAll.forEach { (recurring, dueDate) ->
             binding.llRecurringPreview.addView(
                 createRecurringPreviewRow(
                     recurring,
@@ -1285,42 +1384,56 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         val effectiveDay =
             dueDate.get(Calendar.DAY_OF_MONTH)
 
-        val dueLabel =
-            if (
-                TransactionDateUtils.currentDateKey(
-                    dueDate
-                ) ==
-                TransactionDateUtils.currentDateKey(
-                    now
+        val daysDiff = ((dueDate.timeInMillis - now.timeInMillis) / (24 * 60 * 60 * 1000L)).toInt()
+        val isToday =
+            TransactionDateUtils.currentDateKey(
+                dueDate
+            ) ==
+            TransactionDateUtils.currentDateKey(
+                now
+            )
+        val isVeryClose = isToday || daysDiff in 0..3
+
+        val dueLabel = when {
+            isToday -> "Bugün"
+            daysDiff == 1 -> "Yarın"
+            daysDiff in 2..3 -> "$daysDiff gün sonra (${SimpleDateFormat("d MMM", Locale.forLanguageTag("tr-TR")).format(dueDate.time)})"
+            else -> SimpleDateFormat("d MMMM", Locale.forLanguageTag("tr-TR")).format(dueDate.time)
+        }
+
+        val spannableDetail = android.text.SpannableStringBuilder().apply {
+            val start = length
+            append(dueLabel)
+            if (isVeryClose) {
+                setSpan(
+                    android.text.style.ForegroundColorSpan(Color.parseColor("#E53935")),
+                    start,
+                    length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
-            ) {
-                "Bugün"
-            } else {
-                SimpleDateFormat(
-                    "d MMM",
-                    Locale.forLanguageTag("tr-TR")
-                ).format(dueDate.time)
+                setSpan(
+                    android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                    start,
+                    length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
             }
-
-        val detailLabel =
-            buildString {
-                append(dueLabel)
-                append(" • ")
-                append(
-                    if (recurring.autoCreate) {
-                        "otomatik kayıt"
-                    } else {
-                        "manuel kayıt"
-                    }
-                )
-
-                if (
-                    recurring.dayOfMonth !=
-                    effectiveDay
-                ) {
-                    append(" • ayın son günü")
+            append(" • ")
+            append(
+                if (recurring.autoCreate) {
+                    "otomatik kayıt"
+                } else {
+                    "manuel kayıt"
                 }
+            )
+
+            if (
+                recurring.dayOfMonth !=
+                effectiveDay
+            ) {
+                append(" • ayın son günü")
             }
+        }
 
         val row =
             LinearLayout(requireContext()).apply {
@@ -1385,7 +1498,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         val detailView =
             TextView(requireContext()).apply {
-                text = detailLabel
+                text = spannableDetail
                 setTextColor(
                     MaterialColors.getColor(
                         binding.root,
@@ -1442,7 +1555,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         row.addView(amountView)
 
         row.contentDescription =
-            "${recurring.title}, $detailLabel, " +
+            "${recurring.title}, ${spannableDetail.toString()}, " +
                 amountView.text
 
         return row
@@ -1557,10 +1670,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         dialogBinding.etRecurringCategory.apply {
             setAdapter(
-                ArrayAdapter(
+                CategoryUiUtils.createCategoryDropdownAdapter(
                     requireContext(),
-                    android.R.layout
-                        .simple_dropdown_item_1line,
                     categories
                 )
             )
@@ -1590,6 +1701,10 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 }
             }
         }
+
+        dialogBinding.etRecurringTitle.setupTextInput(maxLength = 50, layout = dialogBinding.layoutRecurringTitle)
+        dialogBinding.etRecurringAmount.setupMoneyInput(layout = dialogBinding.layoutRecurringAmount)
+        dialogBinding.etRecurringDay.setupIntegerInput(minValue = 1, maxValue = 31, layout = dialogBinding.layoutRecurringDay)
 
         fun updateFormForType(
             isIncome: Boolean
@@ -1771,6 +1886,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 if (title.isBlank()) {
                     dialogBinding.layoutRecurringTitle.error =
                         "Başlık girin"
+                    dialogBinding.etRecurringTitle.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -1780,6 +1896,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 if (amountResult is DecimalInputResult.Invalid) {
                     dialogBinding.layoutRecurringAmount.error =
                         amountResult.message
+                    dialogBinding.etRecurringAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -1799,6 +1916,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         .layoutRecurringCategory
                         .error =
                         "Listeden geçerli bir kategori seçin"
+                    dialogBinding.etRecurringCategory.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -1813,6 +1931,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 ) {
                     dialogBinding.layoutRecurringDay.error =
                         "1 ile 31 arasında bir gün girin"
+                    dialogBinding.etRecurringDay.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -1961,22 +2080,16 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         message: String,
         length: Int = Snackbar.LENGTH_SHORT
     ) {
-        if (_binding != null) {
-            Snackbar
-                .make(
-                    binding.root,
-                    message,
-                    length
-                )
-                .show()
-        } else {
-            Toast
-                .makeText(
-                    requireContext(),
-                    message,
-                    Toast.LENGTH_SHORT
-                )
-                .show()
+        if (isAdded) {
+            val type = when {
+                message.contains("DİKKAT", ignoreCase = true) ||
+                message.contains("hata", ignoreCase = true) ||
+                message.contains("gerekli", ignoreCase = true) ||
+                message.contains("oluşturulamadı", ignoreCase = true) ||
+                message.contains("aşacak", ignoreCase = true) -> com.epatay.digitalwallet.util.NotificationType.WARNING
+                else -> com.epatay.digitalwallet.util.NotificationType.SUCCESS
+            }
+            com.epatay.digitalwallet.util.InAppNotification.show(activity, message, type)
         }
     }
 
@@ -2044,9 +2157,8 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         dialogBinding.etCategory.apply {
 
             setAdapter(
-                ArrayAdapter(
+                CategoryUiUtils.createCategoryDropdownAdapter(
                     requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
                     categories
                 )
             )
@@ -2078,6 +2190,9 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             }
 
         }
+
+        dialogBinding.etExpenseTitle.setupTextInput(maxLength = 50, layout = dialogBinding.layoutExpenseTitle)
+        dialogBinding.etExpenseAmount.setupMoneyInput(layout = dialogBinding.layoutExpenseAmount)
 
         fun updateTransactionForm(
             isIncome: Boolean
@@ -2265,7 +2380,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                 if (title.isEmpty()) {
                     dialogBinding.layoutExpenseTitle.error =
                         "Açıklama boş bırakılamaz"
-
+                    dialogBinding.etExpenseTitle.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -2275,7 +2390,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                     dialogBinding.layoutExpenseAmount.error =
                         amountResult.message
-
+                    dialogBinding.etExpenseAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -2294,7 +2409,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
                     dialogBinding.layoutCategory.error =
                         "Listeden geçerli bir kategori seçin"
-
+                    dialogBinding.etCategory.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -2385,36 +2500,33 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                     }
 
                 if (isEditing) {
-
                     transactionViewModel.update(
                         transactionToSave
                     )
-
+                    showInAppMessage(
+                        if (isIncome) "Gelir güncellendi" else "Gider güncellendi"
+                    )
+                    bottomSheetDialog.dismiss()
                 } else {
+                    val currentMonthCount = transactionViewModel.currentMonthTransactionCount.value ?: 0
+                    if (currentMonthCount >= 200) {
+                        bottomSheetDialog.dismiss()
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Aylık İşlem Limiti")
+                            .setMessage("Aylık 200 işlem limitinize ulaştınız. Limitiniz ayın 1'inde yenilenecektir.")
+                            .setPositiveButton("Tamam", null)
+                            .show()
+                        return@setOnClickListener
+                    }
 
                     transactionViewModel.insert(
                         transactionToSave
                     )
+                    showInAppMessage(
+                        if (isIncome) "Gelir eklendi" else "Gider eklendi"
+                    )
+                    bottomSheetDialog.dismiss()
                 }
-
-                showInAppMessage(
-                    when {
-
-                        isEditing && isIncome ->
-                            "Gelir güncellendi"
-
-                        isEditing ->
-                            "Gider güncellendi"
-
-                        isIncome ->
-                            "Gelir eklendi"
-
-                        else ->
-                            "Gider eklendi"
-                    }
-                )
-
-                bottomSheetDialog.dismiss()
             }
 
         bottomSheetDialog.show()
@@ -2608,12 +2720,23 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         val EXPENSE_CATEGORIES =
             listOf(
-                "Gıda",
+                "Market",
+                "Yiyecek ve İçecek",
+                "Fatura ve Abonelikler",
                 "Ulaşım",
-                "Fatura",
-                "Eğitim",
+                "Alışveriş",
+                "Ev",
+                "Araç",
+                "Kişisel",
+                "Sağlık",
                 "Eğlence",
+                "Eğitim",
+                "Spor ve Hobi",
+                "Seyahat",
+                "İş",
                 "Diğer"
             )
     }
-}
+
+    
+    }

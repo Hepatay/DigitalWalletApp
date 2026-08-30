@@ -1,170 +1,100 @@
 # VarlıkCep
 
-VarlıkCep; gelir, gider, bütçe, birikim hedefi ve yatırım varlıklarını tek
-uygulamada takip etmeye yardımcı olan, Kotlin ile geliştirilmiş yerel öncelikli
-bir Android uygulamasıdır.
+VarlıkCep; gelir, gider, bütçe, birikim hedefleri ve yatırım portföyünü (altın & döviz) tek bir yerde yönetmenizi sağlayan, modern mimariyle geliştirilmiş, yerel öncelikli (offline-first) ve bulut senkronizasyonlu bir Android finans asistanıdır.
 
-Uygulama ödeme, para transferi veya yatırım danışmanlığı hizmeti sunmaz.
-Gösterilen döviz, altın ve portföy değerleri bilgilendirme amaçlı referans
-verilerdir ve yatırım tavsiyesi değildir.
+Uygulama; bankacılık, para transferi veya yatırım danışmanlığı hizmeti sunmaz. Gösterilen döviz, altın ve portföy değerleri bilgilendirme amaçlı referans verilerdir.
 
-## Proje bilgileri
+---
+
+## 📱 Proje Bilgileri
 
 | Alan | Değer |
-| --- | --- |
-| Platform | Android 7.0 (API 24) ve üzeri |
-| Dil | Kotlin |
-| Arayüz | XML, Material Components, ViewBinding |
-| Yerel veri | Room Database |
-| Paket adı | `com.epatay.digitalwallet` |
-| Sürüm | `1.1.0` (`versionCode 2`) |
+| :--- | :--- |
+| **Platform** | Android 7.0 (API 24) ve üzeri |
+| **Geliştirme Dili** | Kotlin |
+| **Kullanıcı Arayüzü** | XML, Material 3 Design Components, ViewBinding |
+| **Mimari** | MVVM (Model-View-ViewModel), Repository Pattern, Offline-First |
+| **Veritabanı** | Room Database (v14) & Firebase Firestore |
+| **Kimlik Doğrulama** | Firebase Authentication (Google ile Giriş Yap & Misafir Modu) |
+| **Paket Adı** | `com.epatay.digitalwallet` |
+| **Sürüm** | `1.1.0` (`versionCode 2`) |
 
-## Özellikler
+---
 
-### Bütçe ve işlemler
+## 🌟 Temel Özellikler
 
-- Gelir ve gider ekleme, düzenleme ve silme
-- Pozitif tutar, sayı biçimi ve zorunlu alan doğrulaması
-- Yalnızca listeden seçilebilen gider kategorileri
-- Aylık bütçe, kalan bütçe ve günlük harcanabilir tutar hesaplaması
-- Kategori bazlı bütçeler ve aylık raporlar
-- Metin, kategori, işlem türü ve tarih aralığına göre arama ve filtreleme
-- Düzenli gelir/gider tanımlama ve yaklaşan kayıt bildirimleri
-- Birikim hedefi, para ekleme/çekme ve ilerleme takibi
+### 1. Bütçe ve İşlem Yönetimi
+- **Gelir & Gider Takibi:** Hızlı işlem ekleme, düzenleme ve silme.
+- **Girdi Doğrulaması & Limit Sınırları:** Tüm parasal ve metin alanlarında özel filtreleme (`MoneyInputFilter`, `SafeTextInputFilter`), 999.999.999,99 ₺ tavan sınırı ve anlık hata geri bildirimi.
+- **Kategori Bütçeleri (Limitleri):** Popüler kategori sıralaması (`Market`, `Yiyecek ve İçecek`, `Fatura ve Abonelikler`, `Ulaşım`, `Alışveriş`, `Ev`, `Araç`, `Kişisel`, `Sağlık`, `Eğlence`, `Eğitim`, `Spor ve Hobi`, `Seyahat`, `İş`, `Diğer`), her kategoriye özel renkli ikonlar ve bütçe aşım takibi.
+- **Gelişmiş Arama ve Filtreleme:** Metin araması, kategori seçimi, gelir/gider türü, tarih aralığı ve **Harcama Tutarı Filtresi** (hazır çipli aralıklar: *0-500 ₺*, *500-2.500 ₺*, *2.500-10.000 ₺*, *10.000 ₺+* veya özel min-max girişi).
+- **Düzenli Kayıtlar:** Aylık otomatik tekrarlanan fatura/abonelik tanımlamaları ve hatırlatıcı bildirimler.
+- **Birikim Hedefleri:** Hedef tutar ve tarih belirleme, birikim hareketleri kaydetme ve dinamik ilerleme çubuğu.
 
-### Piyasalar ve döviz çevirici
+### 2. Portföy ve Varlık Yönetimi
+- **Döviz & Altın Takibi:** USD, EUR, GBP, CHF, CAD, AUD, SAR, AED, JPY vb. dövizler ile Gram, Çeyrek, Yarım, Tam, Cumhuriyet, Ata, Bilezik gibi altın türlerini portföye ekleme.
+- **Bayrak & İkon Desteği:** Döviz listesinde resmi ülke bayrakları ve Türkçe para birimi adları, altın listesinde altın ikonları.
+- **Kâr/Zarar ve Değerleme Analizi:** Alış maliyeti, güncel piyasa değeri, anlık kâr/zarar tutarı ve yüzdesi hesaplaması.
+- **Portföy Pasta Grafiği:** Varlık dağılımını gösteren interaktif MPAndroidChart pasta grafiği.
 
-- TCMB günlük döviz alış ve satış kurları
-- TL dönüşümleri ve USD→EUR gibi çapraz döviz hesaplamaları
-- Son başarılı kur verisini Room üzerinde çevrimdışı gösterme
-- Desteklenen para birimleri için uygulama paketindeki yerel PNG bayraklar
-- İnternetten bayrak görseli indirmeyen çevrimdışı görsel yapı
-- API Noktam üzerinden, Trunçgil Finans kaynaklı altın alış ve satış referans fiyatları
-- Gram, çeyrek, yarım, tam ve Ata/Cumhuriyet altını için alış, satış, makas ve makas yüzdesi
-- Döviz ve altın için ayrı Piyasalar sekmeleri
+### 3. Canlı Piyasalar ve Döviz Çevirici
+- **TCMB Döviz Kurları:** Günlük resmi döviz alış/satış kurları ve çapraz kur hesaplamaları.
+- **Canlı Altın Kurları:** Güncel alış, satış ve makas oranları.
+- **Çevrimdışı Dayanıklılık (Offline Fallback):** İnternet olmadığında son başarılı piyasa verileri Room önbelleğinden kesintisiz sunulur.
 
-### Portföy
+### 4. Bulut Senkronizasyonu & Çift Yönlü Sync (Room + Firebase)
+- **Offline-First & İki Yönlü Senkronizasyon:** Çevrimdışıyken yapılan tüm ekleme/güncelleme/silme işlemleri yerel Room veritabanında tutulur, internet bağlantısı sağlandığında `WorkManager` ve `FirebaseSyncManager` ile Firestore'a aktarılır.
+- **Soft-Delete Mimarisi:** Silinen kayıtlar bulutta ve yerelde senkronize edilerek veri kaybı ve çakışmalar engellenir.
+- **Misafir Modu & Hesap Aktarımı:** Misafir olarak kullanılan veriler, Google ile giriş yapıldığında tek tıkla kullanıcının bulut hesabına taşınır.
+- **Hesap ve Tüm Verileri Kalıcı Silme:** GDPR/KVKK uyumlu olarak tek tuşla tüm bulut ve yerel verileri sıfırlama seçeneği.
 
-- Döviz ve altın varlığı ekleme, güncelleme ve silme
-- Kullanıcının gerçek alış fiyatını elle girebilmesi veya piyasa satış fiyatını öneri olarak kullanabilmesi
-- Piyasa alış/satış fiyatı, makas, toplam maliyet ve tahmini satış değeri takibi
-- Tahmini satış değeri ile kâr/zarar hesaplama
-- Dövizler için bayraklarla uyumlu sabit grafik renkleri
-- Altın varlıkları için sarı grafik gösterimi
-- Kullanıcı verilerini koruyan Room migration zinciri
+### 5. Dışa Aktarma (Raporlama)
+- **Excel (`.xlsx`):** FastExcel ile oluşturulmuş, tüm işlem ve portföy sekmelerini içeren formatlı tablo.
+- **PDF Raporu:** VarlıkCep logolu, işlem listesi ve portföy varlıklarını içeren resmi işlem özeti.
+- **CSV Formatı:** UTF-8 kodlamalı, virgül/noktalı virgül uyumlu dışa aktarım.
+- Android Storage Access Framework ile güvenli dosya kaydı.
 
-### Dışa aktarma
+### 6. Kullanıcı Deneyimi & Arayüz
+- **İnteraktif Tanıtım Turu (Tutorial v2):** Uygulama özelliklerini tanıtan, canlı kurlarla örnek veriler oluşturan ve tur sonunda verileri otomatik temizleyen rehber overlay.
+- **Bildirim Hapı (In-App Notification):** Standart Snackbar'ların aksine alttaki butonları kaydırmayan, ekranın üstünde zarifçe açılan durum bildirimleri.
+- **Karanlık / Aydınlık Tema:** Sistem temasıyla tam uyumlu Material 3 renk paleti.
 
-- Microsoft Excel, Google Sheets ve LibreOffice ile uyumlu gerçek `.xlsx`
-  çalışma kitabı
-- UTF-8 ve doğru CSV escape kurallarıyla `.csv` dışa aktarma
-- Gelir ve gider işlemleri için `.pdf` rapor
-- Gelir, gider, kategori bütçesi, döviz yatırımı ve altın yatırımı sütunları
-- Android Storage Access Framework ile kullanıcı tarafından seçilen konuma
-  kaydetme
-- Uygun MIME türleri ve güvenli stream/workbook kapatma
+---
 
-### Kullanıcı arayüzü
-
-- Portföyüm, Bütçem ve Piyasalar için sabit alt navigasyon
-- Sistem çubukları, klavye ve reklam alanını dikkate alan WindowInsets yapısı
-- İçeriği kapatmayan ortak banner reklam alanı
-- Responsive kartlar ve yatay taşma oluşturmayan ekran düzeni
-- Klavye açıldığında sabit kalan alt navigasyon
-- Uygulama içinden erişilebilen Yasal, Gizlilik ve yatırım uyarısı bağlantıları
-- Türkçe karakterleri koruyan UI, Room, arama ve dışa aktarma akışları
-
-## Veri kaynakları
-
-- Döviz kurları: [Türkiye Cumhuriyet Merkez Bankası](https://www.tcmb.gov.tr/kurlar/today.xml)
-- Altın referans fiyatları: [API Noktam](https://apinoktam.erenozdemir.com.tr/) / Trunçgil Finans
-- Reklam: Google Mobile Ads SDK
-- İzin tercihleri: Google User Messaging Platform
-
-Piyasa verileri gecikebilir veya geçici olarak erişilemez olabilir. Uygulama bu
-durumda Room'daki son başarılı veriyi **Son kaydedilen referans fiyat**
-uyarısıyla gösterebilir. Kaynağın veri zamanı ile uygulamanın veriyi çektiği
-zaman ayrı alanlardır.
-
-### Alış, satış ve makas
-
-- **Piyasa alış fiyatı**, kullanıcının varlığı bugün elden çıkarması hâlindeki
-  tahmini değer için kullanılır.
-- **Piyasa satış fiyatı**, yeni varlık formunda yalnızca önerilen alış fiyatıdır;
-  kullanıcı gerçek birim alış fiyatını manuel girebilir.
-- **Makas**, `satış - alış`; **makas yüzdesi** ise
-  `(satış - alış) / alış × 100` olarak hesaplanır.
-- Yeni bir yatırımın piyasa satış fiyatıyla kaydedilip piyasa alış fiyatıyla
-  değerlenmesi nedeniyle makas kadar ekside başlaması normaldir; negatif sonuç
-  gizlenmez veya yapay olarak sıfırlanmaz.
-
-## Teknik yapı
-
-- ViewModel ve Repository katmanları
-- Room DAO, Flow ve StateFlow
-- Kotlin Coroutines ve WorkManager
-- Retrofit/OkHttp tabanlı HTTPS bağlantıları
-- TCMB XML ayrıştırma katmanı
-- MPAndroidChart grafik bileşenleri
-- FastExcel ile OOXML `.xlsx` üretimi
-- Android scoped storage ve Activity Result API
-
-Ana kaynak dizinleri:
+## 🛠️ Teknik Mimari ve Kullanılan Teknolojiler
 
 ```text
 app/src/main/java/com/epatay/digitalwallet/
-├── data/       Room, ağ kaynakları, doğrulama ve hesaplama
-├── export/     XLSX, CSV ve PDF dışa aktarma
-├── recurring/  Düzenli kayıt ve bildirim işleri
-└── ui/         Fragment, ViewModel ve adapter sınıfları
+├── data/          # Room DAO, Entities, Mappers, Remote Data Sources (TCMB & Altın)
+├── export/        # Excel (.xlsx), CSV ve PDF dışa aktarma motorları
+├── recurring/     # Düzenli işlemler ve zamanlanmış bildirim altyapısı
+├── sync/          # Firebase Firestore senkronizasyonu ve WorkManager işçileri
+├── ui/            # Fragment, ViewModel, Adapter ve BottomSheet bileşenleri
+│   ├── login/     # Google Sign-In & LoginActivity
+│   └── tutorial/  # TutorialManager ve dinamik Canvas overlay
+└── util/          # Girdi doğrulama, filtreleme, bildirim ve UI yardımcıları
 ```
 
-## Ekran görüntüleri
+- **Kotlin Coroutines & Flow:** Reaktif veri akışları ve asenkron işlemler.
+- **Android Architecture Components:** ViewModel, StateFlow, LiveData, ViewBinding, Navigation.
+- **Firebase:** Authentication (Google Sign-In) & Cloud Firestore.
+- **WorkManager:** Periyodik kâr/zarar hesaplamaları ve arka plan senkronizasyonu.
+- **Room Persistence Library:** Tip güvenli yerel SQLite veritabanı.
+- **MPAndroidChart:** Portföy ve harcama analitiği grafikleri.
+- **FastExcel:** `.xlsx` üretim motoru.
 
-| Bütçem | Portföyüm | Piyasalar |
-| --- | --- | --- |
-| ![Bütçem](docs/play-store/screenshots/01-dashboard.png) | ![Portföyüm](docs/play-store/screenshots/02-portfolio.png) | ![Piyasalar](docs/play-store/screenshots/03-markets.png) |
+---
 
-## Kurulum
+## 🔒 Gizlilik ve Güvenlik
 
-Gereksinimler:
+- Tüm ağ iletişimleri TLS/HTTPS ile şifrelenir; düz metin (cleartext) trafiği manifest düzeyinde engellenmiştir.
+- Kullanıcı verileri yalnızca kullanıcının kendi `user_id` alanı ile izole edilir ve üçüncü taraflarla paylaşılmaz.
+- [Gizlilik Politikası (Web)](https://hepatay.github.io/DigitalWalletApp/)
+- [Depodaki Gizlilik Politikası](docs/PRIVACY_POLICY_TR.md)
 
-- Güncel Android Studio
-- JDK 17 veya üzeri
-- Android SDK
-- Android 7.0 veya üzeri cihaz/emülatör
+---
 
+## 👨‍💻 Geliştirici
 
-## Gizlilik
-
-Finansal kayıtlar Room veritabanında kullanıcının cihazında saklanır. Hesap veya
-bulut senkronizasyonu bulunmaz. Kullanıcı tarafından dışa aktarılan dosyalar,
-yalnızca kullanıcının seçtiği konuma veya paylaşım hedefine yazılır.
-
-- [Güncel gizlilik politikası](https://hepatay.github.io/DigitalWalletApp/)
-- [Depodaki gizlilik politikası](docs/PRIVACY_POLICY_TR.md)
-- [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md)
-
-## Güvenlik
-
-İmzalama anahtarları, parolalar, `local.properties`, `keystore.properties`,
-`*.jks`, `*.keystore`, AAB ve APK dosyaları GitHub deposuna eklenmemelidir.
-
-`local.properties`/`BuildConfig` kullanımı anahtarın kaynak depoda görünmesini
-engeller; ancak bir mobil istemciye eklenen sır APK içinden kararlı bir
-saldırgana karşı tamamen gizlenemez. Üretimde anahtar kısıtları, kota takibi,
-düzenli rotasyon ve mümkünse sunucu tarafı aracı katman kullanılmalıdır.
-
-
-## Yasal uyarı
-
-VarlıkCep bankacılık, ödeme, kredi, aracılık veya yatırım danışmanlığı hizmeti
-sunmaz. Döviz ve altın fiyatları ile portföy, kâr ve zarar hesapları kesin fiyat
-veya alım-satım teklifi değildir. Kullanıcılar finansal kararlarını kendi
-değerlendirmeleri ve gerektiğinde yetkili uzman görüşüyle vermelidir.
-
-## Geliştirici
-
-Hüseyin Epatay
-
-[GitHub: @Hepatay](https://github.com/Hepatay)
+**Hüseyin Epatay**  
+GitHub: [@Hepatay](https://github.com/Hepatay)

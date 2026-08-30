@@ -12,4 +12,9 @@
     <color name="surface_dialog_dark">#202329</color>
     <color name="surface_card_dark">#191B20</color>
     <color name="surface_variant_soft_dark">#2A2D34</color>
+
+    <!-- Tutorial / Showcase renkleri -->
+    <color name="tutorial_outer">#0F172A</color>
+    <color name="tutorial_target">#38BDF8</color>
+    <color name="tutorial_desc">#94A3B8</color>
 </resources>

@@ -45,6 +45,38 @@ object CurrencyFlagProvider {
             "Yerel bayrağı bulunmayan para birimi: $currencyCode"
         }
 
+    @DrawableRes
+    fun getFlagResIdSafe(currencyCode: String): Int =
+        localFlagsByCode[
+            currencyCode.uppercase(Locale.ROOT)
+        ] ?: R.drawable.ic_exchange_horizontal
+
+    fun getCurrencyDisplayName(currencyCode: String): String =
+        when (currencyCode.uppercase(Locale.ROOT)) {
+            "USD" -> "ABD Doları"
+            "EUR" -> "Euro"
+            "GBP" -> "İngiliz Sterlini"
+            "CHF" -> "İsviçre Frangı"
+            "JPY" -> "Japon Yeni"
+            "CAD" -> "Kanada Doları"
+            "AUD" -> "Avustralya Doları"
+            "CNY" -> "Çin Yuanı"
+            "RUB" -> "Rus Rublesi"
+            "SAR" -> "Suudi Arabistan Riyali"
+            "AED" -> "BAE Dirhemi"
+            "KWD" -> "Kuveyt Dinarı"
+            "QAR" -> "Katar Riyali"
+            "NOK" -> "Norveç Kronu"
+            "SEK" -> "İsveç Kronu"
+            "DKK" -> "Danimarka Kronu"
+            "RON" -> "Rumen Leyi"
+            "PKR" -> "Pakistan Rupisi"
+            "KRW" -> "Güney Kore Wonu"
+            "AZN" -> "Azerbaycan Manatı"
+            "KZT" -> "Kazakistan Tengesi"
+            else -> currencyCode
+        }
+
     @ColorInt
     fun getChartColor(currencyCode: String): Int =
         when (currencyCode.uppercase(Locale.ROOT)) {

@@ -86,19 +86,17 @@ class TransactionCsvEncoderTest {
         assertTrue(content.contains("\"Kayıt türü\""))
         assertTrue(
             content.contains(
-                "\"İşlem\";\"0\";\"01.07.2026 10:00\";" +
-                    "\"Temmuz Maaşı\";\"Gelir\";\"Gelir\""
+                "\"İşlem\";\"01.07.2026 10:00\";\"Temmuz Maaşı\";\"Gelir\";\"Gelir\""
             )
         )
         assertTrue(
             content.contains(
-                "\"Bütçe\";\"\";\"07.2026\";" +
-                    "\"Aylık kategori bütçesi\";\"Gıda\""
+                "\"Bütçe\";\"\";\"07.2026\";\"Aylık kategori bütçesi\";\"Gıda\""
             )
         )
         assertTrue(
             content.contains(
-                "\"Yatırım\";\"7\";\"02.07.2026\";\"USD\""
+                "\"Yatırım\";\"02.07.2026\";\"USD\""
             )
         )
         assertTrue(content.contains("\"Gram Altın\""))

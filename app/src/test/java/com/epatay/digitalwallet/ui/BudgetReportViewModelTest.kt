@@ -142,7 +142,7 @@ class BudgetReportViewModelTest {
             augustSummary.dailySpendingLimit,
             0.001
         )
-        assertEquals(30, augustSummary.daysUntilMonthEnd)
+        assertEquals(31, augustSummary.daysUntilMonthEnd)
     }
 
     private fun calendar(

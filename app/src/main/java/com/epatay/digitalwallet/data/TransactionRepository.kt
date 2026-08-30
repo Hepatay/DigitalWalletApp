@@ -1,14 +1,26 @@
 package com.epatay.digitalwallet.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 data class TransactionFilter(
     val query: String = "",
     val startDateKey: Int? = null,
     val endDateKey: Int? = null,
     val category: String? = null,
-    val type: TransactionType? = null
-)
+    val type: TransactionType? = null,
+    val minAmount: Double? = null,
+    val maxAmount: Double? = null
+) {
+    val hasActiveFilters: Boolean
+        get() = query.isNotBlank() ||
+            startDateKey != null ||
+            endDateKey != null ||
+            category != null ||
+            type != null ||
+            minAmount != null ||
+            maxAmount != null
+}
 
 internal fun normalizeTransactionDate(
     transaction: Transaction
@@ -121,13 +133,18 @@ class TransactionRepository(
                     ?.trim()
                     ?.takeIf(String::isNotEmpty),
             type = filter.type
-        )
+        ).map { list ->
+            list.filter { tx ->
+                (filter.minAmount == null || tx.amount >= filter.minAmount) &&
+                (filter.maxAmount == null || tx.amount <= filter.maxAmount)
+            }
+        }
     }
 
     suspend fun getFilteredSnapshot(
         filter: TransactionFilter
     ): List<Transaction> {
-        return transactionDao.getFilteredTransactionsSnapshot(
+        val list = transactionDao.getFilteredTransactionsSnapshot(
             escapedQuery = escapeLike(filter.query.trim()),
             startDateKey = filter.startDateKey,
             endDateKey = filter.endDateKey,
@@ -137,6 +154,10 @@ class TransactionRepository(
                     ?.takeIf(String::isNotEmpty),
             type = filter.type
         )
+        return list.filter { tx ->
+            (filter.minAmount == null || tx.amount >= filter.minAmount) &&
+            (filter.maxAmount == null || tx.amount <= filter.maxAmount)
+        }
     }
 
     suspend fun getAllSnapshot(): List<Transaction> {
@@ -173,6 +194,20 @@ class TransactionRepository(
 
     fun observeUnknownDateCount(): Flow<Int> {
         return transactionDao.observeUnknownDateCount()
+    }
+
+    fun observeCurrentMonthTransactionCount(
+        startDateKey: Int,
+        endDateKey: Int
+    ): Flow<Int> {
+        return transactionDao.observeCurrentMonthTransactionCount(startDateKey, endDateKey)
+    }
+
+    suspend fun getCurrentMonthTransactionCount(
+        startDateKey: Int,
+        endDateKey: Int
+    ): Int {
+        return transactionDao.getCurrentMonthTransactionCount(startDateKey, endDateKey)
     }
 
     private fun escapeLike(

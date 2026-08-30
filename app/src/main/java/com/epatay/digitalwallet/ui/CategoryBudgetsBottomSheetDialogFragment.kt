@@ -32,6 +32,7 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
+import com.epatay.digitalwallet.util.setupMoneyInput
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.Collator
@@ -139,8 +140,9 @@ class CategoryBudgetsBottomSheetDialogFragment :
                     budgetReportViewModel
                         .categoryBudgetProgress
                         .collectLatest { progress ->
-                            currentProgress = progress
-                            renderBudgetRows(progress)
+                            val filtered = progress.filterNot { it.category.equals("Birikim", ignoreCase = true) }
+                            currentProgress = filtered
+                            renderBudgetRows(filtered)
                         }
                 }
 
@@ -152,6 +154,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
                                 categories
                                     .map(String::trim)
                                     .filter(String::isNotEmpty)
+                                    .filterNot { it.equals("Birikim", ignoreCase = true) }
                         }
                 }
             }
@@ -182,7 +185,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
             )
 
         binding.tvCategoryBudgetSummary.text =
-            "Toplam bütçe: ${formatCurrency(totalLimit)} • " +
+            "Toplam limit: ${formatCurrency(totalLimit)} • " +
                 "Harcanan: ${formatCurrency(totalSpent)}"
 
         progress.forEach { item ->
@@ -239,7 +242,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
         val statusText =
             when {
                 !item.hasBudget ->
-                    "Bütçe belirlenmedi"
+                    "Limit belirlenmedi"
 
                 item.isExceeded ->
                     "Aşım ${formatCurrency(item.exceededAmount)}"
@@ -465,9 +468,9 @@ class CategoryBudgetsBottomSheetDialogFragment :
 
         formBinding.tvCategoryBudgetFormTitle.text =
             if (isEditing) {
-                "Kategori Bütçesini Düzenle"
+                "Kategori Limitini Düzenle"
             } else {
-                "Kategori Bütçesi Ekle"
+                "Kategori Limiti Belirle"
             }
 
         val categoryOptions =
@@ -487,10 +490,8 @@ class CategoryBudgetsBottomSheetDialogFragment :
 
         formBinding.etCategoryBudgetCategory.apply {
             setAdapter(
-                ArrayAdapter(
+                CategoryUiUtils.createCategoryDropdownAdapter(
                     dialogContext,
-                    android.R.layout
-                        .simple_dropdown_item_1line,
                     categoryOptions
                 )
             )
@@ -543,6 +544,8 @@ class CategoryBudgetsBottomSheetDialogFragment :
                 .isVisible = true
         }
 
+        formBinding.etCategoryBudgetAmount.setupMoneyInput(layout = formBinding.layoutCategoryBudgetAmount)
+
         formBinding.btnSaveCategoryBudget
             .setOnClickListener {
                 val category =
@@ -556,7 +559,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
                     DecimalInputValidator.positiveMoney(
                         rawValue =
                             formBinding.etCategoryBudgetAmount.text,
-                        fieldName = "Bütçe tutarı"
+                        fieldName = "Limit tutarı"
                     )
 
                 if (selectedCategoryId == null) {
@@ -564,6 +567,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
                         .layoutCategoryBudgetCategory
                         .error =
                         "Listeden geçerli bir kategori seçin"
+                    formBinding.etCategoryBudgetCategory.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -576,6 +580,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
                         .layoutCategoryBudgetAmount
                         .error =
                         amountResult.message
+                    formBinding.etCategoryBudgetAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -595,9 +600,9 @@ class CategoryBudgetsBottomSheetDialogFragment :
 
                 showInAppMessage(
                     if (isEditing) {
-                        "Kategori bütçesi güncellendi"
+                        "Kategori limiti güncellendi"
                     } else {
-                        "Kategori bütçesi eklendi"
+                        "Kategori limiti belirlendi"
                     }
                 )
 
@@ -616,10 +621,10 @@ class CategoryBudgetsBottomSheetDialogFragment :
                         dialogContext
                     )
                     .setTitle(
-                        "Kategori bütçesini sil"
+                        "Kategori limitini sil"
                     )
                     .setMessage(
-                        "\"$category\" bütçesini silmek " +
+                        "\"$category\" limitini silmek " +
                             "istediğinizden emin misiniz?"
                     )
                     .setNegativeButton(
@@ -633,7 +638,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
                             .deleteBudget(category)
 
                         showInAppMessage(
-                            "Kategori bütçesi silindi"
+                            "Kategori limiti silindi"
                         )
 
                         formDialog.dismiss()
@@ -651,12 +656,7 @@ class CategoryBudgetsBottomSheetDialogFragment :
     private fun buildCategoryOptions(
         selectedCategory: String?
     ): List<String> {
-        val collator =
-            Collator.getInstance(TURKISH_LOCALE).apply {
-                strength = Collator.PRIMARY
-            }
-
-        return (
+        val filtered = (
             DEFAULT_EXPENSE_CATEGORIES +
                 availableCategories +
                 currentProgress.map(
@@ -671,15 +671,26 @@ class CategoryBudgetsBottomSheetDialogFragment :
                 category.equals(
                     "Gelir",
                     ignoreCase = true
+                ) || category.equals(
+                    "Birikim",
+                    ignoreCase = true
                 )
             }
             .distinctBy { category ->
                 category.lowercase(TURKISH_LOCALE)
             }
-            .sortedWith { first, second ->
-                collator.compare(first, second)
-            }
             .toList()
+
+        return filtered.sortedWith { first, second ->
+            val idx1 = DEFAULT_EXPENSE_CATEGORIES.indexOfFirst { it.equals(first, ignoreCase = true) }
+            val idx2 = DEFAULT_EXPENSE_CATEGORIES.indexOfFirst { it.equals(second, ignoreCase = true) }
+            when {
+                idx1 != -1 && idx2 != -1 -> idx1.compareTo(idx2)
+                idx1 != -1 -> -1
+                idx2 != -1 -> 1
+                else -> first.compareTo(second, ignoreCase = true)
+            }
+        }
     }
 
     private fun selectAdjacentMonth(
@@ -800,13 +811,12 @@ class CategoryBudgetsBottomSheetDialogFragment :
     private fun showInAppMessage(
         message: String
     ) {
-        Snackbar
-            .make(
-                binding.root,
-                message,
-                Snackbar.LENGTH_SHORT
-            )
-            .show()
+        val type = if (message.contains("hata", ignoreCase = true) || message.contains("geçerli", ignoreCase = true)) {
+            com.epatay.digitalwallet.util.NotificationType.ERROR
+        } else {
+            com.epatay.digitalwallet.util.NotificationType.SUCCESS
+        }
+        com.epatay.digitalwallet.util.InAppNotification.show(activity, message, type)
     }
 
     private fun categoryIdFor(
@@ -870,11 +880,20 @@ class CategoryBudgetsBottomSheetDialogFragment :
 
         private val DEFAULT_EXPENSE_CATEGORIES =
             listOf(
-                "Gıda",
+                "Market",
+                "Yiyecek ve İçecek",
+                "Fatura ve Abonelikler",
                 "Ulaşım",
-                "Fatura",
-                "Eğitim",
+                "Alışveriş",
+                "Ev",
+                "Araç",
+                "Kişisel",
+                "Sağlık",
                 "Eğlence",
+                "Eğitim",
+                "Spor ve Hobi",
+                "Seyahat",
+                "İş",
                 "Diğer"
             )
     }

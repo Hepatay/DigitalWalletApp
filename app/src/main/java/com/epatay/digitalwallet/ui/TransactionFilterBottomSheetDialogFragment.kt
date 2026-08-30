@@ -20,6 +20,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.epatay.digitalwallet.util.setupMoneyInput
 import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.Locale
@@ -70,6 +71,7 @@ class TransactionFilterBottomSheetDialogFragment :
         restoreFilterState(
             transactionViewModel.filters.value
         )
+        configureAmountInput()
         configureCategoryInput()
         configureDateButtons()
         configureActions()
@@ -89,6 +91,37 @@ class TransactionFilterBottomSheetDialogFragment :
                     BottomSheetBehavior.STATE_EXPANDED
                 skipCollapsed = true
             }
+    }
+
+    private fun configureAmountInput() {
+        binding.etFilterMinAmount.setupMoneyInput(layout = binding.layoutFilterMinAmount)
+        binding.etFilterMaxAmount.setupMoneyInput(layout = binding.layoutFilterMaxAmount)
+
+        binding.chipGroupAmountPresets.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
+            when (checkedIds.first()) {
+                R.id.chipAmountAll -> {
+                    binding.etFilterMinAmount.setText("")
+                    binding.etFilterMaxAmount.setText("")
+                }
+                R.id.chipAmount0To500 -> {
+                    binding.etFilterMinAmount.setText("")
+                    binding.etFilterMaxAmount.setText("500")
+                }
+                R.id.chipAmount500To2500 -> {
+                    binding.etFilterMinAmount.setText("500")
+                    binding.etFilterMaxAmount.setText("2500")
+                }
+                R.id.chipAmount2500To10000 -> {
+                    binding.etFilterMinAmount.setText("2500")
+                    binding.etFilterMaxAmount.setText("10000")
+                }
+                R.id.chipAmount10000Plus -> {
+                    binding.etFilterMinAmount.setText("10000")
+                    binding.etFilterMaxAmount.setText("")
+                }
+            }
+        }
     }
 
     private fun restoreFilterState(
@@ -123,6 +156,26 @@ class TransactionFilterBottomSheetDialogFragment :
                     R.id.rbFilterAll
             }
         )
+
+        val minStr = filters.minAmount?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }.orEmpty()
+        val maxStr = filters.maxAmount?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }.orEmpty()
+        binding.etFilterMinAmount.setText(minStr)
+        binding.etFilterMaxAmount.setText(maxStr)
+
+        when {
+            filters.minAmount == null && filters.maxAmount == null ->
+                binding.chipGroupAmountPresets.check(R.id.chipAmountAll)
+            filters.minAmount == null && filters.maxAmount == 500.0 ->
+                binding.chipGroupAmountPresets.check(R.id.chipAmount0To500)
+            filters.minAmount == 500.0 && filters.maxAmount == 2500.0 ->
+                binding.chipGroupAmountPresets.check(R.id.chipAmount500To2500)
+            filters.minAmount == 2500.0 && filters.maxAmount == 10000.0 ->
+                binding.chipGroupAmountPresets.check(R.id.chipAmount2500To10000)
+            filters.minAmount == 10000.0 && filters.maxAmount == null ->
+                binding.chipGroupAmountPresets.check(R.id.chipAmount10000Plus)
+            else ->
+                binding.chipGroupAmountPresets.clearCheck()
+        }
 
         updateDateButtonLabels()
     }
@@ -183,46 +236,38 @@ class TransactionFilterBottomSheetDialogFragment :
     private fun updateCategoryOptions(
         categories: List<String>
     ) {
-        val normalizedCategories =
-            categories
-                .asSequence()
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .filterNot { category ->
-                    category.equals(
-                        ALL_CATEGORIES_LABEL,
-                        ignoreCase = true
-                    )
-                }
-                .distinct()
-                .toMutableList()
-
-        selectedCategory
-            ?.takeIf { selected ->
-                normalizedCategories.none { category ->
-                    category.equals(
-                        selected,
-                        ignoreCase = true
-                    )
-                }
+        val baseCategories = CategoryUiUtils.POPULAR_EXPENSE_CATEGORIES.toMutableList()
+        
+        val extraCategories = categories
+            .asSequence()
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .filterNot { cat ->
+                cat.equals(ALL_CATEGORIES_LABEL, ignoreCase = true) ||
+                cat.equals("Gelir", ignoreCase = true) ||
+                cat.equals("Birikim", ignoreCase = true) ||
+                baseCategories.any { it.equals(cat, ignoreCase = true) }
             }
-            ?.let(normalizedCategories::add)
+            .distinct()
+            .toList()
 
-        categoryOptions =
-            buildList {
-                add(ALL_CATEGORIES_LABEL)
-                addAll(
-                    normalizedCategories.sortedWith(
-                        String.CASE_INSENSITIVE_ORDER
-                    )
-                )
+        if (extraCategories.isNotEmpty()) {
+            val digerIdx = baseCategories.indexOfFirst { it.equals("Diğer", ignoreCase = true) }
+            if (digerIdx != -1) {
+                baseCategories.addAll(digerIdx, extraCategories)
+            } else {
+                baseCategories.addAll(extraCategories)
             }
+        }
+
+        categoryOptions = buildList {
+            add(ALL_CATEGORIES_LABEL)
+            addAll(baseCategories)
+        }
 
         binding.etFilterCategory.setAdapter(
-            ArrayAdapter(
+            CategoryUiUtils.createCategoryDropdownAdapter(
                 requireContext(),
-                android.R.layout
-                    .simple_dropdown_item_1line,
                 categoryOptions
             )
         )
@@ -367,6 +412,10 @@ class TransactionFilterBottomSheetDialogFragment :
             startDateKey = selectedStartDateKey,
             endDateKey = selectedEndDateKey
         )
+
+        val minAmount = com.epatay.digitalwallet.util.parseMoneyValue(binding.etFilterMinAmount.text?.toString())
+        val maxAmount = com.epatay.digitalwallet.util.parseMoneyValue(binding.etFilterMaxAmount.text?.toString())
+        transactionViewModel.setAmountRange(minAmount, maxAmount)
     }
 
     private fun Int.toDisplayDate(): String {

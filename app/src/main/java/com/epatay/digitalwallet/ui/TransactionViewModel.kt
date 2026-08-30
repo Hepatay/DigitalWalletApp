@@ -3,6 +3,7 @@ package com.epatay.digitalwallet.ui
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.epatay.digitalwallet.data.Transaction
@@ -87,13 +88,14 @@ internal fun calculateMonthlyBudgetSummary(
             Calendar.DAY_OF_MONTH
         )
     val currentDay =
-        calendar.get(Calendar.DAY_OF_MONTH)
+        calendar.get(
+            Calendar.DAY_OF_MONTH
+        )
     val daysUntilMonthEnd =
-        (daysInMonth - currentDay)
-            .coerceAtLeast(0)
-    val budgetingDayCount =
-        (daysUntilMonthEnd + 1)
+        (daysInMonth - currentDay + 1)
             .coerceAtLeast(1)
+    val budgetingDayCount =
+        daysUntilMonthEnd
     val dailySpendingLimit =
         if (rawRemainingLimit > 0.0) {
             java.math.BigDecimal
@@ -232,7 +234,29 @@ class TransactionViewModel(
             )
     }
 
+    private val _errorEvent = MutableLiveData<String>()
+    val errorEvent: androidx.lifecycle.LiveData<String> = _errorEvent
+
+    val currentMonthTransactionCount: androidx.lifecycle.LiveData<Int> =
+        repository.observeCurrentMonthTransactionCount(
+            startDateKey = TransactionDateUtils.monthStartDateKey(TransactionDateUtils.currentMonthKey()),
+            endDateKey = TransactionDateUtils.monthEndDateKey(TransactionDateUtils.currentMonthKey())
+        ).asLiveData()
+
+    private val _monthlyLimit = MutableStateFlow(getMonthlyLimit(application))
+    val monthlyLimit: StateFlow<Double> = _monthlyLimit.asStateFlow()
+
     fun insert(transaction: Transaction) = viewModelScope.launch {
+        val currentMonthKey = TransactionDateUtils.currentMonthKey(Calendar.getInstance())
+        val startKey = TransactionDateUtils.monthStartDateKey(currentMonthKey)
+        val endKey = TransactionDateUtils.monthEndDateKey(currentMonthKey)
+        val thisMonthCount = repository.getCurrentMonthTransactionCount(startKey, endKey)
+
+        if (thisMonthCount >= 200) {
+            _errorEvent.value = "Aylık 200 işlem limitinize ulaştınız. Limitiniz ayın 1'inde yenilenecektir."
+            return@launch
+        }
+
         repository.insert(transaction)
         com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(getApplication())
     }
@@ -316,6 +340,23 @@ class TransactionViewModel(
             _filters.value.copy(type = type)
     }
 
+    fun setAmountRange(
+        minAmount: Double?,
+        maxAmount: Double?
+    ) {
+        val normalizedMin = minAmount?.takeIf { it >= 0.0 }
+        val normalizedMax = maxAmount?.takeIf { it >= 0.0 }
+        val (finalMin, finalMax) = if (normalizedMin != null && normalizedMax != null && normalizedMin > normalizedMax) {
+            normalizedMax to normalizedMin
+        } else {
+            normalizedMin to normalizedMax
+        }
+        _filters.value = _filters.value.copy(
+            minAmount = finalMin,
+            maxAmount = finalMax
+        )
+    }
+
     fun clearFilters() {
         _filters.value = TransactionFilter()
     }
@@ -353,8 +394,8 @@ class TransactionViewModel(
     ) {
         val normalized =
             DecimalMath.normalizeMoney(limit)
-                ?.takeIf { it > 0.0 }
-                ?: return
+                ?.coerceAtLeast(0.0)
+                ?: 0.0
 
         val prefs = context.getSharedPreferences(
             "wallet_prefs",
@@ -369,6 +410,8 @@ class TransactionViewModel(
                     .toPlainString()
             )
             .apply()
+
+        _monthlyLimit.value = normalized
     }
 
     // Aylık limiti okur
@@ -384,7 +427,7 @@ class TransactionViewModel(
                 null
             )
                 ?.toBigDecimalOrNull()
-                ?.takeIf { it > java.math.BigDecimal.ZERO }
+                ?.takeIf { it >= java.math.BigDecimal.ZERO }
                 ?.toDouble()
 
         if (decimalLimit != null && decimalLimit.isFinite()) {
@@ -444,7 +487,7 @@ class TransactionViewModel(
         calendar: Calendar
     ): MonthlyBudgetSummary {
         return calculateMonthlyBudgetSummary(
-            monthlyLimit = getMonthlyLimit(context),
+            monthlyLimit = _monthlyLimit.value,
             transactions = transactions,
             calendar = calendar
         )

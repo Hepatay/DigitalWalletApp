@@ -244,9 +244,7 @@ class MainActivity : AppCompatActivity() {
         savedInstanceState: Bundle?
     ) {
 
-        AppCompatDelegate.setDefaultNightMode(
-            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-        )
+        com.epatay.digitalwallet.util.ThemeManager.applyTheme(this)
 
         val isFreshLaunch =
             savedInstanceState == null
@@ -255,6 +253,14 @@ class MainActivity : AppCompatActivity() {
             installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        val prefs = getSharedPreferences("wallet_prefs", android.content.Context.MODE_PRIVATE)
+        val isGuestMode = prefs.getBoolean("is_guest_mode", false)
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null && !isGuestMode) {
+            startActivity(android.content.Intent(this, com.epatay.digitalwallet.ui.login.LoginActivity::class.java))
+            finish()
+            return
+        }
 
         enableEdgeToEdge()
 
@@ -343,11 +349,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         configureSwipeHint(
-            isFreshLaunch
+            savedInstanceState == null
         )
 
         setupViewPager(
-            isFreshLaunch
+            savedInstanceState == null
         )
     }
 
@@ -1297,6 +1303,9 @@ class MainActivity : AppCompatActivity() {
                 introCompositionReady =
                     true
 
+                systemSplashExited =
+                    true
+
                 binding.root.removeCallbacks(
                     introLoadTimeoutRunnable
                 )
@@ -1309,8 +1318,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         /*
-         * Dosya yüklenemezse uygulama boş
-         * intro ekranında takılı kalmaz.
+         * Dosya yüklenemezse güvenli zaman aşımı
          */
         binding.root.postDelayed(
             introLoadTimeoutRunnable,
@@ -1323,7 +1331,6 @@ class MainActivity : AppCompatActivity() {
         if (
             introFinished ||
             introStarted ||
-            !systemSplashExited ||
             !introCompositionReady
         ) {
             return

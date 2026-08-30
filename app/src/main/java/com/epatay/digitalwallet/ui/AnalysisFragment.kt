@@ -35,6 +35,8 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.snackbar.Snackbar
+import com.epatay.digitalwallet.util.setupMoneyInput
+import com.epatay.digitalwallet.util.setupTextInput
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -56,6 +58,8 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentAnalysisBinding.bind(view)
 
+
+
         adapter = InvestmentAdapter(
             onEditClick = ::showEditDialog,
             onDeleteClick = ::showDeleteDialog
@@ -64,8 +68,30 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         binding.rvInvestments.adapter = adapter
 
         viewModel.portfolioItems.observe(viewLifecycleOwner, ::renderPortfolio)
-        binding.fabAddInvestment.setOnClickListener { showAddBottomSheet() }
-        binding.btnAddFirstInvestment.setOnClickListener { showAddBottomSheet() }
+        viewModel.portfolioAssetCount.observe(viewLifecycleOwner) { /* keep LiveData active */ }
+        viewModel.errorEvent.observe(viewLifecycleOwner) { errorMsg ->
+            if (!errorMsg.isNullOrBlank()) {
+                com.epatay.digitalwallet.util.InAppNotification.show(
+                    activity,
+                    errorMsg,
+                    com.epatay.digitalwallet.util.NotificationType.WARNING
+                )
+            }
+        }
+        val onAddInvestmentClick = {
+            val currentCount = viewModel.portfolioItems.value?.size ?: (viewModel.portfolioAssetCount.value ?: 0)
+            if (currentCount >= 20) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Portföy Kapasitesi Doldu")
+                    .setMessage("Portföyünüze en fazla 20 farklı varlık ekleyebilirsiniz. Yeni bir varlık eklemek için mevcut bir varlığı silebilirsiniz.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+            } else {
+                showAddBottomSheet()
+            }
+        }
+        binding.fabAddInvestment.setOnClickListener { onAddInvestmentClick() }
+        binding.btnAddFirstInvestment.setOnClickListener { onAddInvestmentClick() }
     }
 
     private fun renderPortfolio(items: List<PortfolioAssetItem>) {
@@ -154,13 +180,45 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                         ?: TcmbXmlParser.currencyPriority
                 }
             availableAssetOptions = options
-            sheet.etAssetType.setAdapter(
-                ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    options
-                )
-            )
+            val adapter = object : ArrayAdapter<String>(
+                requireContext(),
+                R.layout.item_asset_dropdown,
+                R.id.tvAssetDropdownCode,
+                options
+            ) {
+                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    return createCustomView(position, convertView, parent)
+                }
+
+                override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    return createCustomView(position, convertView, parent)
+                }
+
+                private fun createCustomView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val row = convertView ?: android.view.LayoutInflater.from(context).inflate(
+                        R.layout.item_asset_dropdown,
+                        parent,
+                        false
+                    )
+                    val item = getItem(position).orEmpty()
+                    val ivIcon = row.findViewById<android.widget.ImageView>(R.id.ivAssetDropdownIcon)
+                    val tvCode = row.findViewById<android.widget.TextView>(R.id.tvAssetDropdownCode)
+                    val tvName = row.findViewById<android.widget.TextView>(R.id.tvAssetDropdownName)
+
+                    if (gold) {
+                        tvCode.text = item
+                        val goldType = GoldType.entries.firstOrNull { it.displayName == item }
+                        tvName.text = if (goldType?.inputUnit == GoldInputUnit.PIECE) "Adet bazlı" else "Gram bazlı"
+                        ivIcon.setImageResource(R.drawable.ic_gold_custom)
+                    } else {
+                        tvCode.text = item
+                        tvName.text = CurrencyFlagProvider.getCurrencyDisplayName(item)
+                        ivIcon.setImageResource(CurrencyFlagProvider.getFlagResIdSafe(item))
+                    }
+                    return row
+                }
+            }
+            sheet.etAssetType.setAdapter(adapter)
             sheet.layoutAssetType.hint = if (gold) "Altın türü" else "Para birimi"
             sheet.layoutInvestmentAmount.placeholderText =
                 if (gold) "Gram için ondalıklı, diğerleri için adet"
@@ -212,10 +270,15 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             ).show()
         }
 
+        sheet.etInvestmentAmount.setupMoneyInput(maxValue = 999_999_999.99, maxDecimals = 4, layout = sheet.layoutInvestmentAmount)
+        sheet.etManualRate.setupMoneyInput(maxValue = 999_999_999.99, maxDecimals = 4, layout = sheet.layoutManualRate)
+        sheet.etInvestmentNote.setupTextInput(maxLength = 150, layout = sheet.layoutInvestmentNote)
+
         sheet.btnSaveInvestment.setOnClickListener {
             val selectedName = sheet.etAssetType.text?.toString()?.trim().orEmpty()
             if (selectedName !in availableAssetOptions) {
                 sheet.layoutAssetType.error = "Listeden geçerli bir varlık seçin"
+                sheet.etAssetType.requestFocus()
                 return@setOnClickListener
             }
 
@@ -228,6 +291,7 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                 if (selectedGoldType == null) {
                     sheet.layoutAssetType.error =
                         "Listeden geçerli bir altın türü seçin"
+                    sheet.etAssetType.requestFocus()
                     return@setOnClickListener
                 }
             }
@@ -245,6 +309,7 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             if (quantityResult is DecimalInputResult.Invalid) {
                 sheet.layoutInvestmentAmount.error =
                     quantityResult.message
+                sheet.etInvestmentAmount.requestFocus()
                 return@setOnClickListener
             }
 
@@ -271,6 +336,7 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                         is DecimalInputResult.Invalid -> {
                             sheet.layoutManualRate.error =
                                 result.message
+                            sheet.etManualRate.requestFocus()
                             return@setOnClickListener
                         }
                     }
@@ -282,9 +348,21 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     if (sheet.rbManualRate.isChecked) "Geçerli bir fiyat girin"
                     else "Güncel satış fiyatı bulunamadı; manuel fiyat girin"
                 if (!sheet.rbManualRate.isChecked) sheet.rbManualRate.isChecked = true
+                sheet.etManualRate.requestFocus()
                 return@setOnClickListener
             }
             sheet.layoutManualRate.error = null
+
+            val currentPortfolioCount = viewModel.portfolioItems.value?.size ?: (viewModel.portfolioAssetCount.value ?: 0)
+            if (currentPortfolioCount >= 20) {
+                dialog.dismiss()
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Portföy Kapasitesi Doldu")
+                    .setMessage("Portföyünüze en fazla 20 farklı varlık ekleyebilirsiniz.")
+                    .setPositiveButton("Tamam", null)
+                    .show()
+                return@setOnClickListener
+            }
 
             val note = sheet.etInvestmentNote.text?.toString()?.trim()?.ifBlank { null }
             val goldType = selectedGoldType
@@ -305,13 +383,11 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
                     note = note
                 )
             }
-            Snackbar
-                .make(
-                    binding.root,
-                    "Varlık kaydedildi",
-                    Snackbar.LENGTH_SHORT
-                )
-                .show()
+            com.epatay.digitalwallet.util.InAppNotification.show(
+                activity,
+                "Varlık kaydedildi",
+                com.epatay.digitalwallet.util.NotificationType.SUCCESS
+            )
             dialog.dismiss()
         }
 
@@ -541,4 +617,6 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         val TR_LOCALE: Locale = Locale.forLanguageTag("tr-TR")
         val GOLD_CHART_COLOR: Int = 0xFFFFC107.toInt()
     }
-}
+
+    
+    }

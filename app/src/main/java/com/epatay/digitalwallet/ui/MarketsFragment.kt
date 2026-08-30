@@ -30,6 +30,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
+import com.epatay.digitalwallet.util.setupMoneyInput
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
@@ -56,6 +57,8 @@ class MarketsFragment : Fragment(R.layout.fragment_markets) {
         super.onViewCreated(view, savedInstanceState)
         _binding =
             FragmentMarketsBinding.bind(view)
+
+
 
         binding.marketsPager.adapter =
             object : FragmentStateAdapter(this) {
@@ -102,11 +105,11 @@ class MarketsFragment : Fragment(R.layout.fragment_markets) {
                 .takeIf { it.size > 1 }
 
         if (rates == null) {
-            Snackbar.make(
-                binding.root,
-                R.string.currency_converter_no_rates,
-                Snackbar.LENGTH_SHORT
-            ).show()
+            com.epatay.digitalwallet.util.InAppNotification.show(
+                activity,
+                getString(R.string.currency_converter_no_rates),
+                com.epatay.digitalwallet.util.NotificationType.WARNING
+            )
             currencyViewModel.loadRates()
             return
         }
@@ -309,6 +312,7 @@ class MarketsFragment : Fragment(R.layout.fragment_markets) {
                 }
             }
 
+        sheet.etConverterAmount.setupMoneyInput(layout = sheet.layoutAmount)
         sheet.etConverterAmount.addTextChangedListener(watcher)
         sheet.etFromCurrency.setOnItemClickListener { _, _, _, _ ->
             hideKeyboard(sheet.etConverterAmount)
@@ -440,4 +444,6 @@ class MarketsFragment : Fragment(R.layout.fragment_markets) {
         val TR_LOCALE: Locale =
             Locale.forLanguageTag("tr-TR")
     }
-}
+
+    
+    }

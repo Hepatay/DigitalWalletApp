@@ -47,13 +47,13 @@ interface TransactionDao {
     // Tüm işlemleri en yeni kayıt üstte olacak şekilde getirir
     @Query(
         "SELECT * FROM transactions_table " +
-                "WHERE is_deleted = 0 ORDER BY uuid DESC"
+                "WHERE is_deleted = 0 ORDER BY occurredOn DESC, updated_at DESC, uuid DESC"
     )
     fun getAllTransactions(): Flow<List<Transaction>>
 
     @Query(
         "SELECT * FROM transactions_table " +
-                "WHERE is_deleted = 0 ORDER BY occurredOn DESC, uuid DESC"
+                "WHERE is_deleted = 0 ORDER BY occurredOn DESC, updated_at DESC, uuid DESC"
     )
     suspend fun getAllTransactionsSnapshot(): List<Transaction>
 
@@ -91,7 +91,7 @@ interface TransactionDao {
                 OR category COLLATE NOCASE
                     LIKE '%' || :escapedQuery || '%' ESCAPE '\'
             )
-        ORDER BY occurredOn DESC, uuid DESC
+        ORDER BY occurredOn DESC, updated_at DESC, uuid DESC
         """
     )
     fun observeFilteredTransactions(
@@ -119,7 +119,7 @@ interface TransactionDao {
                 OR category COLLATE NOCASE
                     LIKE '%' || :escapedQuery || '%' ESCAPE '\'
             )
-        ORDER BY occurredOn DESC, uuid DESC
+        ORDER BY occurredOn DESC, updated_at DESC, uuid DESC
         """
     )
     suspend fun getFilteredTransactionsSnapshot(
@@ -159,7 +159,8 @@ interface TransactionDao {
             COUNT(*) AS transactionCount
         FROM transactions_table
         WHERE
-            type = :type
+            is_deleted = 0
+            AND type = :type
             AND occurredOn BETWEEN :startDateKey AND :endDateKey
         GROUP BY category
         ORDER BY totalAmount DESC, category COLLATE NOCASE ASC
@@ -185,13 +186,27 @@ interface TransactionDao {
         "SELECT COUNT(*) FROM transactions_table WHERE is_deleted = 0 AND occurredOn = 0"
     )
     fun observeUnknownDateCount(): Flow<Int>
+
+    @Query(
+        "SELECT COUNT(*) FROM transactions_table WHERE is_deleted = 0 AND occurredOn BETWEEN :startDateKey AND :endDateKey"
+    )
+    fun observeCurrentMonthTransactionCount(startDateKey: Int, endDateKey: Int): Flow<Int>
+
+    @Query(
+        "SELECT COUNT(*) FROM transactions_table WHERE is_deleted = 0 AND occurredOn BETWEEN :startDateKey AND :endDateKey"
+    )
+    suspend fun getCurrentMonthTransactionCount(startDateKey: Int, endDateKey: Int): Int
     @Query("DELETE FROM transactions_table")
     suspend fun clearAll()
-    @Query("UPDATE transactions_table SET user_id = :userId, updated_at = :now, is_synced = 0 WHERE user_id IS NULL")
+    @Query("UPDATE transactions_table SET user_id = :userId, updated_at = :now, is_synced = 0 WHERE user_id IS NULL OR user_id = 'guest'")
     suspend fun assignUserToGuestRecords(userId: String, now: Long)
 
     @Query("DELETE FROM transactions_table WHERE uuid = :uuid")
     suspend fun hardDeleteTransactionById(uuid: String)
+
+    @Query("DELETE FROM transactions_table WHERE uuid LIKE 'DEMO_TUTORIAL_%'")
+    suspend fun clearDemoTransactions()
+
     @Query("UPDATE transactions_table SET is_deleted = 1, is_synced = 0, updated_at = :timestamp WHERE uuid = :uuid")
     suspend fun deleteTransactionById(uuid: String, timestamp: Long = System.currentTimeMillis())
 }

@@ -26,9 +26,11 @@ import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
     object Idle : AuthState()
-    object Loading : AuthState()
+    data class Loading(val message: String = "Lütfen bekleyin...") : AuthState()
+    object SignedOut : AuthState()
     data class Authenticated(val uid: String, val name: String?, val email: String?, val photoUrl: String? = null) : AuthState()
     data class Error(val message: String) : AuthState()
+    data class ActionSuccess(val message: String) : AuthState()
 }
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,7 +46,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         checkCurrentUser()
     }
 
-    private fun checkCurrentUser() {
+    fun checkCurrentUser() {
         val user = auth.currentUser
         if (user != null) {
             _authState.value = AuthState.Authenticated(user.uid, user.displayName, user.email, user.photoUrl?.toString())
@@ -53,12 +55,71 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteAccountAndData(context: android.content.Context) {
+        _authState.value = AuthState.Loading("Hesabınız ve tüm verileriniz siliniyor...")
+        viewModelScope.launch {
+            val user = auth.currentUser
+            if (user != null) {
+                val uid = user.uid
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        syncManager.deleteAllUserDataFromFirebase(uid)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Error deleting cloud data", e)
+                }
+
+                try {
+                    user.delete().await()
+                } catch (e: Exception) {
+                    Log.w("AuthViewModel", "Firebase User Delete Failed (fallback to signOut)", e)
+                    try {
+                        auth.signOut()
+                    } catch (ex: Exception) {
+                        Log.e("AuthViewModel", "Firebase signOut fallback failed", ex)
+                    }
+                }
+            } else {
+                try {
+                    auth.signOut()
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Firebase signOut failed", e)
+                }
+            }
+
+            try {
+                val credentialManager = CredentialManager.create(context)
+                credentialManager.clearCredentialState(ClearCredentialStateRequest())
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Credential Manager Clear Failed", e)
+            }
+
+            try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    syncManager.clearDatabaseOnLogout()
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Local DB Clear Failed", e)
+            }
+
+            val prefs = context.getSharedPreferences("wallet_prefs", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("is_guest_mode", false).apply()
+
+            _authState.value = AuthState.ActionSuccess(context.getString(R.string.delete_account_success))
+        }
+    }
+
     fun signInWithGoogle(context: android.content.Context) {
-        _authState.value = AuthState.Loading
+        _authState.value = AuthState.Loading("Google ile giriş yapılıyor...")
         viewModelScope.launch {
             try {
                 val credentialManager = CredentialManager.create(context)
-                val webClientId = "488008293284-dv4epl69lh4ni2vu8lec7jukrg0p6a4q.apps.googleusercontent.com"
+                val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+                val webClientId = if (resId != 0) {
+                    context.getString(resId)
+                } else {
+                    "430423683284-3o47lpmpj6fmfgvptut8u580crve4qe9.apps.googleusercontent.com"
+                }
 
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
@@ -89,16 +150,35 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun firebaseAuthWithGoogle(idToken: String) {
         try {
+            _authState.value = AuthState.Loading("Kimlik doğrulanıyor...")
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val authResult = auth.signInWithCredential(credential).await()
             val user = authResult.user
 
             if (user != null) {
-                // Giriş başarılı, yerel kayıtları Firebase kullanıcısına bağla
+                _authState.value = AuthState.Loading("Verileriniz hesabınıza aktarılıyor ve eşitleniyor...")
+                
+                // 1. Assign any guest records in Room to this user
                 syncManager.assignGuestDataToUser()
-                syncManager.pullDataFromFirebase(user.uid)
 
-                // Firebase Sync Worker'ı OneTimeWorkRequest ile tetikle
+                // 2. Synchronously push any existing local data to Firebase cloud immediately
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        syncManager.pushDataToFirebase(user.uid)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Initial Push Failed", e)
+                }
+
+                // 3. Pull any existing remote records from Firebase cloud
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        syncManager.pullDataFromFirebase(user.uid)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Initial Pull Failed", e)
+                }
+
                 val syncRequest = OneTimeWorkRequestBuilder<FirebaseSyncWorker>().build()
                 workManager.enqueue(syncRequest)
 
@@ -113,7 +193,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun signOut(context: android.content.Context) {
-        _authState.value = AuthState.Loading
+        _authState.value = AuthState.Loading("Verileriniz buluta yedekleniyor...")
         viewModelScope.launch {
             val user = auth.currentUser
             if (user != null) {
@@ -125,6 +205,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     Log.e("AuthViewModel", "Error pushing data before logout", e)
                 }
             }
+
+            _authState.value = AuthState.Loading("Güvenli çıkış yapılıyor...")
 
             try {
                 auth.signOut()
@@ -147,7 +229,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 Log.e("AuthViewModel", "Database Clear Failed", e)
             }
             
-            _authState.value = AuthState.Idle
+            val prefs = context.getSharedPreferences("wallet_prefs", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("is_guest_mode", false).apply()
+
+            _authState.value = AuthState.SignedOut
         }
     }
 }

@@ -1,6 +1,7 @@
-package com.epatay.digitalwallet.data
+﻿package com.epatay.digitalwallet.data
 
 import com.epatay.digitalwallet.R
+import com.google.gson.JsonObject
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,47 +39,39 @@ class MarketDataMappingTest {
     }
 
     @Test
-    fun apinoktamMapper_mapsExactFiveProducts_andNeverUsesHasForGram() = runBlocking {
-        val api = FakeGoldApi(
-            items = validItems() + item("has", 6_100.0, 6_101.0)
-        )
+    fun truncgilMapper_mapsExactFiveProducts() = runBlocking {
+        val json = JsonObject().apply {
+            addProperty("Update_Date", "2026-08-28 16:45:02")
+            add("gram-altin", createItemObj("7.142,80", "7.143,76", "%0,29"))
+            add("ceyrek-altin", createItemObj("11.331,11", "11.589,28", "%0,68"))
+            add("yarim-altin", createItemObj("22.591,39", "23.178,56", "%0,68"))
+            add("tam-altin", createItemObj("45.324,43", "46.215,36", "%0,68"))
+            add("cumhuriyet-altini", createItemObj("46.877,00", "47.587,00", "%0,45"))
+            add("ata-altin", createItemObj("46.740,82", "47.916,54", "%0,68"))
+        }
 
-        val rates = ApinoktamGoldRemoteDataSource(
+        val api = FakeTruncgilApi(json)
+        val rates = TruncgilGoldRemoteDataSource(
             api = api,
-            apiKey = "test-key",
             nowMillis = { now }
         ).fetchRates()
 
         assertEquals(GoldType.entries, rates.map(GoldRate::type))
-        assertEquals(6_174.46, rates.first().buyingPrice, 0.0)
-        assertEquals(6_175.37, rates.first().sellingPrice, 0.0)
-        assertEquals(40_436.04, rates.last().buyingPrice, 0.0)
-        assertEquals("v1/altin", api.requestedEndpoint)
-        assertEquals("test-key", api.requestedApiKey)
-        assertEquals(now - 1_000, rates.first().sourceUpdatedAt)
-        assertEquals(now, rates.first().fetchedAt)
+        assertEquals(7142.80, rates.first().buyingPrice, 0.001)
+        assertEquals(7143.76, rates.first().sellingPrice, 0.001)
+        assertEquals("2026-08-28 16:45:02", rates.first().sourceDate)
+        assertEquals("Trunçgil Finans", rates.first().source)
     }
 
     @Test
-    fun apinoktamMapper_rejectsSwappedMissingAndStalePrices() {
-        val swapped = validItems().map {
-            if (it.type == "gram") item("gram", 6_175.37, 6_174.46) else it
-        }
-        assertInvalid(swapped, now - 1_000)
-        assertInvalid(
-            validItems().filterNot { it.type == "ata" || it.type == "cumhuriyet" },
-            now - 1_000
-        )
-        assertInvalid(validItems(), now - 7L * 60L * 60L * 1000L)
-    }
-
-    @Test
-    fun apinoktamMapper_rejectsNullZeroNegativeAndExtremePrices() {
-        listOf<Double?>(null, 0.0, -1.0, 1_000_000_001.0).forEach { invalid ->
-            val items = validItems().map {
-                if (it.type == "gram") it.copy(buyingPrice = invalid) else it
+    fun truncgilMapper_rejectsEmptyResponse() {
+        assertThrows(GoldDataValidationException::class.java) {
+            runBlocking {
+                TruncgilGoldRemoteDataSource(
+                    api = FakeTruncgilApi(JsonObject()),
+                    nowMillis = { now }
+                ).fetchRates()
             }
-            assertInvalid(items, now - 1_000)
         }
     }
 
@@ -100,62 +93,28 @@ class MarketDataMappingTest {
         assertNull(MarketPriceValidator.validate(47.4305, 47.3452))
     }
 
-    private fun assertInvalid(items: List<ApinoktamGoldItem>, sourceTime: Long) {
-        assertThrows(GoldDataValidationException::class.java) {
-            runBlocking {
-                ApinoktamGoldRemoteDataSource(
-                    api = FakeGoldApi(items, sourceTime),
-                    apiKey = "",
-                    nowMillis = { now }
-                ).fetchRates()
-            }
+    private fun createItemObj(buying: String, selling: String, change: String): JsonObject {
+        return JsonObject().apply {
+            addProperty("Buying", buying)
+            addProperty("Selling", selling)
+            addProperty("Change", change)
+            addProperty("Type", "Gold")
         }
     }
 
-    private fun validItems() =
-        listOf(
-            item("gram", 6_174.46, 6_175.37),
-            item("ceyrek", 9_802.68, 10_027.02),
-            item("yarim", 19_544.09, 20_054.04),
-            item("tam", 39_210.71, 39_985.43),
-            item("cumhuriyet", 40_632.0, 41_252.0),
-            item("ata", 40_436.04, 41_457.28)
-        )
-
     private fun rate() = GoldRate(
         type = GoldType.GRAM_GOLD,
-        buyingPrice = 6_174.46,
-        sellingPrice = 6_175.37,
-        source = "API Noktam / Trunçgil Finans",
-        sourceDate = "2026-08-02 11:30:02",
+        buyingPrice = 7_142.80,
+        sellingPrice = 7_143.76,
+        source = "Trunçgil Finans",
+        sourceDate = "2026-08-28 16:45:02",
         sourceUpdatedAt = now - 1_000,
         fetchedAt = now
     )
 
-    private fun item(type: String, buying: Double?, selling: Double?) =
-        ApinoktamGoldItem(type, buying, selling)
-
-    private inner class FakeGoldApi(
-        private val items: List<ApinoktamGoldItem>,
-        private val sourceTime: Long = now - 1_000
-    ) : ApinoktamGoldApi {
-        var requestedEndpoint: String? = null
-        var requestedApiKey: String? = null
-
-        override suspend fun getGoldRates(
-            endpoint: String,
-            apiKey: String?
-        ): ApinoktamGoldResponse {
-            requestedEndpoint = endpoint
-            requestedApiKey = apiKey
-            return ApinoktamGoldResponse(
-                success = true,
-                data = ApinoktamGoldData(
-                    updateEpochMillis = sourceTime,
-                    updateDate = "2026-08-02 11:30:02",
-                    items = items
-                )
-            )
-        }
+    private inner class FakeTruncgilApi(
+        private val json: JsonObject
+    ) : TruncgilGoldApi {
+        override suspend fun getTodayRates(): JsonObject = json
     }
 }

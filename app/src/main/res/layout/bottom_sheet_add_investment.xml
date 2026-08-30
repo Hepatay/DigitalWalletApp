@@ -95,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:digits="0123456789.,"
                 android:inputType="numberDecimal"
-                android:maxLength="24" />
+                android:maxLength="14" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -154,7 +154,7 @@
                 android:layout_height="wrap_content"
                 android:digits="0123456789.,"
                 android:inputType="numberDecimal"
-                android:maxLength="24" />
+                android:maxLength="14" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -182,6 +182,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapSentences|textMultiLine"
+                android:maxLength="150"
                 android:maxLines="3" />
 
         </com.google.android.material.textfield.TextInputLayout>

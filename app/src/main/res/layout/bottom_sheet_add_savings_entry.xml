@@ -89,7 +89,7 @@
                 android:digits="0123456789.,"
                 android:imeOptions="actionNext"
                 android:inputType="numberDecimal"
-                android:maxLength="24"
+                android:maxLength="14"
                 android:maxLines="1"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp" />
@@ -113,18 +113,38 @@
                 android:layout_height="wrap_content"
                 android:imeOptions="actionDone"
                 android:inputType="textCapSentences"
-                android:maxLength="120"
+                android:maxLength="150"
                 android:maxLines="2"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchSyncTransaction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:checked="true"
+            android:text="Bütçeme işlem olarak yansıt"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSyncTransactionHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Para ekleme gider, para çekme gelir olarak bütçenize kaydedilir."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveSavingsEntry"
             android:layout_width="match_parent"
             android:layout_height="54dp"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="20dp"
             android:minHeight="54dp"
             android:text="Hareketi kaydet"
             android:textAllCaps="false"

@@ -24,30 +24,29 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/tvCurrencyDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        tools:text="28 Ağustos 2026, Cuma" />
+
+    <TextView
         android:id="@+id/tvSubtitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="@string/currency_subtitle"
+        android:text="Gösterilen döviz kurları TCMB gösterge niteliğindeki kurlarıdır. Hafta içi her iş gününde saat 15:30\'da güncellenir."
         android:textColor="?attr/colorOnSurfaceVariant"
-        android:textSize="14sp"
+        android:textSize="13sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
-
-    <TextView
-        android:id="@+id/tvLastUpdated"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:textSize="12sp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
-        tools:text="Son Güncelleme: 28.07.2026 15:30"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toBottomOf="@id/tvCurrencyDate" />
 
     <LinearLayout
         android:id="@+id/layoutInfoHeader"
@@ -57,15 +56,24 @@
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvLastUpdated">
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
 
         <TextView
+            android:id="@+id/tvSourceTime"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Kaynak: TCMB (Referans bilgi amaçlıdır)"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="12sp"
-            android:textStyle="italic" />
+            android:textSize="11sp"
+            tools:text="Kaynak Veri Zamanı: 28.08.2026 15:30" />
+
+        <TextView
+            android:id="@+id/tvAppFetchTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            tools:text="Uygulamanın Çektiği Zaman: 28.08.2026 17:05:14" />
 
         <LinearLayout
             android:layout_width="match_parent"

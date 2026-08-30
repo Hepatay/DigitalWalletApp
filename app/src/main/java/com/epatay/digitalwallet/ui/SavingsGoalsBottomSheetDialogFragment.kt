@@ -20,7 +20,9 @@ import com.epatay.digitalwallet.data.DecimalInputResult
 import com.epatay.digitalwallet.data.DecimalInputValidator
 import com.epatay.digitalwallet.data.SavingsGoal
 import com.epatay.digitalwallet.data.SavingsGoalProgress
+import com.epatay.digitalwallet.data.Transaction
 import com.epatay.digitalwallet.data.TransactionDateUtils
+import com.epatay.digitalwallet.data.TransactionType
 import com.epatay.digitalwallet.databinding.BottomSheetAddSavingsEntryBinding
 import com.epatay.digitalwallet.databinding.BottomSheetEditSavingsGoalBinding
 import com.epatay.digitalwallet.databinding.BottomSheetSavingsGoalsBinding
@@ -34,11 +36,17 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputLayout
+import com.epatay.digitalwallet.util.setupMoneyInput
+import com.epatay.digitalwallet.util.setupTextInput
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.GregorianCalendar
 import java.util.Locale
+import java.util.UUID
+import kotlin.math.roundToInt
 
 class SavingsGoalsBottomSheetDialogFragment :
     BottomSheetDialogFragment() {
@@ -52,6 +60,9 @@ class SavingsGoalsBottomSheetDialogFragment :
 
     private val savingsGoalViewModel:
         SavingsGoalViewModel by activityViewModels()
+
+    private val transactionViewModel:
+        TransactionViewModel by activityViewModels()
 
     private val childDialogs =
         linkedSetOf<Dialog>()
@@ -223,17 +234,21 @@ class SavingsGoalsBottomSheetDialogFragment :
                 )
             }
 
+        val isExceeded = progress.savedAmount > progress.goal.targetAmount + BALANCE_EPSILON
         val status =
             TextView(context).apply {
                 text =
-                    if (progress.isCompleted) {
-                        "Tamamlandı • %${progress.progressPercent}"
-                    } else {
-                        "Kalan: ${
-                            formatCurrency(
-                                progress.remainingAmount
-                            )
-                        } • %${progress.progressPercent}"
+                    when {
+                        isExceeded ->
+                            "%${progress.progressPercent} tamamlandı • Hedef ${formatCurrency(progress.exceededAmount)} aşıldı 🏆"
+                        progress.isCompleted ->
+                            "%100 tamamlandı • Hedefe ulaşıldı! 🎉"
+                        else ->
+                            "%${progress.progressPercent} tamamlandı • Kalan: ${
+                                formatCurrency(
+                                    progress.remainingAmount
+                                )
+                            }"
                     }
                 textSize = 13f
                 setTextColor(
@@ -288,19 +303,34 @@ class SavingsGoalsBottomSheetDialogFragment :
                         progress.progressPercent
             }
 
+        var daysRemaining: Int? = null
+        val targetDateStr =
+            goal.targetDateKey
+                ?.takeIf(
+                    TransactionDateUtils::isValidDateKey
+                )
+                ?.let { dateKey ->
+                    val targetCal = dateKey.toCalendar()
+                    val todayCal = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    val diff = targetCal.timeInMillis - todayCal.timeInMillis
+                    val days = (diff / (24 * 60 * 60 * 1000L)).toInt().coerceAtLeast(0)
+                    daysRemaining = days
+                    if (days == 0) {
+                        "🎯 Hedef: Bugün (${dateKey.toDisplayDate()})"
+                    } else {
+                        "🎯 Hedef: ${dateKey.toDisplayDate()} ($days gün kaldı)"
+                    }
+                }
+                ?: "🎯 Hedef: Belirlenmedi"
+
         val targetDate =
             TextView(context).apply {
-                text =
-                    goal.targetDateKey
-                        ?.takeIf(
-                            TransactionDateUtils::isValidDateKey
-                        )
-                        ?.let { dateKey ->
-                            "Hedef tarihi: ${
-                                dateKey.toDisplayDate()
-                            }"
-                        }
-                        ?: "Hedef tarihi: Belirlenmedi"
+                text = targetDateStr
                 textSize = 12f
                 setTextColor(
                     color(
@@ -316,6 +346,44 @@ class SavingsGoalsBottomSheetDialogFragment :
                     0
                 )
             }
+
+        val dailyPlanView = if (!progress.isCompleted && daysRemaining != null && daysRemaining!! > 0 && progress.remainingAmount > 0) {
+            val dailyAmount = progress.remainingAmount / daysRemaining!!
+            TextView(context).apply {
+                text = "💡 Hedefe tam zamanında ulaşmak için günde ortalama ${formatCurrency(dailyAmount)} biriktirmelisin."
+                textSize = 11.5f
+                setTextColor(
+                    color(
+                        com.google.android.material.R.attr
+                            .colorPrimary,
+                        Color.rgb(46, 125, 50)
+                    )
+                )
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dp(4), 0, 0)
+            }
+        } else null
+
+        val motivationView = TextView(context).apply {
+            val msg = when {
+                isExceeded -> "🏆 İnanılmaz bir başarı! Hedefinizi %${progress.progressPercent} oranında aştınız!"
+                progress.isCompleted -> "🎉 Muhteşem! Bu birikim hedefine başarıyla ulaştın!"
+                progress.progressPercent >= 80 -> "🔥 Harika gidiyorsun! Hedefe çok az kaldı, sakın durma!"
+                progress.progressPercent >= 50 -> "💪 Yolu yarıladın bile! Hedefine emin adımlarla ilerliyorsun."
+                progress.progressPercent >= 20 -> "🚀 Tempon çok iyi! İstikrarlı biriktirmeye devam et."
+                else -> "🌱 İlk adımı attın! Her küçük birikim seni hedefine yaklaştırır."
+            }
+            text = msg
+            textSize = 11.5f
+            setTextColor(
+                color(
+                    com.google.android.material.R.attr
+                        .colorOnSurfaceVariant,
+                    Color.DKGRAY
+                )
+            )
+            setPadding(0, dp(4), 0, 0)
+        }
 
         val actions =
             LinearLayout(context).apply {
@@ -378,6 +446,10 @@ class SavingsGoalsBottomSheetDialogFragment :
         content.addView(status)
         content.addView(progressBar)
         content.addView(targetDate)
+        if (dailyPlanView != null) {
+            content.addView(dailyPlanView)
+        }
+        content.addView(motivationView)
         content.addView(actions)
         card.addView(content)
 
@@ -505,6 +577,9 @@ class SavingsGoalsBottomSheetDialogFragment :
 
         updateTargetDateField()
 
+        form.etSavingsGoalTitle.setupTextInput(maxLength = 50, layout = form.layoutSavingsGoalTitle)
+        form.etSavingsGoalTargetAmount.setupMoneyInput(layout = form.layoutSavingsGoalTargetAmount)
+
         form.btnDeleteSavingsGoal
             .setOnClickListener {
                 val goal =
@@ -562,6 +637,7 @@ class SavingsGoalsBottomSheetDialogFragment :
                 if (title.isEmpty()) {
                     form.layoutSavingsGoalTitle.error =
                         "Hedef adı boş bırakılamaz."
+                    form.etSavingsGoalTitle.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -573,6 +649,7 @@ class SavingsGoalsBottomSheetDialogFragment :
                 ) {
                     form.layoutSavingsGoalTargetAmount.error =
                         targetAmountResult.message
+                    form.etSavingsGoalTargetAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -682,6 +759,9 @@ class SavingsGoalsBottomSheetDialogFragment :
 
         updateMovementLabels()
 
+        form.etSavingsEntryAmount.setupMoneyInput(layout = form.layoutSavingsEntryAmount)
+        form.etSavingsEntryNote.setupTextInput(maxLength = 150, layout = form.layoutSavingsEntryNote)
+
         form.btnSaveSavingsEntry
             .setOnClickListener {
                 val amountResult =
@@ -694,6 +774,7 @@ class SavingsGoalsBottomSheetDialogFragment :
                 if (amountResult is DecimalInputResult.Invalid) {
                     form.layoutSavingsEntryAmount.error =
                         amountResult.message
+                    form.etSavingsEntryAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -730,6 +811,7 @@ class SavingsGoalsBottomSheetDialogFragment :
                                     currentProgress.savedAmount
                                 )
                             } çekilebilir."
+                    form.etSavingsEntryAmount.requestFocus()
                     return@setOnClickListener
                 }
 
@@ -752,11 +834,34 @@ class SavingsGoalsBottomSheetDialogFragment :
                     note = note
                 )
 
-                showInAppMessage(
-                    if (isWithdrawal) {
-                        "Birikimden para çekildi"
+                val syncWithBudget = form.switchSyncTransaction.isChecked
+                if (syncWithBudget) {
+                    val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                    val txDateStr = dateFormat.format(Date())
+                    val txTitle = if (isWithdrawal) {
+                        "Birikimden İade: ${progress.goal.title}${if (!note.isNullOrBlank()) " ($note)" else ""}"
                     } else {
-                        "Birikime para eklendi"
+                        "Birikim: ${progress.goal.title}${if (!note.isNullOrBlank()) " ($note)" else ""}"
+                    }
+                    val txType = if (isWithdrawal) TransactionType.INCOME else TransactionType.EXPENSE
+                    val transaction = Transaction(
+                        uuid = UUID.randomUUID().toString(),
+                        title = txTitle,
+                        amount = amount,
+                        category = "Birikim",
+                        date = txDateStr,
+                        type = txType,
+                        occurredOn = TransactionDateUtils.toDateKey(txDateStr)
+                    )
+                    transactionViewModel.insert(transaction)
+                }
+
+                showInAppMessage(
+                    when {
+                        isWithdrawal && syncWithBudget -> "Para çekildi ve bütçenize gelir olarak yansıtıldı"
+                        isWithdrawal -> "Birikimden para çekildi"
+                        syncWithBudget -> "Para eklendi ve bütçenize gider olarak yansıtıldı"
+                        else -> "Birikime para eklendi"
                     }
                 )
 
@@ -811,6 +916,7 @@ class SavingsGoalsBottomSheetDialogFragment :
             initialDate.get(Calendar.DAY_OF_MONTH)
             ).apply {
             setTitle(title)
+            datePicker.minDate = System.currentTimeMillis() - 1000
         }
 
         trackChildDialog(
@@ -886,18 +992,12 @@ class SavingsGoalsBottomSheetDialogFragment :
     private fun showInAppMessage(
         message: String
     ) {
-        val root =
-            _binding
-                ?.root
-                ?: return
-
-        Snackbar
-            .make(
-                root,
-                message,
-                Snackbar.LENGTH_SHORT
-            )
-            .show()
+        val type = if (message.contains("hata", ignoreCase = true) || message.contains("geçerli", ignoreCase = true)) {
+            com.epatay.digitalwallet.util.NotificationType.ERROR
+        } else {
+            com.epatay.digitalwallet.util.NotificationType.SUCCESS
+        }
+        com.epatay.digitalwallet.util.InAppNotification.show(activity, message, type)
     }
 
     private fun <T : Dialog> trackChildDialog(

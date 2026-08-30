@@ -1,4 +1,4 @@
-﻿package com.epatay.digitalwallet.ui
+package com.epatay.digitalwallet.ui
 
 import android.os.Bundle
 import android.view.View
@@ -25,6 +25,10 @@ class GoldFragment : Fragment(R.layout.fragment_gold) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentGoldBinding.bind(view)
+        
+        val format = java.text.SimpleDateFormat("dd MMMM yyyy", java.util.Locale("tr", "TR"))
+        binding.tvGoldDate.text = format.format(java.util.Date())
+        
         binding.rvGoldRates.layoutManager = LinearLayoutManager(requireContext())
         binding.rvGoldRates.adapter = adapter
 
@@ -33,6 +37,11 @@ class GoldFragment : Fragment(R.layout.fragment_gold) {
                 viewModel.uiState.collect(::render)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadRates(forceRefresh = false)
     }
 
     private fun render(state: GoldUiState) {
@@ -53,13 +62,17 @@ class GoldFragment : Fragment(R.layout.fragment_gold) {
                 
                 val firstRate = state.rates.firstOrNull()
                 if (firstRate != null) {
-                    binding.tvSourceTime.text = "Kaynak Veri Zamanı: " + (firstRate.sourceDate ?: "")
+                    val formattedSourceTime = formatSourceDate(firstRate.sourceDate)
+                    binding.tvSourceTime.text = "Kaynak Veri Zamanı: $formattedSourceTime"
                     binding.tvSourceTime.visibility = View.VISIBLE
                     
-                    val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                    val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault())
                     val fetchTimeStr = sdf.format(Date(firstRate.fetchedAt))
-                    binding.tvAppFetchTime.text = "Uygulamanın Çektiği Zaman: " + fetchTimeStr
+                    binding.tvAppFetchTime.text = "Uygulamanın Çektiği Zaman: $fetchTimeStr"
                     binding.tvAppFetchTime.visibility = View.VISIBLE
+
+                    val dateFormat = SimpleDateFormat("dd MMMM yyyy, EEEE", Locale("tr", "TR"))
+                    binding.tvGoldDate.text = dateFormat.format(Date(firstRate.fetchedAt))
                 } else {
                     binding.tvSourceTime.visibility = View.GONE
                     binding.tvAppFetchTime.visibility = View.GONE
@@ -74,6 +87,16 @@ class GoldFragment : Fragment(R.layout.fragment_gold) {
         binding.rvGoldRates.visibility = View.GONE
         binding.tvGoldMessage.text = message
         binding.tvGoldMessage.visibility = View.VISIBLE
+    }
+
+    private fun formatSourceDate(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        return runCatching {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
+            val outputFormat = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault())
+            val date = inputFormat.parse(raw)
+            if (date != null) outputFormat.format(date) else raw
+        }.getOrDefault(raw)
     }
 
     override fun onDestroyView() {

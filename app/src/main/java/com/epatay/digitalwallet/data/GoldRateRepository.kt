@@ -18,7 +18,7 @@ class RoomGoldRateRepository(
     private val context: Context,
     private val dao: GoldRateDao,
     private val remoteDataSource: GoldRemoteDataSource =
-        ApinoktamGoldRemoteDataSource(),
+        TruncgilGoldRemoteDataSource(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : GoldRateRepository {
 
@@ -108,7 +108,7 @@ class RoomGoldRateRepository(
     }
 
     private companion object {
-        const val CACHE_MAX_AGE_MILLIS = 30L * 60L * 1000L
+        const val CACHE_MAX_AGE_MILLIS = 2L * 60L * 1000L
     }
 }
 

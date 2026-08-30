@@ -30,7 +30,7 @@ class FirebaseSyncWorker(
                 txCollection.document(tx.uuid).delete().await()
                 localDb.transactionDao().hardDeleteTransactionById(tx.uuid)
             }
-            val unsyncedTx = localDb.transactionDao().getAllTransactionsSync().filter { !it.is_synced && !it.is_deleted }
+            val unsyncedTx = localDb.transactionDao().getAllTransactionsSync().filter { !it.is_synced && !it.is_deleted && !it.uuid.startsWith("DEMO_TUTORIAL_") }
             for (tx in unsyncedTx) {
                 val newTx = tx.copy(is_synced = true, user_id = uid)
                 txCollection.document(newTx.uuid).set(newTx).await()
@@ -57,7 +57,7 @@ class FirebaseSyncWorker(
                 invCollection.document(inv.uuid).delete().await()
                 localDb.investmentDao().hardDeleteInvestmentById(inv.uuid)
             }
-            val unsyncedInv = localDb.investmentDao().getAllInvestmentsSync().filter { !it.is_synced && !it.is_deleted }
+            val unsyncedInv = localDb.investmentDao().getAllInvestmentsSync().filter { !it.is_synced && !it.is_deleted && !it.uuid.startsWith("DEMO_TUTORIAL_") }
             for (inv in unsyncedInv) {
                 val newInv = inv.copy(is_synced = true, user_id = uid)
                 invCollection.document(newInv.uuid).set(newInv).await()
@@ -84,7 +84,7 @@ class FirebaseSyncWorker(
                 goldCollection.document(gold.uuid).delete().await()
                 localDb.userGoldAssetDao().hardDelete(gold.uuid)
             }
-            val unsyncedGold = localDb.userGoldAssetDao().getAllSync().filter { !it.is_synced && !it.is_deleted }
+            val unsyncedGold = localDb.userGoldAssetDao().getAllSync().filter { !it.is_synced && !it.is_deleted && !it.uuid.startsWith("DEMO_TUTORIAL_") }
             for (gold in unsyncedGold) {
                 val newGold = gold.copy(is_synced = true, user_id = uid)
                 goldCollection.document(newGold.uuid).set(newGold).await()
@@ -195,7 +195,7 @@ class FirebaseSyncWorker(
                 recurringCol.document(recurring.uuid).delete().await()
                 localDb.recurringTransactionDao().hardDelete(recurring.uuid)
             }
-            val unsyncedRecurring = localDb.recurringTransactionDao().getAllSync().filter { !it.is_synced && !it.is_deleted }
+            val unsyncedRecurring = localDb.recurringTransactionDao().getAllSync().filter { !it.is_synced && !it.is_deleted && !it.uuid.startsWith("DEMO_TUTORIAL_") }
             for (recurring in unsyncedRecurring) {
                 val newRec = recurring.copy(is_synced = true, user_id = uid)
                 recurringCol.document(newRec.uuid).set(newRec).await()

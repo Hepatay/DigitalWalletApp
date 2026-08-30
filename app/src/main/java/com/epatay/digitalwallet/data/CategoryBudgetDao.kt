@@ -63,6 +63,10 @@ interface CategoryBudgetDao {
         monthKey: Int,
         category: String
     )
+
+    @Query("DELETE FROM category_budgets WHERE category IN ('Market', 'Yiyecek ve İçecek') AND (limitAmount = 6000.0 OR limitAmount = 3500.0)")
+    suspend fun clearDemoBudgets()
+
     @Query("DELETE FROM category_budgets")
     suspend fun clearAll()
 }
