@@ -282,14 +282,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.tvLegalLink.setOnClickListener {
-            showLegalNotice()
-        }
-
-        binding.tvPrivacyLink.setOnClickListener {
             if (isPrivacyOptionsRequired()) {
                 showPrivacyOptionsForm()
             } else {
-                showPrivacyNotice()
+                showLegalNotice()
             }
         }
 
