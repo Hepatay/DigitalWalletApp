@@ -21,3 +21,6 @@
 -keepattributes Signature,*Annotation*
 
 # Gson bu yanıt modellerini alan adları üzerinden okur.
+-keep class com.epatay.digitalwallet.data.** { *; }
+-keep class com.epatay.digitalwallet.sync.** { *; }
+-keep class com.epatay.digitalwallet.security.** { *; }

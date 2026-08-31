@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Verileriniz Firebase altyapısı ile güvenle buluta yedeklenir. Farklı cihazlardan anlık erişim sağlayabilirsiniz."
+            android:text="🔒 Verileriniz cihazınızda AES-256 ile uçtan uca şifrelenerek buluta aktarılır. Sıfır Bilgi mimarisi sayesinde finansal kayıtlarınızı sizden başka kimse göremez."
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -92,7 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Verileriniz Firebase altyapısı ile güvenle buluta yedeklenir."
+            android:text="🔒 Sıfır Bilgi (Zero-Knowledge) &amp; Uçtan Uca Şifreli Yedekleme Aktif"
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorPrimary" />
 

@@ -249,6 +249,9 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
+    // JSON Serialization for Zero-Knowledge Cloud Payload
+    implementation("com.google.code.gson:gson:2.11.0")
+
     // GerÃ§ek .xlsx workbook Ã¼retimi
     implementation(
         "org.dhatim:fastexcel:0.20.2"

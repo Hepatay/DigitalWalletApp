@@ -42,11 +42,12 @@ Uygulama; bankacılık, para transferi veya yatırım danışmanlığı hizmeti 
 - **Canlı Altın Kurları:** Güncel alış, satış ve makas oranları.
 - **Çevrimdışı Dayanıklılık (Offline Fallback):** İnternet olmadığında son başarılı piyasa verileri Room önbelleğinden kesintisiz sunulur.
 
-### 4. Bulut Senkronizasyonu & Çift Yönlü Sync (Room + Firebase)
+### 4. Bulut Senkronizasyonu & Sıfır Bilgi (Zero-Knowledge) Güvenlik Mimarisi
+- **🔒 Sıfır Bilgi & Uçtan Uca İstemci Şifreleme (AES-256-GCM):** Tüm finansal kayıtlar (tutar, bakiye, bütçe, altın, döviz, notlar) buluta aktarılmadan önce cihazda AES-256 ile şifrelenir. Firebase sunucusunda veriler yalnızca şifreli metin (ciphertext) olarak tutulur; geliştirici dahil hiç kimse kullanıcının finansal verilerini göremez.
 - **Offline-First & İki Yönlü Senkronizasyon:** Çevrimdışıyken yapılan tüm ekleme/güncelleme/silme işlemleri yerel Room veritabanında tutulur, internet bağlantısı sağlandığında `WorkManager` ve `FirebaseSyncManager` ile Firestore'a aktarılır.
 - **Soft-Delete Mimarisi:** Silinen kayıtlar bulutta ve yerelde senkronize edilerek veri kaybı ve çakışmalar engellenir.
 - **Misafir Modu & Hesap Aktarımı:** Misafir olarak kullanılan veriler, Google ile giriş yapıldığında tek tıkla kullanıcının bulut hesabına taşınır.
-- **Hesap ve Tüm Verileri Kalıcı Silme:** GDPR/KVKK uyumlu olarak tek tuşla tüm bulut ve yerel verileri sıfırlama seçeneği.
+- **Hesap ve Tüm Verileri Kalıcı Silme:** Tek tuşla tüm bulut ve yerel verileri anında yok etme seçeneği.
 
 ### 5. Dışa Aktarma (Raporlama)
 - **Excel (`.xlsx`):** FastExcel ile oluşturulmuş, tüm işlem ve portföy sekmelerini içeren formatlı tablo.
