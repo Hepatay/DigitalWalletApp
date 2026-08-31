@@ -92,7 +92,19 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         }
         binding.fabAddInvestment.setOnClickListener { onAddInvestmentClick() }
         binding.btnAddFirstInvestment.setOnClickListener { onAddInvestmentClick() }
+
+        binding.layoutToggleBreakdown.setOnClickListener {
+            isGrandTotalExpanded = !isGrandTotalExpanded
+            binding.layoutGrandTotalBreakdown.visibility =
+                if (isGrandTotalExpanded) View.VISIBLE else View.GONE
+            binding.ivExpandGrandTotal.rotation =
+                if (isGrandTotalExpanded) 180f else 0f
+            binding.tvToggleBreakdownTitle.text =
+                if (isGrandTotalExpanded) "Varlık Dağılımını Gizle" else "Tüm Varlıkları ve Dağılımı Göster"
+        }
     }
+
+    private var isGrandTotalExpanded: Boolean = false
 
     private fun renderPortfolio(items: List<PortfolioAssetItem>) {
         adapter.setData(items)
@@ -121,6 +133,7 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             if (excludedCount > 0) View.VISIBLE else View.GONE
 
         setupPieChart(valuedItems)
+        setupDetailedBreakdown(valuedItems, currentTotal)
     }
 
     private fun bindTotalProfit(value: Double, hasComparableItems: Boolean) {
@@ -575,6 +588,158 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
         }
     }
 
+    private fun setupDetailedBreakdown(items: List<PortfolioAssetItem>, grandTotal: Double) {
+        val hasItems = items.isNotEmpty()
+        binding.layoutToggleBreakdown.visibility = if (hasItems) View.VISIBLE else View.GONE
+        if (!hasItems) {
+            binding.layoutGrandTotalBreakdown.visibility = View.GONE
+            binding.llAllAssetsBreakdown.removeAllViews()
+            return
+        }
+
+        val typedValue = android.util.TypedValue()
+        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+        val onSurfaceColor = typedValue.data
+
+        val typedVariant = android.util.TypedValue()
+        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedVariant, true)
+        val onSurfaceVariantColor = typedVariant.data
+
+        val typedPrimary = android.util.TypedValue()
+        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedPrimary, true)
+        val primaryColor = typedPrimary.data
+
+        binding.llAllAssetsBreakdown.removeAllViews()
+
+        // Altın türlerini birbirinden ayırarak (Gram, Çeyrek, Yarım, Tam vb.) ve dövizleri listeliyoruz
+        val groupedAssets = items
+            .groupBy { Triple(it.kind, it.code, it.displayName) }
+            .map { (identity, group) ->
+                val kind = identity.first
+                val code = identity.second
+                val displayName = identity.third
+                val totalQuantity = group.sumOf { it.quantity }
+                val unitLabel = group.firstOrNull()?.unitLabel.orEmpty()
+                val totalValue = group.sumOf { it.currentValue ?: 0.0 }
+                val costs = group.mapNotNull { it.totalPurchaseCost }
+                val totalCost = if (costs.isNotEmpty()) costs.sum() else null
+                val totalProfit = if (totalCost != null) totalValue - totalCost else null
+                val profitPercentage = if (totalCost != null && totalCost > 0.0) (totalProfit!! / totalCost) * 100.0 else null
+                val sharePercentage = if (grandTotal > 0.0) (totalValue / grandTotal) * 100.0 else 0.0
+
+                AssetBreakdownItem(
+                    kind = kind,
+                    code = code,
+                    displayName = displayName,
+                    totalQuantity = totalQuantity,
+                    unitLabel = unitLabel,
+                    totalValue = totalValue,
+                    totalProfit = totalProfit,
+                    profitPercentage = profitPercentage,
+                    sharePercentage = sharePercentage
+                )
+            }
+            .filter { it.totalValue > 0.0 }
+            .sortedByDescending { it.totalValue }
+
+        val dpToPx = { dp: Int -> (dp * resources.displayMetrics.density).toInt() }
+
+        groupedAssets.forEach { asset ->
+            val row = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, dpToPx(6), 0, dpToPx(6))
+            }
+
+            val icon = android.widget.ImageView(requireContext()).apply {
+                if (asset.kind == PortfolioAssetKind.GOLD) {
+                    setImageResource(R.drawable.ic_gold_coin)
+                } else {
+                    setImageResource(CurrencyFlagProvider.getFlagResIdSafe(asset.code))
+                }
+                layoutParams = android.widget.LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)).apply {
+                    marginEnd = dpToPx(10)
+                }
+            }
+
+            val leftCol = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            val tvName = android.widget.TextView(requireContext()).apply {
+                text = asset.displayName
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(onSurfaceColor)
+            }
+
+            val tvSub = android.widget.TextView(requireContext()).apply {
+                val qtyStr = "${formatQuantity(asset.totalQuantity)} ${asset.unitLabel}"
+                val shareStr = "%${formatNumber(asset.sharePercentage)} pay"
+                text = "$qtyStr • $shareStr"
+                textSize = 11.5f
+                setTextColor(onSurfaceVariantColor)
+            }
+            leftCol.addView(tvName)
+            leftCol.addView(tvSub)
+
+            val rightCol = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.END
+            }
+
+            val tvVal = android.widget.TextView(requireContext()).apply {
+                text = formatCurrency(asset.totalValue)
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(primaryColor)
+            }
+
+            val tvProfit = android.widget.TextView(requireContext()).apply {
+                textSize = 11f
+                setTypeface(null, Typeface.BOLD)
+                if (asset.totalProfit == null) {
+                    text = "-"
+                    setTextColor(Color.parseColor("#888888"))
+                } else when {
+                    abs(asset.totalProfit) < 0.01 -> {
+                        text = "0,00 TL"
+                        setTextColor(Color.parseColor("#888888"))
+                    }
+                    asset.totalProfit > 0.0 -> {
+                        text = "+${formatCurrency(asset.totalProfit)} (%${formatNumber(asset.profitPercentage)})"
+                        setTextColor(Color.parseColor("#2E7D32"))
+                    }
+                    else -> {
+                        text = "-${formatCurrency(abs(asset.totalProfit))} (%${formatNumber(asset.profitPercentage)})"
+                        setTextColor(Color.parseColor("#C62828"))
+                    }
+                }
+            }
+            rightCol.addView(tvVal)
+            rightCol.addView(tvProfit)
+
+            row.addView(icon)
+            row.addView(leftCol)
+            row.addView(rightCol)
+
+            binding.llAllAssetsBreakdown.addView(row)
+        }
+    }
+
+    private data class AssetBreakdownItem(
+        val kind: PortfolioAssetKind,
+        val code: String,
+        val displayName: String,
+        val totalQuantity: Double,
+        val unitLabel: String,
+        val totalValue: Double,
+        val totalProfit: Double?,
+        val profitPercentage: Double?,
+        val sharePercentage: Double
+    )
+
     private data class PortfolioChartSlice(
         val kind: PortfolioAssetKind,
         val code: String,
@@ -594,6 +759,20 @@ class AnalysisFragment : Fragment(R.layout.fragment_analysis) {
             minimumFractionDigits = 2
             maximumFractionDigits = 2
         }.format(value) + " TL"
+
+    private fun formatQuantity(value: Double): String =
+        NumberFormat.getNumberInstance(TR_LOCALE).apply {
+            minimumFractionDigits = 0
+            maximumFractionDigits = 4
+        }.format(value)
+
+    private fun formatNumber(value: Double?): String =
+        value?.let {
+            NumberFormat.getNumberInstance(TR_LOCALE).apply {
+                minimumFractionDigits = 1
+                maximumFractionDigits = 2
+            }.format(it)
+        } ?: "-"
 
     override fun onDestroyView() {
         activeDialogs.toList().forEach { dialog ->

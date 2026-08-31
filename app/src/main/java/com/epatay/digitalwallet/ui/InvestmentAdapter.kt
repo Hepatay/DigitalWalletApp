@@ -19,6 +19,7 @@ class InvestmentAdapter(
 ) : RecyclerView.Adapter<InvestmentAdapter.InvestmentViewHolder>() {
 
     private var items: List<PortfolioAssetItem> = emptyList()
+    private val expandedItemKeys: MutableSet<String> = mutableSetOf()
 
     class InvestmentViewHolder(val binding: ItemInvestmentBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -42,7 +43,7 @@ class InvestmentAdapter(
         binding.tvAssetName.text = item.displayName
         binding.tvAmount.text =
             "${formatQuantity(item.quantity)} ${item.unitLabel}"
-        binding.tvBuyDate.text = item.purchaseDateText
+        binding.tvBuyDate.text = "Alış Tarihi: ${item.purchaseDateText}"
         binding.tvBuyPrice.text =
             "Kullanıcı alış fiyatı: ${formatRate(item.purchaseUnitPrice)}"
         binding.tvTotalBuyCost.text =
@@ -58,6 +59,10 @@ class InvestmentAdapter(
 
         val marketBuying = item.marketBuyingPrice
         if (marketBuying == null || item.currentValue == null) {
+            binding.tvSummaryCurrentValue.text = "-"
+            binding.tvSummaryProfitLoss.text = "Kâr/Zarar: -"
+            binding.tvSummaryProfitLoss.setTextColor(Color.parseColor("#888888"))
+
             binding.tvCurrentRate.text = "Güncel fiyat bilgisi bulunamadı."
             binding.tvMarketSelling.text = "Piyasa satış fiyatı: -"
             binding.tvSpread.text = "Makas: -"
@@ -65,6 +70,10 @@ class InvestmentAdapter(
             binding.tvProfitLoss.text = "Kâr/Zarar: -"
             binding.tvProfitLoss.setTextColor(Color.parseColor("#888888"))
         } else {
+            val formattedValue = formatCurrency(item.currentValue)
+            binding.tvSummaryCurrentValue.text = formattedValue
+            binding.tvCurrentValue.text = "Tahmini satış değeri: $formattedValue"
+
             binding.tvCurrentRate.text =
                 "Piyasa alış fiyatı: ${formatRate(marketBuying)}"
             binding.tvMarketSelling.text =
@@ -72,8 +81,7 @@ class InvestmentAdapter(
             binding.tvSpread.text =
                 "Makas: ${formatCurrency(item.spread)} " +
                     "(%${formatNumber(item.spreadPercentage)})"
-            binding.tvCurrentValue.text =
-                "Tahmini satış değeri: ${formatCurrency(item.currentValue)}"
+
             bindProfitLoss(binding, item.profitLoss, item.profitLossPercentage)
         }
 
@@ -97,9 +105,30 @@ class InvestmentAdapter(
                 fetchedAtText = fetchedAt
             )
         binding.tvReference.text = "Referans bilgi amaçlıdır • Yatırım tavsiyesi değildir"
-        binding.tvNote.text = item.note.orEmpty()
+        binding.tvNote.text = "Not: ${item.note.orEmpty()}"
         binding.tvNote.visibility =
             if (item.note.isNullOrBlank()) View.GONE else View.VISIBLE
+
+        // Açılır / Kapanır Durumu
+        val isExpanded = expandedItemKeys.contains(item.stableKey)
+        binding.layoutExpandedDetails.visibility = if (isExpanded) View.VISIBLE else View.GONE
+        binding.ivExpandChevron.rotation = if (isExpanded) 180f else 0f
+
+        val toggleExpand = {
+            val currentPos = holder.adapterPosition
+            if (currentPos != RecyclerView.NO_POSITION) {
+                if (expandedItemKeys.contains(item.stableKey)) {
+                    expandedItemKeys.remove(item.stableKey)
+                } else {
+                    expandedItemKeys.add(item.stableKey)
+                }
+                notifyItemChanged(currentPos)
+            }
+        }
+
+        binding.cardInvestmentItem.setOnClickListener { toggleExpand() }
+        binding.layoutSummaryHeader.setOnClickListener { toggleExpand() }
+        binding.ivExpandChevron.setOnClickListener { toggleExpand() }
 
         binding.ivMoreOptions.setOnClickListener { view: android.view.View ->
             val popup = PopupMenu(view.context, view)
@@ -129,6 +158,8 @@ class InvestmentAdapter(
         if (difference == null) {
             binding.tvProfitLoss.text = "Kâr/Zarar: -"
             binding.tvProfitLoss.setTextColor(Color.parseColor("#888888"))
+            binding.tvSummaryProfitLoss.text = "Kâr/Zarar: -"
+            binding.tvSummaryProfitLoss.setTextColor(Color.parseColor("#888888"))
             return
         }
 
@@ -136,16 +167,24 @@ class InvestmentAdapter(
             abs(difference) < 0.01 -> {
                 binding.tvProfitLoss.text = "0,00 TL"
                 binding.tvProfitLoss.setTextColor(Color.parseColor("#888888"))
+                binding.tvSummaryProfitLoss.text = "0,00 TL"
+                binding.tvSummaryProfitLoss.setTextColor(Color.parseColor("#888888"))
             }
             difference > 0.0 -> {
                 binding.tvProfitLoss.text =
                     "+${formatCurrency(difference)} Kâr (%${formatNumber(percentage)})"
                 binding.tvProfitLoss.setTextColor(Color.parseColor("#2E7D32"))
+                binding.tvSummaryProfitLoss.text =
+                    "+${formatCurrency(difference)} (%${formatNumber(percentage)})"
+                binding.tvSummaryProfitLoss.setTextColor(Color.parseColor("#2E7D32"))
             }
             else -> {
                 binding.tvProfitLoss.text =
                     "-${formatCurrency(abs(difference))} Zarar (%${formatNumber(percentage)})"
                 binding.tvProfitLoss.setTextColor(Color.parseColor("#C62828"))
+                binding.tvSummaryProfitLoss.text =
+                    "-${formatCurrency(abs(difference))} (%${formatNumber(percentage)})"
+                binding.tvSummaryProfitLoss.setTextColor(Color.parseColor("#C62828"))
             }
         }
     }
