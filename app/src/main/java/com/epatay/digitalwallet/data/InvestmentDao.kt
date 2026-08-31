@@ -36,7 +36,7 @@ interface InvestmentDao {
     fun getAllInvestments(): LiveData<List<InvestmentItem>>
 
     // Yeni yatırım ekler
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertInvestment(
         investment: InvestmentItem
     )

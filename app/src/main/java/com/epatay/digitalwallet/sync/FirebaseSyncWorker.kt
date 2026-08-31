@@ -22,6 +22,7 @@ class FirebaseSyncWorker(
 
         return try {
             val syncManager = FirebaseSyncManager(applicationContext)
+            syncManager.pullDataFromFirebase(uid)
             syncManager.pushDataToFirebase(uid)
             Log.d(TAG, "Zero-Knowledge sync completed successfully")
             Result.success()

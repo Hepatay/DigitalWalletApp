@@ -23,7 +23,7 @@ interface RecurringOccurrenceDao {
         periodKey: String
     ): Boolean
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(
         occurrence: RecurringOccurrence
     ): Long

@@ -3,6 +3,7 @@ package com.epatay.digitalwallet.data
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +29,7 @@ interface UserGoldAssetDao {
     @Query("SELECT * FROM user_gold_assets")
     suspend fun getAllSync(): List<UserGoldAssetEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(asset: UserGoldAssetEntity): Long
 
     @Update

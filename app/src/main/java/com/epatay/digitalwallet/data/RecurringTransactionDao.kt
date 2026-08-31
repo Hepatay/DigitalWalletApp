@@ -34,7 +34,7 @@ interface RecurringTransactionDao {
         id: String
     ): RecurringTransaction?
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(
         recurringTransaction: RecurringTransaction
     ): Long

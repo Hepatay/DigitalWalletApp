@@ -161,16 +161,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 // 1. Assign any guest records in Room to this user
                 syncManager.assignGuestDataToUser()
 
-                // 2. Synchronously push any existing local data to Firebase cloud immediately
-                try {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        syncManager.pushDataToFirebase(user.uid)
-                    }
-                } catch (e: Exception) {
-                    Log.e("AuthViewModel", "Initial Push Failed", e)
-                }
-
-                // 3. Pull any existing remote records from Firebase cloud
+                // 2. Pull any existing remote records from Firebase cloud
                 try {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         syncManager.pullDataFromFirebase(user.uid)
@@ -179,8 +170,16 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     Log.e("AuthViewModel", "Initial Pull Failed", e)
                 }
 
-                val syncRequest = OneTimeWorkRequestBuilder<FirebaseSyncWorker>().build()
-                workManager.enqueue(syncRequest)
+                // 3. Synchronously push any existing local data to Firebase cloud immediately
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        syncManager.pushDataToFirebase(user.uid)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Initial Push Failed", e)
+                }
+
+                FirebaseSyncWorker.trigger(getApplication())
 
                 _authState.value = AuthState.Authenticated(user.uid, user.displayName, user.email, user.photoUrl?.toString())
             } else {

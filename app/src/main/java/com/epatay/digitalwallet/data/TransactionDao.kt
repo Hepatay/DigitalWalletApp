@@ -27,7 +27,7 @@ data class CategoryTransactionTotal(
 interface TransactionDao {
 
     // Yeni gelir veya gider ekler
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(
         transaction: Transaction
     )

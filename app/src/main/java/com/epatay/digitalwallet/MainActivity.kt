@@ -369,6 +369,10 @@ class MainActivity : AppCompatActivity() {
             RecurringTransactionScheduler.runNow(
                 this
             )
+
+            if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+                com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(applicationContext)
+            }
         }
 
         bannerAdView?.resume()
@@ -493,6 +497,10 @@ class MainActivity : AppCompatActivity() {
             RecurringTransactionScheduler.runNow(
                 this
             )
+        }
+
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+            com.epatay.digitalwallet.sync.FirebaseSyncWorker.trigger(applicationContext)
         }
     }
 
